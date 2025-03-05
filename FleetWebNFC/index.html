@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fleet Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      background: #f0f0f0;
+      margin: 0; 
+      padding: 0; 
+      font-family: sans-serif;
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      height: 100vh;
+    }
+    .login-container {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 1rem;
+    }
+    input {
+      display: block;
+      margin: 0.5rem auto;
+      padding: 0.5rem;
+      width: 200px;
+      font-size: 1rem;
+    }
+    button {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    #message {
+      margin-top: 1rem;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-container">
+  <h1>Fleet Login</h1>
+  <input type="email" id="login-email" placeholder="Email" />
+  <input type="password" id="login-password" placeholder="Password" />
+  <button id="login-btn">Login</button>
+  <div id="message"></div>
+</div>
+
+<!-- Firebase scripts -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+  import { getAuth, signInWithEmailAndPassword } 
+    from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+
+  // TODO: Replace with your Firebase config
+  const firebaseConfig = {
+  apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
+  authDomain: "yfned-fleet-nfc.firebaseapp.com",
+  databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
+  projectId: "yfned-fleet-nfc",
+  storageBucket: "yfned-fleet-nfc.firebasestorage.app",
+  messagingSenderId: "482363667898",
+  appId: "1:482363667898:web:4b0364e891a221e9631983",
+  measurementId: "G-LK66DQVKW4"
+};
+
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  const loginBtn = document.getElementById('login-btn');
+  const emailInput = document.getElementById('login-email');
+  const passInput = document.getElementById('login-password');
+  const msgDiv = document.getElementById('message');
+
+  // Handle Login
+  loginBtn.addEventListener('click', async () => {
+    msgDiv.textContent = '';
+    const email = emailInput.value;
+    const pass = passInput.value;
+    if(!email || !pass) {
+      msgDiv.textContent = 'Please enter email and password.';
+      return;
+    }
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      // If successful, redirect to calendar
+      window.location.href = 'calendar.html';
+    } catch(err) {
+      msgDiv.textContent = 'Login failed: ' + err.message;
+    }
+  });
+</script>
+
+</body>
+</html>
