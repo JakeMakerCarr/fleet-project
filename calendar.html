@@ -114,15 +114,15 @@
 
   // Your Firebase config
   const firebaseConfig = {
-  apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
-  authDomain: "yfned-fleet-nfc.firebaseapp.com",
-  databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
-  projectId: "yfned-fleet-nfc",
-  storageBucket: "yfned-fleet-nfc.firebasestorage.app",
-  messagingSenderId: "482363667898",
-  appId: "1:482363667898:web:4b0364e891a221e9631983",
-  measurementId: "G-LK66DQVKW4"
-};
+    apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
+    authDomain: "yfned-fleet-nfc.firebaseapp.com",
+    databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
+    projectId: "yfned-fleet-nfc",
+    storageBucket: "yfned-fleet-nfc.firebasestorage.app",
+    messagingSenderId: "482363667898",
+    appId: "1:482363667898:web:4b0364e891a221e9631983",
+    measurementId: "G-LK66DQVKW4"
+  };
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getDatabase(app);
@@ -147,6 +147,25 @@
   const urlParams = new URLSearchParams(window.location.search);
   const nfcVehicle = urlParams.get('nfcVehicle'); // e.g. "Vehicle3" if tapped an NFC tag
 
+  // NEW: Update heading function
+  async function updateVehicleHeading(vehicleName) {
+    if (!vehicleName) return;
+    const vehicleRef = ref(db, 'vehicles/' + vehicleName);
+    const snap = await get(vehicleRef);
+
+    if (snap.exists()) {
+      const vehData = snap.val();
+      if (vehData.status === 'signedOut') {
+        vehicleHeading.textContent = `${vehicleName} schedule: Currently Signed Out by: ${vehData.CurrentlySignedOutBy}`;
+      } else {
+        vehicleHeading.textContent = `${vehicleName} schedule: Available`;
+      }
+    } else {
+      // If there's no record yet, just default to "Available" or your preferred text
+      vehicleHeading.textContent = `${vehicleName} schedule: Available`;
+    }
+  }
+
   // On Auth
   onAuthStateChanged(auth, (user) => {
     if(!user) {
@@ -158,11 +177,15 @@
 
       initCalendar();
 
-      vehicleSelect.addEventListener('change', () => {
-        vehicleHeading.textContent = vehicleSelect.value + ' schedule:';
+      // On vehicle change, update heading
+      vehicleSelect.addEventListener('change', async () => {
+        const selectedVehicle = vehicleSelect.value;
+        await updateVehicleHeading(selectedVehicle); // NEW
         calendar.refetchEvents();
       });
-      vehicleHeading.textContent = vehicleSelect.value + ' schedule:';
+
+      // Set default heading on load
+      updateVehicleHeading(vehicleSelect.value); // NEW
 
       // Book
       bookVehicleBtn.addEventListener('click', async (e) => {
@@ -180,9 +203,8 @@
         await handleReturnVehicle();
       });
 
-      // If came from an NFC tap => handle automatically
+      // If came from NFC => automatically handle
       if(nfcVehicle) {
-        // Wait a small delay or call handleNfcFlow immediately
         handleNfcFlow(nfcVehicle);
       }
     }
@@ -234,36 +256,48 @@
     }
   }
 
-  // toTimestamp(...), handleBooking(...), handleSignOutVehicle(...), signOutVehicleInDB(...), handleReturnVehicle(...)
-
-  // 1) If vehicle is "signedOut" by me => return
-  // 2) Else => same signOut logic (which checks active booking or not)
-  async function handleNfcFlow(nfcVeh) {
-    alert(`NFC tap detected for ${nfcVeh}. Checking vehicle status...`);
-    
-    // 1) Check vehicle's current status
-    const vehicleRef = ref(db, 'vehicles/' + nfcVeh);
-    const vehicleSnap = await get(vehicleRef);
-    
-    if(vehicleSnap.exists()) {
-      const vehData = vehicleSnap.val();
-      if(vehData.status === 'signedOut' && vehData.CurrentlySignedOutBy === currentUser.email) {
-        // Return it
-        alert(`You're returning ${nfcVeh} via NFC tap.`);
-        await handleReturnVehicle(nfcVeh);
-      } else {
-        // Attempt sign-out logic
-        alert(`Attempting to sign out ${nfcVeh} via NFC tap.`);
-        await handleSignOutVehicle(nfcVeh);
-      }
-    } else {
-      // If vehicle node doesn't exist, we can sign out freely (or block?)
-      alert(`${nfcVeh} not found in the DB. Signing out anyway?`);
-      await signOutVehicleInDB(nfcVeh);
-    }
+  // Convert date/time to timestamp
+  function toTimestamp(dateStr, timeStr) {
+    const date = new Date(dateStr + 'T' + timeStr);
+    return date.getTime();
   }
 
-  // If you keep handleSignOutVehicle signature the same, you'll want to pass a parameter or fallback to the dropdown
+  // handleBooking(...)
+  async function handleBooking() {
+    const selectedVehicle = vehicleSelect.value;
+    if(!selectedVehicle) {
+      alert('No vehicle selected for booking.');
+      return;
+    }
+
+    // Basic validation
+    const dateVal = bookingDateInput.value;
+    const startVal = bookingStartInput.value;
+    const endVal = bookingEndInput.value;
+    if(!dateVal || !startVal || !endVal) {
+      alert('Please provide date, start time, and end time.');
+      return;
+    }
+
+    // Create booking entry
+    const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
+    const startTimeISO = new Date(`${dateVal}T${startVal}`).toISOString();
+    const endTimeISO = new Date(`${dateVal}T${endVal}`).toISOString();
+
+    await set(bookingRef, {
+      userName: currentUser.email,
+      date: dateVal,
+      startTime: startVal,
+      endTime: endVal,
+      startTimeISO,
+      endTimeISO,
+    });
+
+    alert('Booking created!');
+    calendar.refetchEvents();
+  }
+
+  // handleSignOutVehicle
   async function handleSignOutVehicle(paramVehicle=null) {
     const selectedVehicle = paramVehicle || vehicleSelect.value;
     if(!selectedVehicle) {
@@ -311,7 +345,7 @@
     }
   }
 
-  // Return logic
+  // handleReturnVehicle
   async function handleReturnVehicle(paramVehicle=null) {
     const selectedVehicle = paramVehicle || vehicleSelect.value;
     if(!selectedVehicle) {
@@ -347,9 +381,34 @@
       action: 'signedIn',
       timestamp: Date.now()
     });
+
+    // NEW: Update heading
+    await updateVehicleHeading(selectedVehicle);
   }
 
-  // Actually sign out in DB + log
+  // NFC flow
+  async function handleNfcFlow(nfcVeh) {
+    alert(`NFC tap detected for ${nfcVeh}. Checking vehicle status...`);
+    
+    const vehicleRef = ref(db, 'vehicles/' + nfcVeh);
+    const vehicleSnap = await get(vehicleRef);
+    
+    if(vehicleSnap.exists()) {
+      const vehData = vehicleSnap.val();
+      if(vehData.status === 'signedOut' && vehData.CurrentlySignedOutBy === currentUser.email) {
+        alert(`You're returning ${nfcVeh} via NFC tap.`);
+        await handleReturnVehicle(nfcVeh);
+      } else {
+        alert(`Attempting to sign out ${nfcVeh} via NFC tap.`);
+        await handleSignOutVehicle(nfcVeh);
+      }
+    } else {
+      alert(`${nfcVeh} not found in the DB. Signing out anyway?`);
+      await signOutVehicleInDB(nfcVeh);
+    }
+  }
+
+  // signOutVehicleInDB
   async function signOutVehicleInDB(vehicleName) {
     // Mark vehicle as signed out
     await update(ref(db, 'vehicles/' + vehicleName), {
@@ -365,6 +424,9 @@
       action: 'signedOut',
       timestamp: Date.now()
     });
+
+    // NEW: Update heading
+    await updateVehicleHeading(vehicleName);
   }
 </script>
 
