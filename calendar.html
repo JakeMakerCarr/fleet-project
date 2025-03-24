@@ -189,15 +189,15 @@
 
   // Firebase config
   const firebaseConfig = {
-  apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
-  authDomain: "yfned-fleet-nfc.firebaseapp.com",
-  databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
-  projectId: "yfned-fleet-nfc",
-  storageBucket: "yfned-fleet-nfc.firebasestorage.app",
-  messagingSenderId: "482363667898",
-  appId: "1:482363667898:web:4b0364e891a221e9631983",
-  measurementId: "G-LK66DQVKW4"
-};
+    apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
+    authDomain: "yfned-fleet-nfc.firebaseapp.com",
+    databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
+    projectId: "yfned-fleet-nfc",
+    storageBucket: "yfned-fleet-nfc.firebasestorage.app",
+    messagingSenderId: "482363667898",
+    appId: "1:482363667898:web:4b0364e891a221e9631983",
+    measurementId: "G-LK66DQVKW4"
+  };
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getDatabase(app);
@@ -223,9 +223,11 @@
 
   let lastClickedDayEl = null; // used to unhighlight the previously clicked day cell
 
+  // NFC query param
   const urlParams = new URLSearchParams(window.location.search);
-  const nfcVehicle = urlParams.get('nfcVehicle'); // e.g. ?nfcVehicle=Vehicle3
+  const nfcVehicle = urlParams.get('nfcVehicle');
 
+  // Update heading based on vehicle data in /vehicles
   async function updateVehicleHeading(vehicleName) {
     if (!vehicleName) return;
     const vehicleRef = ref(db, 'vehicles/' + vehicleName);
@@ -243,6 +245,7 @@
     }
   }
 
+  // On auth state
   onAuthStateChanged(auth, (user) => {
     if(!user) {
       window.location.href = 'index.html';
@@ -253,14 +256,13 @@
 
       initCalendar();
 
-      // On vehicle change
       vehicleSelect.addEventListener('change', async () => {
         const selectedVehicle = vehicleSelect.value;
         await updateVehicleHeading(selectedVehicle);
         calendar.refetchEvents();
       });
 
-      // Set default heading on load
+      // Default heading on load
       updateVehicleHeading(vehicleSelect.value);
 
       // Book
@@ -279,22 +281,24 @@
         await handleReturnVehicle();
       });
 
-      // NFC param => handle automatically
+      // If we have ?nfcVehicle=...
       if(nfcVehicle) {
         handleNfcFlow(nfcVehicle);
       }
     }
   });
 
+  // Logout
   logoutBtn.addEventListener('click', async () => {
     await signOut(auth);
   });
 
+  // Initialize FullCalendar
   function initCalendar() {
     const calendarEl = document.getElementById('calendar');
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
-      timeZone: 'local', // ensure local time
+      timeZone: 'local', // interpret events in local time
       events: fetchVehicleBookings,
       dateClick: (info) => {
         // Unhighlight old day
@@ -308,10 +312,8 @@
         // Show date in the sidebar
         selectedDateTextEl.textContent = info.dateStr;
 
-        // Get events for this date
+        // DAY-BASED approach => get events that overlap the entire day
         const eventsForDay = getEventsForDate(info.date);
-
-        // Render them
         displayBookingsForDay(eventsForDay, info.dateStr);
 
         // Auto-fill booking form
@@ -322,6 +324,7 @@
     calendar.render();
   }
 
+  // Fetch events from /bookings/{vehicleName}
   async function fetchVehicleBookings(info, successCallback, failureCallback) {
     try {
       const selectedVehicle = vehicleSelect.value;
@@ -340,7 +343,7 @@
       const events = Object.keys(data).map(bookingId => {
         const b = data[bookingId];
         return {
-          // e.g. "12:00 Booked by: jake.carr@..."
+          // e.g. "06:00 Booked by: user"
           title: `${b.startTime} Booked by: ${b.userName || "Unknown"}`,
           start: b.startTimeISO,
           end: b.endTimeISO
@@ -353,14 +356,22 @@
     }
   }
 
+  // DAY-BASED approach: match events if they overlap the 24h block of clickedDate
   function getEventsForDate(clickedDate) {
+    // define the day start (midnight) and the next midnight
+    const dayStart = new Date(clickedDate);
+    dayStart.setHours(0, 0, 0, 0); 
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1); // next midnight
+
     const allEvents = calendar.getEvents();
-    // Return events where clickedDate is >= start && < end
     return allEvents.filter(ev => {
-      return ev.start <= clickedDate && clickedDate < ev.end;
+      // event must overlap [dayStart, dayEnd)
+      return ev.start < dayEnd && ev.end > dayStart;
     });
   }
 
+  // Display events in sidebar
   function displayBookingsForDay(eventsForDay, dateStr) {
     dateBookingsListEl.innerHTML = '';
 
@@ -371,18 +382,20 @@
 
     eventsForDay.forEach(ev => {
       const item = document.createElement('div');
-      // e.g. "12:00 Booked by: user | Start: localTime ... End: localTime..."
       const startStr = ev.start.toLocaleString();
       const endStr = ev.end.toLocaleString();
+      // e.g. "06:00 Booked by: user | Start: Thu Mar 27 2025 06:00:00 ... End: ..."
       item.textContent = `${ev.title} | Start: ${startStr} | End: ${endStr}`;
       dateBookingsListEl.appendChild(item);
     });
   }
 
+  // Convert date/time to timestamp
   function toTimestamp(dateStr, timeStr) {
     return new Date(`${dateStr}T${timeStr}`).getTime();
   }
 
+  // handleBooking(...)
   async function handleBooking() {
     const selectedVehicle = vehicleSelect.value;
     if(!selectedVehicle) {
@@ -415,6 +428,7 @@
     calendar.refetchEvents();
   }
 
+  // handleSignOutVehicle
   async function handleSignOutVehicle(paramVehicle=null) {
     const selectedVehicle = paramVehicle || vehicleSelect.value;
     if(!selectedVehicle) {
@@ -459,6 +473,7 @@
     }
   }
 
+  // handleReturnVehicle
   async function handleReturnVehicle(paramVehicle=null) {
     const selectedVehicle = paramVehicle || vehicleSelect.value;
     if(!selectedVehicle) {
@@ -495,6 +510,7 @@
     await updateVehicleHeading(selectedVehicle);
   }
 
+  // NFC flow
   async function handleNfcFlow(nfcVeh) {
     alert(`NFC tap detected for ${nfcVeh}. Checking vehicle status...`);
     const vehicleRef = ref(db, 'vehicles/' + nfcVeh);
@@ -514,6 +530,7 @@
     }
   }
 
+  // Actually sign out in DB
   async function signOutVehicleInDB(vehicleName) {
     await update(ref(db, 'vehicles/' + vehicleName), {
       status: 'signedOut',
