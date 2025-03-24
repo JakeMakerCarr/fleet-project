@@ -32,9 +32,22 @@
     select, input[type="date"], input[type="time"] {
       font-size: 1rem; padding: 0.3rem; margin: 0.3rem 0;
     }
-    .calendar-container {
-      /* Normal flow (no absolute) so heading doesn't overlap */
+
+    /* NEW LAYOUT / SIDEBAR */
+    .calendar-and-details {
+      display: flex; /* put calendar on the left, details on the right */
+      gap: 1rem;
     }
+    .calendar-section {
+      flex: 1; /* grow to fill space */
+      min-width: 0; /* needed so calendar can shrink if needed */
+    }
+    .details-section {
+      flex: 0 0 300px; /* fixed width sidebar */
+      border-left: 1px solid #ccc;
+      padding-left: 1rem;
+    }
+
     #vehicle-schedule-heading {
       width: 100%;
       text-align: center;
@@ -43,20 +56,30 @@
       color: #333;
       margin: 0 0 1rem 0; /* spacing below heading */
     }
-    #calendar { margin-top: 2rem; }
+    #calendar {
+      margin-top: 2rem;
+    }
 
-    /* Selected Date Info Box */
+    /* Make the date panel stand out */
     #selected-date-info {
       margin-top: 1rem;
-      border: 1px solid #ccc;
       padding: 1rem;
       border-radius: 6px;
+      background: #fafafa;
+    }
+    #selected-date-info h3 {
+      font-size: 1.25rem;
+      margin: 0 0 0.5rem;
+    }
+    #date-bookings-list {
+      font-size: 1rem;
+      line-height: 1.4;
     }
     #date-bookings-list div {
-      margin-bottom: 0.5rem; /* a little spacing for each booking line */
+      margin-bottom: 0.75rem; /* spacing between booking lines */
     }
 
-    /* Form layout */
+    /* Booking form layout */
     #booking-form {
       display: flex; flex-wrap: wrap; gap: 1rem;
       margin-bottom: 1rem; align-items: center;
@@ -116,16 +139,21 @@
     <button id="returnVehicleBtn">Return Vehicle Now</button>
   </div>
 
-  <!-- CALENDAR -->
-  <div class="calendar-container">
-    <h1 id="vehicle-schedule-heading"></h1>
-    <div id="calendar"></div>
-  </div>
+  <!-- NEW LAYOUT WRAPPER -->
+  <div class="calendar-and-details">
+    <!-- LEFT: CALENDAR -->
+    <div class="calendar-section">
+      <h1 id="vehicle-schedule-heading"></h1>
+      <div id="calendar"></div>
+    </div>
 
-  <!-- SELECTED DATE INFO BOX -->
-  <div id="selected-date-info" style="display:none;">
-    <h3>Selected Date: <span id="selected-date-text"></span></h3>
-    <div id="date-bookings-list"></div>
+    <!-- RIGHT: SELECTED DATE INFO -->
+    <div class="details-section">
+      <div id="selected-date-info">
+        <h3>Selected Date: <span id="selected-date-text"></span></h3>
+        <div id="date-bookings-list">No date selected yet.</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -142,15 +170,15 @@
 
   // Your Firebase config
   const firebaseConfig = {
-    apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
-    authDomain: "yfned-fleet-nfc.firebaseapp.com",
-    databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
-    projectId: "yfned-fleet-nfc",
-    storageBucket: "yfned-fleet-nfc.firebasestorage.app",
-    messagingSenderId: "482363667898",
-    appId: "1:482363667898:web:4b0364e891a221e9631983",
-    measurementId: "G-LK66DQVKW4"
-  };
+  apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
+  authDomain: "yfned-fleet-nfc.firebaseapp.com",
+  databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
+  projectId: "yfned-fleet-nfc",
+  storageBucket: "yfned-fleet-nfc.firebasestorage.app",
+  messagingSenderId: "482363667898",
+  appId: "1:482363667898:web:4b0364e891a221e9631983",
+  measurementId: "G-LK66DQVKW4"
+};
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getDatabase(app);
@@ -163,7 +191,6 @@
   const vehicleSelect = document.getElementById('vehicle-select');
   const vehicleHeading = document.getElementById('vehicle-schedule-heading');
 
-  // Booking form
   const bookingDateInput = document.getElementById('booking-date');
   const bookingStartInput = document.getElementById('booking-start');
   const bookingEndInput = document.getElementById('booking-end');
@@ -171,19 +198,17 @@
   const signOutBtn = document.getElementById('signOutBtn');
   const returnVehicleBtn = document.getElementById('returnVehicleBtn');
 
-  // Selected date info elements
-  const selectedDateInfoEl = document.getElementById('selected-date-info');
+  // Elements for the date detail panel
   const selectedDateTextEl = document.getElementById('selected-date-text');
   const dateBookingsListEl = document.getElementById('date-bookings-list');
 
-  // For highlighting clicked day cells
-  let lastClickedDayEl = null;
+  let lastClickedDayEl = null; // for highlighting the clicked cell
 
-  // Query param for nfcVehicle?
+  // If user came via an NFC link, e.g. ?nfcVehicle=Vehicle3
   const urlParams = new URLSearchParams(window.location.search);
-  const nfcVehicle = urlParams.get('nfcVehicle'); // e.g. "Vehicle3" if tapped an NFC tag
+  const nfcVehicle = urlParams.get('nfcVehicle');
 
-  // NEW: Update heading function
+  // Update heading function
   async function updateVehicleHeading(vehicleName) {
     if (!vehicleName) return;
     const vehicleRef = ref(db, 'vehicles/' + vehicleName);
@@ -192,18 +217,15 @@
     if (snap.exists()) {
       const vehData = snap.val();
       if (vehData.status === 'signedOut') {
-        // Use innerHTML to add a <br> for the line break
         vehicleHeading.innerHTML = `${vehicleName} schedule:<br>Currently Signed Out by: ${vehData.CurrentlySignedOutBy}`;
       } else {
         vehicleHeading.textContent = `${vehicleName} schedule: Available`;
       }
     } else {
-      // If there's no record yet, just default to "Available" or your preferred text
       vehicleHeading.textContent = `${vehicleName} schedule: Available`;
     }
   }
 
-  // On Auth
   onAuthStateChanged(auth, (user) => {
     if(!user) {
       window.location.href = 'index.html';
@@ -214,7 +236,7 @@
 
       initCalendar();
 
-      // On vehicle change, update heading
+      // On vehicle change
       vehicleSelect.addEventListener('change', async () => {
         const selectedVehicle = vehicleSelect.value;
         await updateVehicleHeading(selectedVehicle);
@@ -240,46 +262,41 @@
         await handleReturnVehicle();
       });
 
-      // If came from NFC => automatically handle
+      // If NFC param
       if(nfcVehicle) {
         handleNfcFlow(nfcVehicle);
       }
     }
   });
 
-  // LOGOUT
   logoutBtn.addEventListener('click', async () => {
     await signOut(auth);
   });
 
-  // Initialize FullCalendar
   function initCalendar() {
     const calendarEl = document.getElementById('calendar');
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
       events: fetchVehicleBookings,
-
-      // (A) Add dateClick callback
       dateClick: (info) => {
-        // 1) Highlight the clicked day cell
+        // Unhighlight old day
         if (lastClickedDayEl) {
-          // revert old highlight
           lastClickedDayEl.style.backgroundColor = '';
         }
+        // Highlight new
         info.dayEl.style.backgroundColor = 'lightblue';
         lastClickedDayEl = info.dayEl;
 
-        // 2) Show the date in #selected-date-text
+        // Show date in the sidebar
         selectedDateTextEl.textContent = info.dateStr;
-        selectedDateInfoEl.style.display = 'block'; // show the info box
 
-        // 3) Filter all events that overlap this date
+        // Get events for this date
         const eventsForDay = getEventsForDate(info.date);
 
-        // 4) Display them in #date-bookings-list
+        // Render them
         displayBookingsForDay(eventsForDay, info.dateStr);
 
-        // 5) (Optional) auto-fill the booking form's date
+        // Auto-fill booking form
         bookingDateInput.value = info.dateStr;
       }
     });
@@ -287,7 +304,6 @@
     calendar.render();
   }
 
-  // (B) fetch events from the DB
   async function fetchVehicleBookings(info, successCallback, failureCallback) {
     try {
       const selectedVehicle = vehicleSelect.value;
@@ -306,7 +322,7 @@
       const events = Object.keys(data).map(bookingId => {
         const b = data[bookingId];
         return {
-          title: `Booked by: ${b.userName || "Unknown"}`,
+          title: `${b.startTime} Booked by: ${b.userName || "Unknown"}`,  // if you prefer "8a Booked by..."
           start: b.startTimeISO,
           end: b.endTimeISO
         };
@@ -318,24 +334,16 @@
     }
   }
 
-  // (C) Utility to find which events match a specific day
   function getEventsForDate(clickedDate) {
-    // getEvents() returns the in-memory events FullCalendar is holding
     const allEvents = calendar.getEvents();
-    const matching = allEvents.filter(event => {
-      // event.start / event.end are JS Date objects
-      const start = event.start;
-      const end = event.end;
-      // For FullCalendar all-day events, end might be the next day at 00:00
-      // We'll check if clickedDate is in [start, end)
-      return start <= clickedDate && clickedDate < end;
+    // Return events where clickedDate is >= start && < end
+    return allEvents.filter(ev => {
+      return ev.start <= clickedDate && clickedDate < ev.end;
     });
-    return matching;
   }
 
-  // (D) Display the bookings in #date-bookings-list
   function displayBookingsForDay(eventsForDay, dateStr) {
-    dateBookingsListEl.innerHTML = ''; // clear old
+    dateBookingsListEl.innerHTML = '';
 
     if (eventsForDay.length === 0) {
       dateBookingsListEl.textContent = 'No bookings on ' + dateStr + '.';
@@ -344,7 +352,7 @@
 
     eventsForDay.forEach(ev => {
       const item = document.createElement('div');
-      // Format the times nicely
+      // e.g. "8:00 AM Booked by jake@domain" 
       const startStr = ev.start.toLocaleString();
       const endStr = ev.end.toLocaleString();
       item.textContent = `${ev.title} | Start: ${startStr} | End: ${endStr}`;
@@ -352,13 +360,10 @@
     });
   }
 
-  // Convert date/time to timestamp
   function toTimestamp(dateStr, timeStr) {
-    const date = new Date(dateStr + 'T' + timeStr);
-    return date.getTime();
+    return new Date(`${dateStr}T${timeStr}`).getTime();
   }
 
-  // handleBooking(...)
   async function handleBooking() {
     const selectedVehicle = vehicleSelect.value;
     if(!selectedVehicle) {
@@ -366,7 +371,6 @@
       return;
     }
 
-    // Basic validation
     const dateVal = bookingDateInput.value;
     const startVal = bookingStartInput.value;
     const endVal = bookingEndInput.value;
@@ -375,7 +379,6 @@
       return;
     }
 
-    // Create booking entry in DB
     const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
     const startTimeISO = new Date(`${dateVal}T${startVal}`).toISOString();
     const endTimeISO = new Date(`${dateVal}T${endVal}`).toISOString();
@@ -386,14 +389,13 @@
       startTime: startVal,
       endTime: endVal,
       startTimeISO,
-      endTimeISO,
+      endTimeISO
     });
 
     alert('Booking created!');
     calendar.refetchEvents();
   }
 
-  // handleSignOutVehicle
   async function handleSignOutVehicle(paramVehicle=null) {
     const selectedVehicle = paramVehicle || vehicleSelect.value;
     if(!selectedVehicle) {
@@ -402,7 +404,6 @@
     }
 
     const now = Date.now();
-    // Load all bookings
     const bookingSnap = await get(ref(db, 'bookings/' + selectedVehicle));
     if(!bookingSnap.exists()) {
       // No bookings => sign out
@@ -414,7 +415,6 @@
     let activeBookingFound = false;
     let belongsToCurrentUser = false;
 
-    // Check if "now" is within any active booking
     for(const bId in allBookings) {
       const b = allBookings[bId];
       const startTS = toTimestamp(b.date, b.startTime);
@@ -436,12 +436,10 @@
         alert('Vehicle is currently booked by someone else at this time!');
       }
     } else {
-      // No active booking => sign out
       await signOutVehicleInDB(selectedVehicle);
     }
   }
 
-  // handleReturnVehicle
   async function handleReturnVehicle(paramVehicle=null) {
     const selectedVehicle = paramVehicle || vehicleSelect.value;
     if(!selectedVehicle) {
@@ -449,7 +447,6 @@
       return;
     }
 
-    // Check current status
     const vehicleRef = ref(db, 'vehicles/' + selectedVehicle);
     const vehicleSnap = await get(vehicleRef);
     if(!vehicleSnap.exists()) {
@@ -463,14 +460,12 @@
       return;
     }
 
-    // Return
     await update(vehicleRef, {
       status: 'available',
       CurrentlySignedOutBy: null
     });
     alert('Vehicle returned successfully!');
 
-    // Log "signedIn"
     const logsRef = push(ref(db, `vehicleLogs/${selectedVehicle}`));
     await set(logsRef, {
       userEmail: currentUser.email,
@@ -478,17 +473,13 @@
       timestamp: Date.now()
     });
 
-    // Update heading
     await updateVehicleHeading(selectedVehicle);
   }
 
-  // NFC flow
   async function handleNfcFlow(nfcVeh) {
     alert(`NFC tap detected for ${nfcVeh}. Checking vehicle status...`);
-    
     const vehicleRef = ref(db, 'vehicles/' + nfcVeh);
     const vehicleSnap = await get(vehicleRef);
-    
     if(vehicleSnap.exists()) {
       const vehData = vehicleSnap.val();
       if(vehData.status === 'signedOut' && vehData.CurrentlySignedOutBy === currentUser.email) {
@@ -504,16 +495,13 @@
     }
   }
 
-  // signOutVehicleInDB
   async function signOutVehicleInDB(vehicleName) {
-    // Mark vehicle as signed out
     await update(ref(db, 'vehicles/' + vehicleName), {
       status: 'signedOut',
       CurrentlySignedOutBy: currentUser.email
     });
     alert('Vehicle signed out successfully!');
 
-    // Log "signedOut"
     const logRef = push(ref(db, `vehicleLogs/${vehicleName}`));
     await set(logRef, {
       userEmail: currentUser.email,
@@ -521,7 +509,6 @@
       timestamp: Date.now()
     });
 
-    // Update heading
     await updateVehicleHeading(vehicleName);
   }
 </script>
