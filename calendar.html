@@ -147,24 +147,25 @@
   const urlParams = new URLSearchParams(window.location.search);
   const nfcVehicle = urlParams.get('nfcVehicle'); // e.g. "Vehicle3" if tapped an NFC tag
 
-  // NEW: Update heading function
-  async function updateVehicleHeading(vehicleName) {
-    if (!vehicleName) return;
-    const vehicleRef = ref(db, 'vehicles/' + vehicleName);
-    const snap = await get(vehicleRef);
+// NEW: Update heading function
+async function updateVehicleHeading(vehicleName) {
+  if (!vehicleName) return;
+  const vehicleRef = ref(db, 'vehicles/' + vehicleName);
+  const snap = await get(vehicleRef);
 
-    if (snap.exists()) {
-      const vehData = snap.val();
-      if (vehData.status === 'signedOut') {
-        vehicleHeading.textContent = `${vehicleName} schedule: Currently Signed Out by: ${vehData.CurrentlySignedOutBy}`;
-      } else {
-        vehicleHeading.textContent = `${vehicleName} schedule: Available`;
-      }
+  if (snap.exists()) {
+    const vehData = snap.val();
+    if (vehData.status === 'signedOut') {
+      // Use innerHTML to add a <br> for the line break
+      vehicleHeading.innerHTML = `${vehicleName} schedule:<br>Currently Signed Out by: ${vehData.CurrentlySignedOutBy}`;
     } else {
-      // If there's no record yet, just default to "Available" or your preferred text
       vehicleHeading.textContent = `${vehicleName} schedule: Available`;
     }
+  } else {
+    // If there's no record yet, just default to "Available" or your preferred text
+    vehicleHeading.textContent = `${vehicleName} schedule: Available`;
   }
+}
 
   // On Auth
   onAuthStateChanged(auth, (user) => {
