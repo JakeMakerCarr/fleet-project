@@ -8,7 +8,11 @@
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.9.0/main.min.css" rel="stylesheet">
 
   <style>
-    body { margin: 0; padding: 0; font-family: sans-serif; background: #f0f0f0; }
+    body {
+      margin: 0; padding: 0;
+      font-family: sans-serif;
+      background: #f0f0f0;
+    }
     header {
       background: #333; color: white;
       display: flex; justify-content: space-between; align-items: center;
@@ -29,27 +33,37 @@
       font-size: 1rem; padding: 0.3rem; margin: 0.3rem 0;
     }
     .calendar-container {
-      /* position: relative; */
-      /* padding-top: 5rem; */ /* Removed the extra top-padding */
+      /* Normal flow (no absolute) so heading doesn't overlap */
     }
     #vehicle-schedule-heading {
-      /* Remove absolute positioning */
-      /* position: absolute; top: 10px; left: 0; */
       width: 100%;
       text-align: center;
       font-size: 2rem;
       font-weight: bold;
       color: #333;
-      margin: 0 0 1rem 0; /* Keeps some spacing under the heading */
+      margin: 0 0 1rem 0; /* spacing below heading */
     }
     #calendar { margin-top: 2rem; }
+
+    /* Selected Date Info Box */
+    #selected-date-info {
+      margin-top: 1rem;
+      border: 1px solid #ccc;
+      padding: 1rem;
+      border-radius: 6px;
+    }
+    #date-bookings-list div {
+      margin-bottom: 0.5rem; /* a little spacing for each booking line */
+    }
+
     /* Form layout */
     #booking-form {
       display: flex; flex-wrap: wrap; gap: 1rem;
       margin-bottom: 1rem; align-items: center;
     }
     #booking-form label {
-      display: flex; flex-direction: column; font-weight: bold;
+      display: flex; flex-direction: column;
+      font-weight: bold;
     }
     #signOutBtn, #returnVehicleBtn {
       margin-bottom: 1rem; margin-right: 1rem;
@@ -107,6 +121,12 @@
     <h1 id="vehicle-schedule-heading"></h1>
     <div id="calendar"></div>
   </div>
+
+  <!-- SELECTED DATE INFO BOX -->
+  <div id="selected-date-info" style="display:none;">
+    <h3>Selected Date: <span id="selected-date-text"></span></h3>
+    <div id="date-bookings-list"></div>
+  </div>
 </div>
 
 <!-- FullCalendar JS -->
@@ -142,7 +162,7 @@
   const logoutBtn = document.getElementById('logout-btn');
   const vehicleSelect = document.getElementById('vehicle-select');
   const vehicleHeading = document.getElementById('vehicle-schedule-heading');
-  
+
   // Booking form
   const bookingDateInput = document.getElementById('booking-date');
   const bookingStartInput = document.getElementById('booking-start');
@@ -151,29 +171,37 @@
   const signOutBtn = document.getElementById('signOutBtn');
   const returnVehicleBtn = document.getElementById('returnVehicleBtn');
 
+  // Selected date info elements
+  const selectedDateInfoEl = document.getElementById('selected-date-info');
+  const selectedDateTextEl = document.getElementById('selected-date-text');
+  const dateBookingsListEl = document.getElementById('date-bookings-list');
+
+  // For highlighting clicked day cells
+  let lastClickedDayEl = null;
+
   // Query param for nfcVehicle?
   const urlParams = new URLSearchParams(window.location.search);
   const nfcVehicle = urlParams.get('nfcVehicle'); // e.g. "Vehicle3" if tapped an NFC tag
 
-// NEW: Update heading function
-async function updateVehicleHeading(vehicleName) {
-  if (!vehicleName) return;
-  const vehicleRef = ref(db, 'vehicles/' + vehicleName);
-  const snap = await get(vehicleRef);
+  // NEW: Update heading function
+  async function updateVehicleHeading(vehicleName) {
+    if (!vehicleName) return;
+    const vehicleRef = ref(db, 'vehicles/' + vehicleName);
+    const snap = await get(vehicleRef);
 
-  if (snap.exists()) {
-    const vehData = snap.val();
-    if (vehData.status === 'signedOut') {
-      // Use innerHTML to add a <br> for the line break
-      vehicleHeading.innerHTML = `${vehicleName} schedule:<br>Currently Signed Out by: ${vehData.CurrentlySignedOutBy}`;
+    if (snap.exists()) {
+      const vehData = snap.val();
+      if (vehData.status === 'signedOut') {
+        // Use innerHTML to add a <br> for the line break
+        vehicleHeading.innerHTML = `${vehicleName} schedule:<br>Currently Signed Out by: ${vehData.CurrentlySignedOutBy}`;
+      } else {
+        vehicleHeading.textContent = `${vehicleName} schedule: Available`;
+      }
     } else {
+      // If there's no record yet, just default to "Available" or your preferred text
       vehicleHeading.textContent = `${vehicleName} schedule: Available`;
     }
-  } else {
-    // If there's no record yet, just default to "Available" or your preferred text
-    vehicleHeading.textContent = `${vehicleName} schedule: Available`;
   }
-}
 
   // On Auth
   onAuthStateChanged(auth, (user) => {
@@ -189,12 +217,12 @@ async function updateVehicleHeading(vehicleName) {
       // On vehicle change, update heading
       vehicleSelect.addEventListener('change', async () => {
         const selectedVehicle = vehicleSelect.value;
-        await updateVehicleHeading(selectedVehicle); // NEW
+        await updateVehicleHeading(selectedVehicle);
         calendar.refetchEvents();
       });
 
       // Set default heading on load
-      updateVehicleHeading(vehicleSelect.value); // NEW
+      updateVehicleHeading(vehicleSelect.value);
 
       // Book
       bookVehicleBtn.addEventListener('click', async (e) => {
@@ -229,12 +257,37 @@ async function updateVehicleHeading(vehicleName) {
     const calendarEl = document.getElementById('calendar');
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
-      events: fetchVehicleBookings
+      events: fetchVehicleBookings,
+
+      // (A) Add dateClick callback
+      dateClick: (info) => {
+        // 1) Highlight the clicked day cell
+        if (lastClickedDayEl) {
+          // revert old highlight
+          lastClickedDayEl.style.backgroundColor = '';
+        }
+        info.dayEl.style.backgroundColor = 'lightblue';
+        lastClickedDayEl = info.dayEl;
+
+        // 2) Show the date in #selected-date-text
+        selectedDateTextEl.textContent = info.dateStr;
+        selectedDateInfoEl.style.display = 'block'; // show the info box
+
+        // 3) Filter all events that overlap this date
+        const eventsForDay = getEventsForDate(info.date);
+
+        // 4) Display them in #date-bookings-list
+        displayBookingsForDay(eventsForDay, info.dateStr);
+
+        // 5) (Optional) auto-fill the booking form's date
+        bookingDateInput.value = info.dateStr;
+      }
     });
+
     calendar.render();
   }
 
-  // fetchVehicleBookings(...) unchanged
+  // (B) fetch events from the DB
   async function fetchVehicleBookings(info, successCallback, failureCallback) {
     try {
       const selectedVehicle = vehicleSelect.value;
@@ -265,6 +318,40 @@ async function updateVehicleHeading(vehicleName) {
     }
   }
 
+  // (C) Utility to find which events match a specific day
+  function getEventsForDate(clickedDate) {
+    // getEvents() returns the in-memory events FullCalendar is holding
+    const allEvents = calendar.getEvents();
+    const matching = allEvents.filter(event => {
+      // event.start / event.end are JS Date objects
+      const start = event.start;
+      const end = event.end;
+      // For FullCalendar all-day events, end might be the next day at 00:00
+      // We'll check if clickedDate is in [start, end)
+      return start <= clickedDate && clickedDate < end;
+    });
+    return matching;
+  }
+
+  // (D) Display the bookings in #date-bookings-list
+  function displayBookingsForDay(eventsForDay, dateStr) {
+    dateBookingsListEl.innerHTML = ''; // clear old
+
+    if (eventsForDay.length === 0) {
+      dateBookingsListEl.textContent = 'No bookings on ' + dateStr + '.';
+      return;
+    }
+
+    eventsForDay.forEach(ev => {
+      const item = document.createElement('div');
+      // Format the times nicely
+      const startStr = ev.start.toLocaleString();
+      const endStr = ev.end.toLocaleString();
+      item.textContent = `${ev.title} | Start: ${startStr} | End: ${endStr}`;
+      dateBookingsListEl.appendChild(item);
+    });
+  }
+
   // Convert date/time to timestamp
   function toTimestamp(dateStr, timeStr) {
     const date = new Date(dateStr + 'T' + timeStr);
@@ -288,7 +375,7 @@ async function updateVehicleHeading(vehicleName) {
       return;
     }
 
-    // Create booking entry
+    // Create booking entry in DB
     const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
     const startTimeISO = new Date(`${dateVal}T${startVal}`).toISOString();
     const endTimeISO = new Date(`${dateVal}T${endVal}`).toISOString();
@@ -391,7 +478,7 @@ async function updateVehicleHeading(vehicleName) {
       timestamp: Date.now()
     });
 
-    // NEW: Update heading
+    // Update heading
     await updateVehicleHeading(selectedVehicle);
   }
 
@@ -434,7 +521,7 @@ async function updateVehicleHeading(vehicleName) {
       timestamp: Date.now()
     });
 
-    // NEW: Update heading
+    // Update heading
     await updateVehicleHeading(vehicleName);
   }
 </script>
