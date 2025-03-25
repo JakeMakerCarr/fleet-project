@@ -81,7 +81,6 @@
 
     /* SIDEBAR DETAILS SECTION */
     .details-section {
-      /* On wide screens, it becomes a sidebar. On narrow, it appears below. */
       flex: 0 0 300px; /* fixed width on wide screens */
       border-left: 1px solid #ccc;
       padding-left: 1rem;
@@ -226,7 +225,7 @@
   const urlParams = new URLSearchParams(window.location.search);
   const nfcVehicle = urlParams.get('nfcVehicle');
 
-  // NEW: utility to check if new booking overlaps existing
+  // NEW: Utility to check if new booking overlaps existing
   async function isBookingOverlapping(vehicleName, newStartTS, newEndTS) {
     const snap = await get(ref(db, 'bookings/' + vehicleName));
     if(!snap.exists()) return false; // no bookings => no overlap
@@ -252,12 +251,12 @@
     if (snap.exists()) {
       const vehData = snap.val();
       if (vehData.status === 'signedOut') {
-        vehicleHeading.innerHTML = '${vehicleName} schedule:<br>Currently Signed Out by: ${vehData.CurrentlySignedOutBy}';
+        vehicleHeading.innerHTML = `${vehicleName} schedule:<br>Currently Signed Out by: ${vehData.CurrentlySignedOutBy}`;
       } else {
-        vehicleHeading.textContent = ${vehicleName} schedule: Available;
+        vehicleHeading.textContent = `${vehicleName} schedule: Available`;
       }
     } else {
-      vehicleHeading.textContent = ${vehicleName} schedule: Available;
+      vehicleHeading.textContent = `${vehicleName} schedule: Available`;
     }
   }
 
@@ -278,19 +277,23 @@
 
       updateVehicleHeading(vehicleSelect.value);
 
+      // Book
       bookVehicleBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         await handleBooking();
       });
 
+      // Sign out
       signOutBtn.addEventListener('click', async () => {
         await handleSignOutVehicle();
       });
 
+      // Return
       returnVehicleBtn.addEventListener('click', async () => {
         await handleReturnVehicle();
       });
 
+      // If came from NFC => auto handle
       if(nfcVehicle) {
         handleNfcFlow(nfcVehicle);
       }
@@ -344,12 +347,10 @@
         const b = data[bookingId];
         return {
           id: bookingId,
-          title: ${b.startTime} Booked by: ${b.userName || "Unknown"},
+          title: `${b.startTime} Booked by: ${b.userName || "Unknown"}`,
           start: b.startTimeISO,
           end: b.endTimeISO,
-          extendedProps: {
-            creatorEmail: b.userName
-          }
+          extendedProps: { creatorEmail: b.userName }
         };
       });
       successCallback(events);
@@ -379,7 +380,7 @@
       const div = document.createElement('div');
       const startStr = ev.start.toLocaleString();
       const endStr = ev.end.toLocaleString();
-      div.textContent = ${ev.title} | Start: ${startStr} | End: ${endStr};
+      div.textContent = `${ev.title} | Start: ${startStr} | End: ${endStr}`;
 
       // remove button if user is the creator
       const creator = (ev.extendedProps.creatorEmail || '').toLowerCase();
@@ -401,7 +402,7 @@
   async function removeBooking(bookingId) {
     try {
       const vehicleName = vehicleSelect.value;
-      await remove(ref(db, bookings/${vehicleName}/${bookingId}));
+      await remove(ref(db, `bookings/${vehicleName}/${bookingId}`));
       alert('Booking removed successfully!');
       calendar.refetchEvents();
     } catch(err) {
@@ -411,10 +412,10 @@
   }
 
   function toTimestamp(dateStr, timeStr) {
-    return new Date(dateStr + 'T' + timeStr).getTime();
+    return new Date(`${dateStr}T${timeStr}`).getTime();
   }
 
-  // NEW: handleBooking with overlap check + signOut check
+  // handleBooking with overlap check + signOut check
   async function handleBooking() {
     const vehicleName = vehicleSelect.value;
     if(!vehicleName) {
@@ -449,13 +450,13 @@
     if(vehSnap.exists()) {
       const vData = vehSnap.val();
       if(vData.status === 'signedOut' && vData.CurrentlySignedOutBy !== currentUser.email) {
-        alert(Vehicle is currently signed out by ${vData.CurrentlySignedOutBy}. Cannot book!);
+        alert(`Vehicle is currently signed out by ${vData.CurrentlySignedOutBy}. Cannot book!`);
         return;
       }
     }
 
     // 3) If no conflict => create booking
-    const bookingRef = push(ref(db, 'bookings/' + vehicleName));
+    const bookingRef = push(ref(db, `bookings/${vehicleName}`));
     const startTimeISO = new Date(startTS).toISOString();
     const endTimeISO   = new Date(endTS).toISOString();
 
@@ -472,7 +473,7 @@
     calendar.refetchEvents();
   }
 
-  // NEW: sign out with block if vehicle is signed out by someone else
+  // sign out with block if vehicle is signed out by someone else
   async function handleSignOutVehicle(paramVehicle=null) {
     const vehicleName = paramVehicle || vehicleSelect.value;
     if(!vehicleName) {
@@ -481,19 +482,19 @@
     }
 
     // if vehicle is already "signedOut" by someone else => block
-    const vehRef = ref(db, 'vehicles/' + vehicleName);
+    const vehRef = ref(db, `vehicles/${vehicleName}`);
     const vehSnap = await get(vehRef);
     if(vehSnap.exists()) {
       const vData = vehSnap.val();
       if(vData.status === 'signedOut' && vData.CurrentlySignedOutBy !== currentUser.email) {
-        alert(Vehicle is already signed out by ${vData.CurrentlySignedOutBy}. You can't sign it out now!);
+        alert(`Vehicle is already signed out by ${vData.CurrentlySignedOutBy}. You can't sign it out now!`);
         return;
       }
     }
 
     // also do the active booking check
     const now = Date.now();
-    const bookingSnap = await get(ref(db, 'bookings/' + vehicleName));
+    const bookingSnap = await get(ref(db, `bookings/${vehicleName}`));
     if(!bookingSnap.exists()) {
       // No bookings => sign out
       await signOutVehicleInDB(vehicleName);
@@ -536,7 +537,7 @@
       return;
     }
 
-    const vehicleRef = ref(db, 'vehicles/' + vehicleName);
+    const vehicleRef = ref(db, `vehicles/${vehicleName}`);
     const vehicleSnap = await get(vehicleRef);
     if(!vehicleSnap.exists()) {
       alert('Vehicle data not found.');
@@ -555,7 +556,7 @@
     });
     alert('Vehicle returned successfully!');
 
-    const logsRef = push(ref(db, vehicleLogs/${vehicleName}));
+    const logsRef = push(ref(db, `vehicleLogs/${vehicleName}`));
     await set(logsRef, {
       userEmail: currentUser.email,
       action: 'signedIn',
@@ -566,32 +567,32 @@
   }
 
   async function handleNfcFlow(nfcVeh) {
-    alert(NFC tap detected for ${nfcVeh}. Checking vehicle status...);
-    const vehicleRef = ref(db, 'vehicles/' + nfcVeh);
+    alert(`NFC tap detected for ${nfcVeh}. Checking vehicle status...`);
+    const vehicleRef = ref(db, `vehicles/${nfcVeh}`);
     const vehicleSnap = await get(vehicleRef);
     if(vehicleSnap.exists()) {
       const vehData = vehicleSnap.val();
       if(vehData.status === 'signedOut' && vehData.CurrentlySignedOutBy === currentUser.email) {
-        alert(You're returning ${nfcVeh} via NFC tap.);
+        alert(`You're returning ${nfcVeh} via NFC tap.`);
         await handleReturnVehicle(nfcVeh);
       } else {
-        alert(Attempting to sign out ${nfcVeh} via NFC tap.);
+        alert(`Attempting to sign out ${nfcVeh} via NFC tap.`);
         await handleSignOutVehicle(nfcVeh);
       }
     } else {
-      alert(${nfcVeh} not found in the DB. Signing out anyway?);
+      alert(`${nfcVeh} not found in the DB. Signing out anyway?`);
       await signOutVehicleInDB(nfcVeh);
     }
   }
 
   async function signOutVehicleInDB(vehicleName) {
-    await update(ref(db, 'vehicles/' + vehicleName), {
+    await update(ref(db, `vehicles/${vehicleName}`), {
       status: 'signedOut',
       CurrentlySignedOutBy: currentUser.email
     });
     alert('Vehicle signed out successfully!');
 
-    const logRef = push(ref(db, vehicleLogs/${vehicleName}));
+    const logRef = push(ref(db, `vehicleLogs/${vehicleName}`));
     await set(logRef, {
       userEmail: currentUser.email,
       action: 'signedOut',
