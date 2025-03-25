@@ -189,15 +189,16 @@
 
   // Firebase config
   const firebaseConfig = {
-    apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
-    authDomain: "yfned-fleet-nfc.firebaseapp.com",
-    databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
-    projectId: "yfned-fleet-nfc",
-    storageBucket: "yfned-fleet-nfc.firebasestorage.app",
-    messagingSenderId: "482363667898",
-    appId: "1:482363667898:web:4b0364e891a221e9631983",
-    measurementId: "G-LK66DQVKW4"
-  };
+  const firebaseConfig = {
+  apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
+  authDomain: "yfned-fleet-nfc.firebaseapp.com",
+  databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
+  projectId: "yfned-fleet-nfc",
+  storageBucket: "yfned-fleet-nfc.firebasestorage.app",
+  messagingSenderId: "482363667898",
+  appId: "1:482363667898:web:4b0364e891a221e9631983",
+  measurementId: "G-LK66DQVKW4"
+};
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getDatabase(app);
@@ -343,16 +344,11 @@
       const events = Object.keys(data).map(bookingId => {
         const b = data[bookingId];
         return {
-          // We'll store the push key as "id" so we know how to remove it
           id: bookingId,
-          // e.g. "06:00 Booked by: user"
           title: `${b.startTime} Booked by: ${b.userName || "Unknown"}`,
           start: b.startTimeISO,
           end: b.endTimeISO,
-          // We'll keep track of the booking creator email in extendedProps
-          extendedProps: {
-            creatorEmail: b.userName // or rename it to b.ownerEmail if you prefer
-          }
+          extendedProps: { creatorEmail: b.userName }
         };
       });
       successCallback(events);
@@ -362,21 +358,17 @@
     }
   }
 
-  // DAY-BASED approach: match events if they overlap the 24h block of clickedDate
+  // DAY-BASED approach
   function getEventsForDate(clickedDate) {
     const dayStart = new Date(clickedDate);
     dayStart.setHours(0, 0, 0, 0); 
     const dayEnd = new Date(dayStart);
-    dayEnd.setDate(dayEnd.getDate() + 1); // next midnight
+    dayEnd.setDate(dayEnd.getDate() + 1);
 
     const allEvents = calendar.getEvents();
-    return allEvents.filter(ev => {
-      // event must overlap [dayStart, dayEnd)
-      return ev.start < dayEnd && ev.end > dayStart;
-    });
+    return allEvents.filter(ev => ev.start < dayEnd && ev.end > dayStart);
   }
 
-  // Display events in sidebar (with a "Remove" button if user is the owner)
   function displayBookingsForDay(eventsForDay, dateStr) {
     dateBookingsListEl.innerHTML = '';
 
@@ -389,11 +381,8 @@
       const item = document.createElement('div');
       const startStr = ev.start.toLocaleString();
       const endStr = ev.end.toLocaleString();
-
-      // We'll show the basic text
       item.textContent = `${ev.title} | Start: ${startStr} | End: ${endStr}`;
 
-      // Now let's add a "Remove" button. Only show it if current user is the booking's creator
       const creator = (ev.extendedProps.creatorEmail || '').toLowerCase();
       const me = currentUser.email.toLowerCase();
 
@@ -413,26 +402,40 @@
     });
   }
 
-  // removeBooking(...) actually deletes the booking from DB, then refetches
+  // NEW: Utility to check if booking overlaps existing bookings
+  async function isBookingOverlapping(vehicleName, newStartTS, newEndTS) {
+    // Load all bookings for this vehicle
+    const snap = await get(ref(db, 'bookings/' + vehicleName));
+    if(!snap.exists()) return false; // no existing => no overlap
+
+    const allBookings = snap.val();
+    // Overlap check: [startA < endB && endA > startB]
+    for(const bId in allBookings) {
+      const b = allBookings[bId];
+      const existingStart = toTimestamp(b.date, b.startTime);
+      const existingEnd   = toTimestamp(b.date, b.endTime);
+
+      // If the new booking range intersects the existing booking range
+      if(newStartTS < existingEnd && newEndTS > existingStart) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // removeBooking(...) 
   async function removeBooking(bookingId) {
     try {
       const vehicleName = vehicleSelect.value;
-      const bookingRef = ref(db, `bookings/${vehicleName}/${bookingId}`);
-      await remove(bookingRef);
+      await remove(ref(db, `bookings/${vehicleName}/${bookingId}`));
       alert('Booking removed successfully!');
-
-      // Force the calendar to reload events
       calendar.refetchEvents();
-      // If you also want to refresh the day panel for the last clicked date, 
-      // you'd just re-run "displayBookingsForDay" with the same date
-      // but it's simpler just to click the day again.
     } catch (err) {
       console.error(err);
       alert('Error removing booking: ' + err);
     }
   }
 
-  // Convert date/time to timestamp
   function toTimestamp(dateStr, timeStr) {
     return new Date(`${dateStr}T${timeStr}`).getTime();
   }
@@ -453,12 +456,38 @@
       return;
     }
 
+    // 1) Overlap check
+    const startTS = toTimestamp(dateVal, startVal);
+    const endTS   = toTimestamp(dateVal, endVal);
+    if(endTS <= startTS) {
+      alert('End time must be after start time!');
+      return;
+    }
+
+    // Check if there's an overlap with existing bookings
+    const overlap = await isBookingOverlapping(selectedVehicle, startTS, endTS);
+    if(overlap) {
+      alert('This time range is already booked by someone else!');
+      return;
+    }
+
+    // 2) Also check if vehicle is currently signed out
+    const vehSnap = await get(ref(db, 'vehicles/' + selectedVehicle));
+    if(vehSnap.exists()) {
+      const vehData = vehSnap.val();
+      if(vehData.status === 'signedOut' && vehData.CurrentlySignedOutBy !== currentUser.email) {
+        alert(`Vehicle is currently signed out by ${vehData.CurrentlySignedOutBy}. Cannot book now!`);
+        return;
+      }
+    }
+
+    // 3) If no conflict => create the booking
     const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
-    const startTimeISO = new Date(`${dateVal}T${startVal}`).toISOString();
-    const endTimeISO = new Date(`${dateVal}T${endVal}`).toISOString();
+    const startTimeISO = new Date(startTS).toISOString();
+    const endTimeISO   = new Date(endTS).toISOString();
 
     await set(bookingRef, {
-      userName: currentUser.email, // store the booking's creator
+      userName: currentUser.email,
       date: dateVal,
       startTime: startVal,
       endTime: endVal,
@@ -478,6 +507,18 @@
       return;
     }
 
+    // NEW: Check if vehicle is already signed out by someone else
+    const vehRef = ref(db, 'vehicles/' + selectedVehicle);
+    const vehSnap = await get(vehRef);
+    if(vehSnap.exists()) {
+      const vData = vehSnap.val();
+      if(vData.status === 'signedOut' && vData.CurrentlySignedOutBy !== currentUser.email) {
+        alert(`Vehicle is currently signed out by ${vData.CurrentlySignedOutBy}. You cannot sign it out!`);
+        return;
+      }
+    }
+
+    // Also do the active booking check as before
     const now = Date.now();
     const bookingSnap = await get(ref(db, 'bookings/' + selectedVehicle));
     if(!bookingSnap.exists()) {
@@ -493,7 +534,7 @@
     for(const bId in allBookings) {
       const b = allBookings[bId];
       const startTS = toTimestamp(b.date, b.startTime);
-      const endTS = toTimestamp(b.date, b.endTime);
+      const endTS   = toTimestamp(b.date, b.endTime);
 
       if(now >= startTS && now < endTS) {
         activeBookingFound = true;
@@ -542,6 +583,7 @@
     });
     alert('Vehicle returned successfully!');
 
+    // Log
     const logsRef = push(ref(db, `vehicleLogs/${selectedVehicle}`));
     await set(logsRef, {
       userEmail: currentUser.email,
@@ -580,6 +622,7 @@
     });
     alert('Vehicle signed out successfully!');
 
+    // Log
     const logRef = push(ref(db, `vehicleLogs/${vehicleName}`));
     await set(logRef, {
       userEmail: currentUser.email,
