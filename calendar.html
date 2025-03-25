@@ -343,7 +343,7 @@ function initCalendar() {
           // We'll store the push key as "id" so we know how to remove it
           id: bookingId,
           // e.g. "06:00 Booked by: user"
-          title: `@ ${b.startTime} To ${b.endTime}`,
+          title: `@ ${b.startTime}-${b.endTime}`,
           start: b.startTimeISO,
           end: b.endTimeISO,
           // We'll keep track of the booking creator email in extendedProps
