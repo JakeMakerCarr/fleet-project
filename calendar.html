@@ -252,7 +252,7 @@
     if (snap.exists()) {
       const vehData = snap.val();
       if (vehData.status === 'signedOut') {
-        vehicleHeading.innerHTML = ${vehicleName} schedule:<br>Currently Signed Out by: ${vehData.CurrentlySignedOutBy};
+        vehicleHeading.innerHTML = '${vehicleName} schedule:<br>Currently Signed Out by: ${vehData.CurrentlySignedOutBy}';
       } else {
         vehicleHeading.textContent = ${vehicleName} schedule: Available;
       }
