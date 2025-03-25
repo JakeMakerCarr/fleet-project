@@ -2,7 +2,7 @@ body {
   background-color: #5cbde5;
   background-image: url('skybackgroundmidnightfeather.png');
   background-repeat: repeat;
-  background-size: auto; /* or auto, or cover depending on your look */
+  background-size: 400px; /* or auto, or cover depending on your look */
   margin: 0;
   padding: 0;
   font-family: sans-serif;
