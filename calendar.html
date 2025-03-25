@@ -294,40 +294,32 @@
   });
 
   // Initialize FullCalendar
-  function initCalendar() {
-    const calendarEl = document.getElementById('calendar');
-    calendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: 'dayGridMonth',
-      timeZone: 'local', // interpret events in local time
-      events: fetchVehicleBookings,
-      eventTimeFormat: { 
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true 
-      },
-      dateClick: (info) => {
-        // Unhighlight old day
-        if (lastClickedDayEl) {
-          lastClickedDayEl.style.backgroundColor = '';
-        }
-        // Highlight new
-        info.dayEl.style.backgroundColor = 'lightblue';
-        lastClickedDayEl = info.dayEl;
-
-        // Show date in the sidebar
-        selectedDateTextEl.textContent = info.dateStr;
-
-        // DAY-BASED approach => get events that overlap the entire day
-        const eventsForDay = getEventsForDate(info.date);
-        displayBookingsForDay(eventsForDay, info.dateStr);
-
-        // Auto-fill booking form
-        bookingDateInput.value = info.dateStr;
+function initCalendar() {
+  const calendarEl = document.getElementById('calendar');
+  calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    timeZone: 'local',
+    events: fetchVehicleBookings,
+    displayEventTime: false, // 👈 Disable default time next to the dot
+    dateClick: (info) => {
+      if (lastClickedDayEl) {
+        lastClickedDayEl.style.backgroundColor = '';
       }
-    });
+      info.dayEl.style.backgroundColor = 'lightblue';
+      lastClickedDayEl = info.dayEl;
 
-    calendar.render();
-  }
+      selectedDateTextEl.textContent = info.dateStr;
+
+      const eventsForDay = getEventsForDate(info.date);
+      displayBookingsForDay(eventsForDay, info.dateStr);
+
+      bookingDateInput.value = info.dateStr;
+    }
+  });
+
+  calendar.render();
+}
+
 
   // Fetch events from /bookings/{vehicleName}
   async function fetchVehicleBookings(info, successCallback, failureCallback) {
