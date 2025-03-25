@@ -189,7 +189,7 @@
 
   // Firebase config
   const firebaseConfig = {
-    apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
+    apiKey: "AIzaSyA...",
     authDomain: "yfned-fleet-nfc.firebaseapp.com",
     databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
     projectId: "yfned-fleet-nfc",
@@ -217,22 +217,38 @@
   const signOutBtn = document.getElementById('signOutBtn');
   const returnVehicleBtn = document.getElementById('returnVehicleBtn');
 
-  // Elements for the date detail panel
   const selectedDateTextEl = document.getElementById('selected-date-text');
   const dateBookingsListEl = document.getElementById('date-bookings-list');
 
-  let lastClickedDayEl = null; // used to unhighlight the previously clicked day cell
+  let lastClickedDayEl = null;
 
-  // NFC query param
+  // If user came via an NFC link, e.g. ?nfcVehicle=Vehicle3
   const urlParams = new URLSearchParams(window.location.search);
   const nfcVehicle = urlParams.get('nfcVehicle');
 
-  // Update heading based on vehicle data in /vehicles
+  // NEW: utility to check if new booking overlaps existing
+  async function isBookingOverlapping(vehicleName, newStartTS, newEndTS) {
+    const snap = await get(ref(db, 'bookings/' + vehicleName));
+    if(!snap.exists()) return false; // no bookings => no overlap
+
+    const allBookings = snap.val();
+    // overlap if newStart < existingEnd && newEnd > existingStart
+    for(const bId in allBookings) {
+      const b = allBookings[bId];
+      const existingStart = toTimestamp(b.date, b.startTime);
+      const existingEnd   = toTimestamp(b.date, b.endTime);
+
+      if(newStartTS < existingEnd && newEndTS > existingStart) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Update heading with vehicle status
   async function updateVehicleHeading(vehicleName) {
     if (!vehicleName) return;
-    const vehicleRef = ref(db, 'vehicles/' + vehicleName);
-    const snap = await get(vehicleRef);
-
+    const snap = await get(ref(db, 'vehicles/' + vehicleName));
     if (snap.exists()) {
       const vehData = snap.val();
       if (vehData.status === 'signedOut') {
@@ -245,7 +261,6 @@
     }
   }
 
-  // On auth state
   onAuthStateChanged(auth, (user) => {
     if(!user) {
       window.location.href = 'index.html';
@@ -257,83 +272,68 @@
       initCalendar();
 
       vehicleSelect.addEventListener('change', async () => {
-        const selectedVehicle = vehicleSelect.value;
-        await updateVehicleHeading(selectedVehicle);
+        await updateVehicleHeading(vehicleSelect.value);
         calendar.refetchEvents();
       });
 
-      // Default heading on load
       updateVehicleHeading(vehicleSelect.value);
 
-      // Book
       bookVehicleBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         await handleBooking();
       });
 
-      // Sign out
       signOutBtn.addEventListener('click', async () => {
         await handleSignOutVehicle();
       });
 
-      // Return
       returnVehicleBtn.addEventListener('click', async () => {
         await handleReturnVehicle();
       });
 
-      // If we have ?nfcVehicle=...
       if(nfcVehicle) {
         handleNfcFlow(nfcVehicle);
       }
     }
   });
 
-  // Logout
   logoutBtn.addEventListener('click', async () => {
     await signOut(auth);
   });
 
-  // Initialize FullCalendar
   function initCalendar() {
     const calendarEl = document.getElementById('calendar');
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
-      timeZone: 'local', // interpret events in local time
+      timeZone: 'local',
       events: fetchVehicleBookings,
       dateClick: (info) => {
-        // Unhighlight old day
         if (lastClickedDayEl) {
           lastClickedDayEl.style.backgroundColor = '';
         }
-        // Highlight new
         info.dayEl.style.backgroundColor = 'lightblue';
         lastClickedDayEl = info.dayEl;
 
-        // Show date in the sidebar
         selectedDateTextEl.textContent = info.dateStr;
 
-        // DAY-BASED approach => get events that overlap the entire day
         const eventsForDay = getEventsForDate(info.date);
         displayBookingsForDay(eventsForDay, info.dateStr);
 
-        // Auto-fill booking form
         bookingDateInput.value = info.dateStr;
       }
     });
-
     calendar.render();
   }
 
-  // Fetch events from /bookings/{vehicleName}
   async function fetchVehicleBookings(info, successCallback, failureCallback) {
     try {
-      const selectedVehicle = vehicleSelect.value;
-      if(!selectedVehicle) {
+      const vehicleName = vehicleSelect.value;
+      if(!vehicleName) {
         successCallback([]);
         return;
       }
 
-      const snap = await get(ref(db, 'bookings/' + selectedVehicle));
+      const snap = await get(ref(db, 'bookings/' + vehicleName));
       if(!snap.exists()) {
         successCallback([]);
         return;
@@ -343,15 +343,12 @@
       const events = Object.keys(data).map(bookingId => {
         const b = data[bookingId];
         return {
-          // We'll store the push key as "id" so we know how to remove it
           id: bookingId,
-          // e.g. "06:00 Booked by: user"
           title: ${b.startTime} Booked by: ${b.userName || "Unknown"},
           start: b.startTimeISO,
           end: b.endTimeISO,
-          // We'll keep track of the booking creator email in extendedProps
           extendedProps: {
-            creatorEmail: b.userName // or rename it to b.ownerEmail if you prefer
+            creatorEmail: b.userName
           }
         };
       });
@@ -362,103 +359,108 @@
     }
   }
 
-  // DAY-BASED approach: match events if they overlap the 24h block of clickedDate
   function getEventsForDate(clickedDate) {
     const dayStart = new Date(clickedDate);
-    dayStart.setHours(0, 0, 0, 0); 
+    dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(dayStart);
-    dayEnd.setDate(dayEnd.getDate() + 1); // next midnight
+    dayEnd.setDate(dayEnd.getDate() + 1);
 
     const allEvents = calendar.getEvents();
-    return allEvents.filter(ev => {
-      // event must overlap [dayStart, dayEnd)
-      return ev.start < dayEnd && ev.end > dayStart;
-    });
+    return allEvents.filter(ev => ev.start < dayEnd && ev.end > dayStart);
   }
 
-  // Display events in sidebar (with a "Remove" button if user is the owner)
   function displayBookingsForDay(eventsForDay, dateStr) {
     dateBookingsListEl.innerHTML = '';
-
     if (eventsForDay.length === 0) {
       dateBookingsListEl.textContent = 'No bookings on ' + dateStr + '.';
       return;
     }
-
     eventsForDay.forEach(ev => {
-      const item = document.createElement('div');
+      const div = document.createElement('div');
       const startStr = ev.start.toLocaleString();
       const endStr = ev.end.toLocaleString();
+      div.textContent = ${ev.title} | Start: ${startStr} | End: ${endStr};
 
-      // We'll show the basic text
-      item.textContent = ${ev.title} | Start: ${startStr} | End: ${endStr};
-
-      // Now let's add a "Remove" button. Only show it if current user is the booking's creator
+      // remove button if user is the creator
       const creator = (ev.extendedProps.creatorEmail || '').toLowerCase();
-      const me = currentUser.email.toLowerCase();
-
-      if (creator === me) {
+      if(creator === currentUser.email.toLowerCase()) {
         const removeBtn = document.createElement('button');
         removeBtn.textContent = 'Remove';
         removeBtn.style.marginLeft = '1rem';
         removeBtn.onclick = async () => {
-          if (confirm('Are you sure you want to delete this booking?')) {
+          if(confirm('Delete this booking?')) {
             await removeBooking(ev.id);
           }
         };
-        item.appendChild(removeBtn);
+        div.appendChild(removeBtn);
       }
-
-      dateBookingsListEl.appendChild(item);
+      dateBookingsListEl.appendChild(div);
     });
   }
 
-  // removeBooking(...) actually deletes the booking from DB, then refetches
   async function removeBooking(bookingId) {
     try {
       const vehicleName = vehicleSelect.value;
-      const bookingRef = ref(db, bookings/${vehicleName}/${bookingId});
-      await remove(bookingRef);
+      await remove(ref(db, bookings/${vehicleName}/${bookingId}));
       alert('Booking removed successfully!');
-
-      // Force the calendar to reload events
       calendar.refetchEvents();
-      // If you also want to refresh the day panel for the last clicked date, 
-      // you'd just re-run "displayBookingsForDay" with the same date
-      // but it's simpler just to click the day again.
-    } catch (err) {
+    } catch(err) {
       console.error(err);
       alert('Error removing booking: ' + err);
     }
   }
 
-  // Convert date/time to timestamp
   function toTimestamp(dateStr, timeStr) {
-    return new Date(${dateStr}T${timeStr}).getTime();
+    return new Date(dateStr + 'T' + timeStr).getTime();
   }
 
-  // handleBooking(...)
+  // NEW: handleBooking with overlap check + signOut check
   async function handleBooking() {
-    const selectedVehicle = vehicleSelect.value;
-    if(!selectedVehicle) {
+    const vehicleName = vehicleSelect.value;
+    if(!vehicleName) {
       alert('No vehicle selected for booking.');
       return;
     }
 
     const dateVal = bookingDateInput.value;
     const startVal = bookingStartInput.value;
-    const endVal = bookingEndInput.value;
+    const endVal   = bookingEndInput.value;
     if(!dateVal || !startVal || !endVal) {
       alert('Please provide date, start time, and end time.');
       return;
     }
 
-    const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
-    const startTimeISO = new Date(${dateVal}T${startVal}).toISOString();
-    const endTimeISO = new Date(${dateVal}T${endVal}).toISOString();
+    const startTS = toTimestamp(dateVal, startVal);
+    const endTS   = toTimestamp(dateVal, endVal);
+    if(endTS <= startTS) {
+      alert('End time must be after start time!');
+      return;
+    }
+
+    // 1) Check overlap
+    const overlap = await isBookingOverlapping(vehicleName, startTS, endTS);
+    if(overlap) {
+      alert('That time range is already booked!');
+      return;
+    }
+
+    // 2) Also check if vehicle is currently signed out by someone else
+    const vehSnap = await get(ref(db, 'vehicles/' + vehicleName));
+    if(vehSnap.exists()) {
+      const vData = vehSnap.val();
+      if(vData.status === 'signedOut' && vData.CurrentlySignedOutBy !== currentUser.email) {
+        alert(Vehicle is currently signed out by ${vData.CurrentlySignedOutBy}. Cannot book!);
+        return;
+      }
+    }
+
+    // 3) If no conflict => create booking
+    const bookingRef = push(ref(db, 'bookings/' + vehicleName));
+    const startTimeISO = new Date(startTS).toISOString();
+    const endTimeISO   = new Date(endTS).toISOString();
 
     await set(bookingRef, {
-      userName: currentUser.email, // store the booking's creator
+      userName: currentUser.email,
       date: dateVal,
       startTime: startVal,
       endTime: endVal,
@@ -470,19 +472,31 @@
     calendar.refetchEvents();
   }
 
-  // handleSignOutVehicle
+  // NEW: sign out with block if vehicle is signed out by someone else
   async function handleSignOutVehicle(paramVehicle=null) {
-    const selectedVehicle = paramVehicle || vehicleSelect.value;
-    if(!selectedVehicle) {
+    const vehicleName = paramVehicle || vehicleSelect.value;
+    if(!vehicleName) {
       alert('No vehicle selected.');
       return;
     }
 
+    // if vehicle is already "signedOut" by someone else => block
+    const vehRef = ref(db, 'vehicles/' + vehicleName);
+    const vehSnap = await get(vehRef);
+    if(vehSnap.exists()) {
+      const vData = vehSnap.val();
+      if(vData.status === 'signedOut' && vData.CurrentlySignedOutBy !== currentUser.email) {
+        alert(Vehicle is already signed out by ${vData.CurrentlySignedOutBy}. You can't sign it out now!);
+        return;
+      }
+    }
+
+    // also do the active booking check
     const now = Date.now();
-    const bookingSnap = await get(ref(db, 'bookings/' + selectedVehicle));
+    const bookingSnap = await get(ref(db, 'bookings/' + vehicleName));
     if(!bookingSnap.exists()) {
       // No bookings => sign out
-      await signOutVehicleInDB(selectedVehicle);
+      await signOutVehicleInDB(vehicleName);
       return;
     }
 
@@ -493,7 +507,7 @@
     for(const bId in allBookings) {
       const b = allBookings[bId];
       const startTS = toTimestamp(b.date, b.startTime);
-      const endTS = toTimestamp(b.date, b.endTime);
+      const endTS   = toTimestamp(b.date, b.endTime);
 
       if(now >= startTS && now < endTS) {
         activeBookingFound = true;
@@ -506,24 +520,23 @@
 
     if(activeBookingFound) {
       if(belongsToCurrentUser) {
-        await signOutVehicleInDB(selectedVehicle);
+        await signOutVehicleInDB(vehicleName);
       } else {
         alert('Vehicle is currently booked by someone else at this time!');
       }
     } else {
-      await signOutVehicleInDB(selectedVehicle);
+      await signOutVehicleInDB(vehicleName);
     }
   }
 
-  // handleReturnVehicle
   async function handleReturnVehicle(paramVehicle=null) {
-    const selectedVehicle = paramVehicle || vehicleSelect.value;
-    if(!selectedVehicle) {
+    const vehicleName = paramVehicle || vehicleSelect.value;
+    if(!vehicleName) {
       alert('No vehicle selected.');
       return;
     }
 
-    const vehicleRef = ref(db, 'vehicles/' + selectedVehicle);
+    const vehicleRef = ref(db, 'vehicles/' + vehicleName);
     const vehicleSnap = await get(vehicleRef);
     if(!vehicleSnap.exists()) {
       alert('Vehicle data not found.');
@@ -542,17 +555,16 @@
     });
     alert('Vehicle returned successfully!');
 
-    const logsRef = push(ref(db, vehicleLogs/${selectedVehicle}));
+    const logsRef = push(ref(db, vehicleLogs/${vehicleName}));
     await set(logsRef, {
       userEmail: currentUser.email,
       action: 'signedIn',
       timestamp: Date.now()
     });
 
-    await updateVehicleHeading(selectedVehicle);
+    await updateVehicleHeading(vehicleName);
   }
 
-  // NFC flow
   async function handleNfcFlow(nfcVeh) {
     alert(NFC tap detected for ${nfcVeh}. Checking vehicle status...);
     const vehicleRef = ref(db, 'vehicles/' + nfcVeh);
@@ -572,7 +584,6 @@
     }
   }
 
-  // Actually sign out in DB
   async function signOutVehicleInDB(vehicleName) {
     await update(ref(db, 'vehicles/' + vehicleName), {
       status: 'signedOut',
