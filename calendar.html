@@ -437,83 +437,129 @@
     return new Date(`${dateStr}T${timeStr}`).getTime();
   }
 
+  // Check for booking conflicts
+async function isBookingOverlapping(vehicleName, newStartTS, newEndTS) {
+  const snap = await get(ref(db, 'bookings/' + vehicleName));
+  if (!snap.exists()) return false;
+
+  const bookings = snap.val();
+  for (const id in bookings) {
+    const b = bookings[id];
+    const existingStart = toTimestamp(b.date, b.startTime);
+    const existingEnd = toTimestamp(b.date, b.endTime);
+
+    // Check for time overlap
+    if (newStartTS < existingEnd && newEndTS > existingStart) {
+      return true;
+    }
+  }
+  return false;
+}
+
+  
   // handleBooking(...)
   async function handleBooking() {
-    const selectedVehicle = vehicleSelect.value;
-    if(!selectedVehicle) {
-      alert('No vehicle selected for booking.');
-      return;
-    }
-
-    const dateVal = bookingDateInput.value;
-    const startVal = bookingStartInput.value;
-    const endVal = bookingEndInput.value;
-    if(!dateVal || !startVal || !endVal) {
-      alert('Please provide date, start time, and end time.');
-      return;
-    }
-
-    const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
-    const startTimeISO = new Date(`${dateVal}T${startVal}`).toISOString();
-    const endTimeISO = new Date(`${dateVal}T${endVal}`).toISOString();
-
-    await set(bookingRef, {
-      userName: currentUser.email, // store the booking's creator
-      date: dateVal,
-      startTime: startVal,
-      endTime: endVal,
-      startTimeISO,
-      endTimeISO
-    });
-
-    alert('Booking created!');
-    calendar.refetchEvents();
+  const selectedVehicle = vehicleSelect.value;
+  if(!selectedVehicle) {
+    alert('No vehicle selected for booking.');
+    return;
   }
+
+  const dateVal = bookingDateInput.value;
+  const startVal = bookingStartInput.value;
+  const endVal = bookingEndInput.value;
+
+  if(!dateVal || !startVal || !endVal) {
+    alert('Please provide date, start time, and end time.');
+    return;
+  }
+
+  const startTS = toTimestamp(dateVal, startVal);
+  const endTS = toTimestamp(dateVal, endVal);
+
+  if (endTS <= startTS) {
+    alert('End time must be after start time!');
+    return;
+  }
+
+  // Check for booking conflicts
+  const conflict = await isBookingOverlapping(selectedVehicle, startTS, endTS);
+  if (conflict) {
+    alert('That time range is already booked for this vehicle!');
+    return;
+  }
+
+  const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
+  const startTimeISO = new Date(startTS).toISOString();
+  const endTimeISO = new Date(endTS).toISOString();
+
+  await set(bookingRef, {
+    userName: currentUser.email,
+    date: dateVal,
+    startTime: startVal,
+    endTime: endVal,
+    startTimeISO,
+    endTimeISO
+  });
+
+  alert('Booking created!');
+  calendar.refetchEvents();
+}
 
   // handleSignOutVehicle
-  async function handleSignOutVehicle(paramVehicle=null) {
-    const selectedVehicle = paramVehicle || vehicleSelect.value;
-    if(!selectedVehicle) {
-      alert('No vehicle selected.');
+async function handleSignOutVehicle(paramVehicle=null) {
+  const selectedVehicle = paramVehicle || vehicleSelect.value;
+  if(!selectedVehicle) {
+    alert('No vehicle selected.');
+    return;
+  }
+
+  const vehicleRef = ref(db, 'vehicles/' + selectedVehicle);
+  const vehicleSnap = await get(vehicleRef);
+  if(vehicleSnap.exists()) {
+    const vehicleData = vehicleSnap.val();
+    if(vehicleData.status === 'signedOut' && vehicleData.CurrentlySignedOutBy !== currentUser.email) {
+      alert(`Vehicle is already signed out by ${vehicleData.CurrentlySignedOutBy}. You can't sign it out now!`);
       return;
-    }
-
-    const now = Date.now();
-    const bookingSnap = await get(ref(db, 'bookings/' + selectedVehicle));
-    if(!bookingSnap.exists()) {
-      // No bookings => sign out
-      await signOutVehicleInDB(selectedVehicle);
-      return;
-    }
-
-    const allBookings = bookingSnap.val();
-    let activeBookingFound = false;
-    let belongsToCurrentUser = false;
-
-    for(const bId in allBookings) {
-      const b = allBookings[bId];
-      const startTS = toTimestamp(b.date, b.startTime);
-      const endTS = toTimestamp(b.date, b.endTime);
-
-      if(now >= startTS && now < endTS) {
-        activeBookingFound = true;
-        if(b.userName === currentUser.email) {
-          belongsToCurrentUser = true;
-        }
-        break;
-      }
-    }
-
-    if(activeBookingFound) {
-      if(belongsToCurrentUser) {
-        await signOutVehicleInDB(selectedVehicle);
-      } else {
-        alert('Vehicle is currently booked by someone else at this time!');
-      }
-    } else {
-      await signOutVehicleInDB(selectedVehicle);
     }
   }
+
+  const now = Date.now();
+  const bookingSnap = await get(ref(db, 'bookings/' + selectedVehicle));
+  if(!bookingSnap.exists()) {
+    await signOutVehicleInDB(selectedVehicle);
+    return;
+  }
+
+  const allBookings = bookingSnap.val();
+  let activeBookingFound = false;
+  let belongsToCurrentUser = false;
+
+  for(const bId in allBookings) {
+    const b = allBookings[bId];
+    const startTS = toTimestamp(b.date, b.startTime);
+    const endTS = toTimestamp(b.date, b.endTime);
+
+    if(now >= startTS && now < endTS) {
+      activeBookingFound = true;
+      if(b.userName === currentUser.email) {
+        belongsToCurrentUser = true;
+      }
+      break;
+    }
+  }
+
+  if(activeBookingFound) {
+    if(belongsToCurrentUser) {
+      await signOutVehicleInDB(selectedVehicle);
+    } else {
+      alert('Vehicle is currently booked by someone else at this time!');
+    }
+  } else {
+    await signOutVehicleInDB(selectedVehicle);
+  }
+}
+
 
   // handleReturnVehicle
   async function handleReturnVehicle(paramVehicle=null) {
