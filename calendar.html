@@ -184,7 +184,7 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
   import { getAuth, onAuthStateChanged, signOut }
     from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
-  import { getDatabase, ref, get, push, set, update }
+  import { getDatabase, ref, get, push, set, update, remove }
     from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
 
   // Firebase config
@@ -343,10 +343,16 @@
       const events = Object.keys(data).map(bookingId => {
         const b = data[bookingId];
         return {
+          // We'll store the push key as "id" so we know how to remove it
+          id: bookingId,
           // e.g. "06:00 Booked by: user"
           title: `${b.startTime} Booked by: ${b.userName || "Unknown"}`,
           start: b.startTimeISO,
-          end: b.endTimeISO
+          end: b.endTimeISO,
+          // We'll keep track of the booking creator email in extendedProps
+          extendedProps: {
+            creatorEmail: b.userName // or rename it to b.ownerEmail if you prefer
+          }
         };
       });
       successCallback(events);
@@ -358,7 +364,6 @@
 
   // DAY-BASED approach: match events if they overlap the 24h block of clickedDate
   function getEventsForDate(clickedDate) {
-    // define the day start (midnight) and the next midnight
     const dayStart = new Date(clickedDate);
     dayStart.setHours(0, 0, 0, 0); 
     const dayEnd = new Date(dayStart);
@@ -371,7 +376,7 @@
     });
   }
 
-  // Display events in sidebar
+  // Display events in sidebar (with a "Remove" button if user is the owner)
   function displayBookingsForDay(eventsForDay, dateStr) {
     dateBookingsListEl.innerHTML = '';
 
@@ -384,10 +389,47 @@
       const item = document.createElement('div');
       const startStr = ev.start.toLocaleString();
       const endStr = ev.end.toLocaleString();
-      // e.g. "06:00 Booked by: user | Start: Thu Mar 27 2025 06:00:00 ... End: ..."
+
+      // We'll show the basic text
       item.textContent = `${ev.title} | Start: ${startStr} | End: ${endStr}`;
+
+      // Now let's add a "Remove" button. Only show it if current user is the booking's creator
+      const creator = (ev.extendedProps.creatorEmail || '').toLowerCase();
+      const me = currentUser.email.toLowerCase();
+
+      if (creator === me) {
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = 'Remove';
+        removeBtn.style.marginLeft = '1rem';
+        removeBtn.onclick = async () => {
+          if (confirm('Are you sure you want to delete this booking?')) {
+            await removeBooking(ev.id);
+          }
+        };
+        item.appendChild(removeBtn);
+      }
+
       dateBookingsListEl.appendChild(item);
     });
+  }
+
+  // removeBooking(...) actually deletes the booking from DB, then refetches
+  async function removeBooking(bookingId) {
+    try {
+      const vehicleName = vehicleSelect.value;
+      const bookingRef = ref(db, `bookings/${vehicleName}/${bookingId}`);
+      await remove(bookingRef);
+      alert('Booking removed successfully!');
+
+      // Force the calendar to reload events
+      calendar.refetchEvents();
+      // If you also want to refresh the day panel for the last clicked date, 
+      // you'd just re-run "displayBookingsForDay" with the same date
+      // but it's simpler just to click the day again.
+    } catch (err) {
+      console.error(err);
+      alert('Error removing booking: ' + err);
+    }
   }
 
   // Convert date/time to timestamp
@@ -416,7 +458,7 @@
     const endTimeISO = new Date(`${dateVal}T${endVal}`).toISOString();
 
     await set(bookingRef, {
-      userName: currentUser.email,
+      userName: currentUser.email, // store the booking's creator
       date: dateVal,
       startTime: startVal,
       endTime: endVal,
