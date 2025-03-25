@@ -445,8 +445,8 @@ async function isBookingOverlapping(vehicleName, newStartTS, newEndTS) {
   const bookings = snap.val();
   for (const id in bookings) {
     const b = bookings[id];
-    const existingStart = toTimestamp(b.date, b.startTime);
-    const existingEnd = toTimestamp(b.date, b.endTime);
+    const existingStart = new Date(b.startTimeISO).getTime();
+    const existingEnd = new Date(b.endTimeISO).getTime();
 
     // Check for time overlap
     if (newStartTS < existingEnd && newEndTS > existingStart) {
