@@ -236,12 +236,12 @@
     if (snap.exists()) {
       const vehData = snap.val();
       if (vehData.status === 'signedOut') {
-        vehicleHeading.innerHTML = ${vehicleName} schedule:<br>Currently Signed Out by: ${vehData.CurrentlySignedOutBy};
+        vehicleHeading.innerHTML = `${vehicleName} schedule:<br>Currently Signed Out by: ${vehData.CurrentlySignedOutBy}`;
       } else {
-        vehicleHeading.textContent = ${vehicleName} schedule: Available;
+        vehicleHeading.textContent = `${vehicleName} schedule: Available`;
       }
     } else {
-      vehicleHeading.textContent = ${vehicleName} schedule: Available;
+      vehicleHeading.textContent = `${vehicleName} schedule: Available`;
     }
   }
 
@@ -346,7 +346,7 @@
           // We'll store the push key as "id" so we know how to remove it
           id: bookingId,
           // e.g. "06:00 Booked by: user"
-          title: ${b.startTime} Booked by: ${b.userName || "Unknown"},
+          title: `${b.startTime} Booked by: ${b.userName || "Unknown"}`,
           start: b.startTimeISO,
           end: b.endTimeISO,
           // We'll keep track of the booking creator email in extendedProps
@@ -391,7 +391,7 @@
       const endStr = ev.end.toLocaleString();
 
       // We'll show the basic text
-      item.textContent = ${ev.title} | Start: ${startStr} | End: ${endStr};
+      item.textContent = `${ev.title} | Start: ${startStr} | End: ${endStr}`;
 
       // Now let's add a "Remove" button. Only show it if current user is the booking's creator
       const creator = (ev.extendedProps.creatorEmail || '').toLowerCase();
@@ -417,7 +417,7 @@
   async function removeBooking(bookingId) {
     try {
       const vehicleName = vehicleSelect.value;
-      const bookingRef = ref(db, bookings/${vehicleName}/${bookingId});
+      const bookingRef = ref(db, `bookings/${vehicleName}/${bookingId}`);
       await remove(bookingRef);
       alert('Booking removed successfully!');
 
@@ -434,7 +434,7 @@
 
   // Convert date/time to timestamp
   function toTimestamp(dateStr, timeStr) {
-    return new Date(${dateStr}T${timeStr}).getTime();
+    return new Date(`${dateStr}T${timeStr}`).getTime();
   }
 
   // handleBooking(...)
@@ -454,8 +454,8 @@
     }
 
     const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
-    const startTimeISO = new Date(${dateVal}T${startVal}).toISOString();
-    const endTimeISO = new Date(${dateVal}T${endVal}).toISOString();
+    const startTimeISO = new Date(`${dateVal}T${startVal}`).toISOString();
+    const endTimeISO = new Date(`${dateVal}T${endVal}`).toISOString();
 
     await set(bookingRef, {
       userName: currentUser.email, // store the booking's creator
@@ -542,7 +542,7 @@
     });
     alert('Vehicle returned successfully!');
 
-    const logsRef = push(ref(db, vehicleLogs/${selectedVehicle}));
+    const logsRef = push(ref(db, `vehicleLogs/${selectedVehicle}`));
     await set(logsRef, {
       userEmail: currentUser.email,
       action: 'signedIn',
@@ -554,20 +554,20 @@
 
   // NFC flow
   async function handleNfcFlow(nfcVeh) {
-    alert(NFC tap detected for ${nfcVeh}. Checking vehicle status...);
+    alert(`NFC tap detected for ${nfcVeh}. Checking vehicle status...`);
     const vehicleRef = ref(db, 'vehicles/' + nfcVeh);
     const vehicleSnap = await get(vehicleRef);
     if(vehicleSnap.exists()) {
       const vehData = vehicleSnap.val();
       if(vehData.status === 'signedOut' && vehData.CurrentlySignedOutBy === currentUser.email) {
-        alert(You're returning ${nfcVeh} via NFC tap.);
+        alert(`You're returning ${nfcVeh} via NFC tap.`);
         await handleReturnVehicle(nfcVeh);
       } else {
-        alert(Attempting to sign out ${nfcVeh} via NFC tap.);
+        alert(`Attempting to sign out ${nfcVeh} via NFC tap.`);
         await handleSignOutVehicle(nfcVeh);
       }
     } else {
-      alert(${nfcVeh} not found in the DB. Signing out anyway?);
+      alert(`${nfcVeh} not found in the DB. Signing out anyway?`);
       await signOutVehicleInDB(nfcVeh);
     }
   }
@@ -580,7 +580,7 @@
     });
     alert('Vehicle signed out successfully!');
 
-    const logRef = push(ref(db, vehicleLogs/${vehicleName}));
+    const logRef = push(ref(db, `vehicleLogs/${vehicleName}`));
     await set(logRef, {
       userEmail: currentUser.email,
       action: 'signedOut',
