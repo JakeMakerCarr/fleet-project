@@ -300,6 +300,11 @@
       initialView: 'dayGridMonth',
       timeZone: 'local', // interpret events in local time
       events: fetchVehicleBookings,
+      eventTimeFormat: { 
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true 
+      },
       dateClick: (info) => {
         // Unhighlight old day
         if (lastClickedDayEl) {
