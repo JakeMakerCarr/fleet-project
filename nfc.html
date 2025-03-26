@@ -64,7 +64,7 @@
   const db = getDatabase(app);
 
   const urlParams = new URLSearchParams(window.location.search);
-  const vehicle = urlParams.get('vehicle');
+  const vehicle = decodeURIComponent(urlParams.get('vehicle'));
   const authStatus = document.getElementById('auth-status');
   const mainContent = document.getElementById('main-content');
   const vehicleNameEl = document.getElementById('vehicle-name');
