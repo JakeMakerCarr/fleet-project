@@ -7,6 +7,9 @@
   <style>
     body {
       background-color: #5cbde5;
+      background-image: url('skybackgroundmidnightfeather.png');
+      background-repeat: repeat;
+      background-size: 400px;
       font-family: sans-serif;
       margin: 0;
       padding: 0;
@@ -16,8 +19,18 @@
       background: #333;
       color: white;
       padding: 1rem;
-      text-align: center;
-      font-size: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #logout-btn {
+      background: #666;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
     }
 
     .container {
@@ -63,23 +76,12 @@
       background-color: #2ecc71;
       color: white;
     }
-
-    #logout-btn {
-      float: right;
-      background: #666;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-top: -2.5rem;
-    }
   </style>
 </head>
 <body>
 
 <header>
-  YFNED Fleetmaster Controls
+  <div>YFNED Fleetmaster Controls</div>
   <button id="logout-btn">Logout</button>
 </header>
 
@@ -89,7 +91,6 @@
     <thead>
       <tr>
         <th>Vehicle Name</th>
-        <th>Key Status</th>
         <th>Toggle</th>
       </tr>
     </thead>
@@ -130,14 +131,11 @@
       if (snap.exists()) {
         const vehicles = snap.val();
         Object.keys(vehicles).forEach(name => {
-          const { keyStatus = 'atFrontDesk' } = vehicles[name];
+          const keyStatus = vehicles[name].keyStatus || 'atFrontDesk';
           const row = document.createElement('tr');
 
           const nameCell = document.createElement('td');
           nameCell.textContent = name;
-
-          const statusCell = document.createElement('td');
-          statusCell.textContent = keyStatus;
 
           const toggleCell = document.createElement('td');
           const toggleBtn = document.createElement('button');
@@ -147,12 +145,11 @@
           toggleBtn.onclick = async () => {
             const newStatus = keyStatus === 'atFrontDesk' ? 'withStaff' : 'atFrontDesk';
             await update(ref(db, 'vehicles/' + name), { keyStatus: newStatus });
-            location.reload(); // Refresh for now — can replace with smarter update later
+            location.reload();
           };
 
           toggleCell.appendChild(toggleBtn);
           row.appendChild(nameCell);
-          row.appendChild(statusCell);
           row.appendChild(toggleCell);
           tableBody.appendChild(row);
         });
