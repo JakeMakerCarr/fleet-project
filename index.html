@@ -60,13 +60,15 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
   import { getAuth, signInWithEmailAndPassword } 
     from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+  import { getDatabase, ref, get } 
+    from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
     authDomain: "yfned-fleet-nfc.firebaseapp.com",
     databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
     projectId: "yfned-fleet-nfc",
-    storageBucket: "yfned-fleet-nfc.firebasestorage.app",
+    storageBucket: "yfned-fleet-nfc.appspot.com",
     messagingSenderId: "482363667898",
     appId: "1:482363667898:web:4b0364e891a221e9631983",
     measurementId: "G-LK66DQVKW4"
@@ -74,31 +76,32 @@
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  const db = getDatabase(app);
 
   const loginBtn = document.getElementById('login-btn');
   const emailInput = document.getElementById('login-email');
   const passInput = document.getElementById('login-password');
   const msgDiv = document.getElementById('message');
 
-  // Read the vehicle param from the URL if present
-  const urlParams = new URLSearchParams(window.location.search);
-  const vehicleParam = urlParams.get('vehicle');
-
   loginBtn.addEventListener('click', async () => {
     msgDiv.textContent = '';
     const email = emailInput.value;
     const pass = passInput.value;
+
     if (!email || !pass) {
       msgDiv.textContent = 'Please enter email and password.';
       return;
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, pass);
+      const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+      const user = userCredential.user;
 
-      // Redirect based on whether this login came from an NFC tag
-      if (vehicleParam) {
-        window.location.href = `nfc.html?vehicle=${encodeURIComponent(vehicleParam)}`;
+      const snap = await get(ref(db, 'users/' + user.uid));
+      const role = snap.val()?.role || '';
+
+      if (role === 'fleetmaster') {
+        window.location.href = 'fleetmaster.html';
       } else {
         window.location.href = 'calendar.html';
       }
