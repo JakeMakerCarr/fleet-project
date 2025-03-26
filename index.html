@@ -58,10 +58,8 @@
 <!-- Firebase scripts -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
-  import { getAuth, signInWithEmailAndPassword } 
-    from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
-  import { getDatabase, ref, get } 
-    from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
+  import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+  import { getDatabase, ref, get, set, child } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
@@ -97,14 +95,27 @@
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
       const user = userCredential.user;
 
-      const snap = await get(ref(db, 'users/' + user.uid));
-      const role = snap.val()?.role || '';
+      const userRef = ref(db, 'users/' + user.uid);
+      const userSnap = await get(userRef);
+
+      // If user doesn't exist in DB, create them with default role "staff"
+      if (!userSnap.exists()) {
+        await set(userRef, {
+          email: user.email,
+          role: 'staff'
+        });
+      }
+
+      // Get role and redirect
+      const roleSnap = await get(child(ref(db), `users/${user.uid}/role`));
+      const role = roleSnap.exists() ? roleSnap.val() : 'staff';
 
       if (role === 'fleetmaster') {
         window.location.href = 'fleetmaster.html';
       } else {
         window.location.href = 'calendar.html';
       }
+
     } catch (err) {
       msgDiv.textContent = 'Login failed: ' + err.message;
     }
