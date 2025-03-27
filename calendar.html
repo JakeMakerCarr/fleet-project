@@ -119,6 +119,12 @@
     #date-bookings-list div {
       margin-bottom: 0.75rem;
     }
+    #booking-start, #booking-end {
+      font-size: 1.1rem;
+      padding: 0.5rem;
+      width: 140px;
+  }
+
   </style>
 </head>
 <body>
@@ -278,18 +284,18 @@
     flatpickr("#booking-start", {
       enableTime: true,
       noCalendar: true,
-      dateFormat: "H:i",
-      time_24hr: true,
+      dateFormat: "h:i K", // <--- K gives AM/PM
+      time_24hr: false,
       minTime: "06:00",
       maxTime: "21:00",
       defaultDate: "06:00"
     });
 
-    flatpickr("#booking-end", {
+  flatpickr("#booking-end", {
       enableTime: true,
       noCalendar: true,
-      dateFormat: "H:i",
-      time_24hr: true,
+      dateFormat: "h:i K", // <--- K gives AM/PM
+      time_24hr: false,
       minTime: "06:00",
       maxTime: "21:00",
       defaultDate: "07:00"
