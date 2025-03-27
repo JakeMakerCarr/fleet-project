@@ -8,6 +8,12 @@
   <!-- FullCalendar CSS -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.9.0/main.min.css" rel="stylesheet">
   
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+  <!-- Flatpickr JS -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  
   <!-- Your custom external stylesheet -->
   <link rel="stylesheet" href="style.css">
 
@@ -159,11 +165,11 @@
       </label>
       <label>
         Start Time (6AM - 9PM):
-        <input type="time" id="booking-start" value="06:00" min="06:00" max="21:00" />
+        <input type="text" id="booking-start" placeholder="Select Start Time" />
       </label>
       <label>
         End Time (6AM - 9PM):
-        <input type="time" id="booking-end" value="07:00" min="06:00" max="21:00" />
+        <input type="text" id="booking-end" placeholder="Select End Time" />
       </label>
       <button type="submit" id="bookVehicleBtn" class="action-button">Book Vehicle</button>
     </form>
@@ -269,6 +275,26 @@
       userInfo.textContent = 'Logged in as: ' + user.email;
       logoutBtn.style.display = 'inline-block';
 
+    flatpickr("#booking-start", {
+      enableTime: true,
+      noCalendar: true,
+      dateFormat: "H:i",
+      time_24hr: true,
+      minTime: "06:00",
+      maxTime: "21:00",
+      defaultDate: "06:00"
+    });
+
+    flatpickr("#booking-end", {
+      enableTime: true,
+      noCalendar: true,
+      dateFormat: "H:i",
+      time_24hr: true,
+      minTime: "06:00",
+      maxTime: "21:00",
+      defaultDate: "07:00"
+    });
+  
       initCalendar();
 
       vehicleSelect.addEventListener('change', async () => {
