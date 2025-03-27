@@ -523,22 +523,72 @@ async function isBookingOverlapping(vehicleName, newStartTS, newEndTS) {
 }
 
   // handleSignOutVehicle
-async function handleSignOutVehicle(paramVehicle=null) {
+async function handleSignOutVehicle(paramVehicle = null) {
   const selectedVehicle = paramVehicle || vehicleSelect.value;
-  if(!selectedVehicle) {
+  if (!selectedVehicle) {
     alert('No vehicle selected.');
     return;
   }
 
   const vehicleRef = ref(db, 'vehicles/' + selectedVehicle);
   const vehicleSnap = await get(vehicleRef);
-  if(vehicleSnap.exists()) {
-    const vehicleData = vehicleSnap.val();
-    if(vehicleData.status === 'signedOut' && vehicleData.CurrentlySignedOutBy !== currentUser.email) {
-      alert(`Vehicle is already signed out by ${vehicleData.CurrentlySignedOutBy}. You can't sign it out now!`);
-      return;
+
+  if (!vehicleSnap.exists()) {
+    alert('Vehicle data not found.');
+    return;
+  }
+
+  const vehicleData = vehicleSnap.val();
+
+  // ⛔️ BLOCK if vehicle keys haven't been handed to the staff yet
+  if (vehicleData.keyStatus !== 'withStaff') {
+    alert('This vehicle cannot be signed out until the keys are handed to you by the front desk.');
+    return;
+  }
+
+  // Prevent sign-out if it's signed out by someone else
+  if (vehicleData.status === 'signedOut' && vehicleData.CurrentlySignedOutBy !== currentUser.email) {
+    alert(`Vehicle is already signed out by ${vehicleData.CurrentlySignedOutBy}. You can't sign it out now!`);
+    return;
+  }
+
+  const now = Date.now();
+  const bookingSnap = await get(ref(db, 'bookings/' + selectedVehicle));
+
+  if (!bookingSnap.exists()) {
+    await signOutVehicleInDB(selectedVehicle);
+    return;
+  }
+
+  const allBookings = bookingSnap.val();
+  let activeBookingFound = false;
+  let belongsToCurrentUser = false;
+
+  for (const bId in allBookings) {
+    const b = allBookings[bId];
+    const startTS = toTimestamp(b.date, b.startTime);
+    const endTS = toTimestamp(b.date, b.endTime);
+
+    if (now >= startTS && now < endTS) {
+      activeBookingFound = true;
+      if (b.userName === currentUser.email) {
+        belongsToCurrentUser = true;
+      }
+      break;
     }
   }
+
+  if (activeBookingFound) {
+    if (belongsToCurrentUser) {
+      await signOutVehicleInDB(selectedVehicle);
+    } else {
+      alert('Vehicle is currently booked by someone else at this time!');
+    }
+  } else {
+    await signOutVehicleInDB(selectedVehicle);
+  }
+}
+
 
   const now = Date.now();
   const bookingSnap = await get(ref(db, 'bookings/' + selectedVehicle));
