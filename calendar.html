@@ -283,25 +283,29 @@
       userInfo.textContent = 'Logged in as: ' + user.email;
       logoutBtn.style.display = 'inline-block';
 
-    flatpickr("#booking-start", {
-      enableTime: true,
-      noCalendar: true,
-      dateFormat: "h:i K", // <--- K gives AM/PM
-      time_24hr: false,
-      minTime: "06:00",
-      maxTime: "21:00",
-      defaultDate: "06:00"
-    });
+    // jQuery Timepicker Setup
+setTimeout(() => {
+  $('#booking-start').timepicker({
+    timeFormat: 'h:mm p',
+    interval: 15,
+    minTime: '6:00am',
+    maxTime: '9:00pm',
+    dynamic: false,
+    dropdown: true,
+    scrollbar: true
+  });
 
-  flatpickr("#booking-end", {
-      enableTime: true,
-      noCalendar: true,
-      dateFormat: "h:i K", // <--- K gives AM/PM
-      time_24hr: false,
-      minTime: "06:00",
-      maxTime: "21:00",
-      defaultDate: "07:00"
-    });
+  $('#booking-end').timepicker({
+    timeFormat: 'h:mm p',
+    interval: 15,
+    minTime: '6:00am',
+    maxTime: '9:00pm',
+    dynamic: false,
+    dropdown: true,
+    scrollbar: true
+  });
+}, 0);
+
   
       initCalendar();
 
