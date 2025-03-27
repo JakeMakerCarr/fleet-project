@@ -20,114 +20,119 @@
   <link rel="stylesheet" href="style.css">
 
   <style>
-    /* BASIC PAGE STYLES */
-    body {
-      margin: 0; padding: 0;
-      font-family: sans-serif;
-    }
-    header {
-      background: #333; color: white;
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 1rem;
-    }
-    #user-info { margin-right: 1rem; }
-    #logout-btn {
-      cursor: pointer; padding: 0.5rem 1rem; border: none;
-      background: #666; color: white; border-radius: 4px;
-    }
-    .container {
-      max-width: 1200px; margin: 1rem auto; background: white; padding: 1rem;
-      border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    h2 { margin-top: 0; }
+  /* BASIC PAGE STYLES */
+  body {
+    margin: 0; padding: 0;
+    font-family: sans-serif;
+  }
+  header {
+    background: #333; color: white;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1rem;
+  }
+  #user-info { margin-right: 1rem; }
+  #logout-btn {
+    cursor: pointer; padding: 0.5rem 1rem; border: none;
+    background: #666; color: white; border-radius: 4px;
+  }
+  .container {
+    max-width: 1200px; margin: 1rem auto; background: white; padding: 1rem;
+    border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  }
+  h2 { margin-top: 0; }
 
-    .vehicle-select-container { margin-bottom: 1rem; }
-    select, input[type="date"], input[type="time"] {
-      font-size: 1rem; padding: 0.3rem; margin: 0.3rem 0;
-    }
-
-    /* FORM LAYOUT */
-    #booking-form {
-      display: flex; flex-wrap: wrap; gap: 1rem;
-      margin-bottom: 1rem; align-items: center;
-    }
-    #booking-form label {
-      display: flex; flex-direction: column;
-      font-weight: bold;
-    }
-    #signOutBtn, #returnVehicleBtn {
-      margin-bottom: 1rem; margin-right: 1rem;
-    }
-
-    /* CALENDAR + DETAILS LAYOUT 
-       By default, stacked (block). We use a media query 
-       to do side-by-side on wider screens. */
-    .calendar-and-details {
-      display: block; /* default stacked layout on narrow screens */
-    }
-    @media (min-width: 800px) {
-      .calendar-and-details {
-        display: flex; /* side by side on wider screens */
-        flex-wrap: nowrap; /* prevent wrapping so the sidebar stays to the right */
-        gap: 1rem;
-      }
-    }
-
-    /* CALENDAR SECTION */
-    .calendar-section {
-      flex: 1; /* fill remaining space on wide screens */
-      min-width: 0; /* allow flex to shrink if necessary */
-    }
-    #vehicle-schedule-heading {
-      width: 100%;
-      text-align: center;
-      font-size: 2rem;
-      font-weight: bold;
-      color: #333;
-      margin: 0 0 1rem 0;
-    }
-    #calendar {
-      margin-top: 2rem;
-    }
-
-    /* SIDEBAR DETAILS SECTION */
-    .details-section {
-      /* On wide screens, it becomes a sidebar. On narrow, it appears below. */
-      flex: 0 0 300px; /* fixed width on wide screens */
-      border-left: 1px solid #ccc;
-      padding-left: 1rem;
-      margin-top: 1rem;
-    }
-    @media (min-width: 800px) {
-      .details-section {
-        margin-top: 0; /* remove extra top margin on wide screens */
-      }
-    }
-
-    /* SELECTED DATE INFO STYLES */
-    #selected-date-info {
-      background: #fafafa;
-      border-radius: 6px;
-      padding: 1rem;
-    }
-    #selected-date-info h3 {
-      font-size: 1.25rem;
-      margin: 0 0 0.5rem;
-    }
-    #date-bookings-list {
-      font-size: 1rem;
-      line-height: 1.4;
-    }
-    #date-bookings-list div {
-      margin-bottom: 0.75rem;
-    }
-    #booking-start, #booking-end {
-      font-size: 1.1rem;
-      padding: 0.5rem;
-      width: 260px;
+  .vehicle-select-container { margin-bottom: 1rem; }
+  select, input[type="date"], input[type="time"] {
+    font-size: 1rem; padding: 0.3rem; margin: 0.3rem 0;
   }
 
-  </style>
+  /* FORM LAYOUT */
+  #booking-form {
+    display: flex; flex-wrap: wrap; gap: 1rem;
+    margin-bottom: 1rem; align-items: center;
+  }
+  #booking-form label {
+    display: flex; flex-direction: column;
+    font-weight: bold;
+  }
+  #signOutBtn, #returnVehicleBtn {
+    margin-bottom: 1rem; margin-right: 1rem;
+  }
+
+  /* CALENDAR + DETAILS LAYOUT */
+  .calendar-and-details {
+    display: block;
+  }
+  @media (min-width: 800px) {
+    .calendar-and-details {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 1rem;
+    }
+  }
+
+  .calendar-section {
+    flex: 1;
+    min-width: 0;
+  }
+  #vehicle-schedule-heading {
+    width: 100%;
+    text-align: center;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
+    margin: 0 0 1rem 0;
+  }
+  #calendar {
+    margin-top: 2rem;
+  }
+
+  .details-section {
+    flex: 0 0 300px;
+    border-left: 1px solid #ccc;
+    padding-left: 1rem;
+    margin-top: 1rem;
+  }
+  @media (min-width: 800px) {
+    .details-section {
+      margin-top: 0;
+    }
+  }
+
+  #selected-date-info {
+    background: #fafafa;
+    border-radius: 6px;
+    padding: 1rem;
+  }
+  #selected-date-info h3 {
+    font-size: 1.25rem;
+    margin: 0 0 0.5rem;
+  }
+  #date-bookings-list {
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+  #date-bookings-list div {
+    margin-bottom: 0.75rem;
+  }
+
+  #booking-start, #booking-end {
+    font-size: 1.1rem;
+    padding: 0.5rem;
+    width: 260px;
+  }
+
+  /* ✅ jQuery Timepicker dropdown override */
+  .ui-timepicker-wrapper {
+    width: 140px !important;
+    font-size: 1rem;
+    z-index: 9999 !important;
+  }
+  .ui-timepicker-list li {
+    white-space: nowrap;
+    padding: 6px 10px;
+  }
+</style>
 </head>
 <body>
 
