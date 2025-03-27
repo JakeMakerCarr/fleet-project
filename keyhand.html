@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Key Handoff</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      background-color: #5cbde5;
+      background-image: url('skybackgroundmidnightfeather.png');
+      background-repeat: repeat;
+      background-size: 400px;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    #status {
+      font-size: 1.25rem;
+      margin-top: 2rem;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>YFNED Key Handoff</h1>
+  <div id="status">Checking tag...</div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+    import { getDatabase, ref, get, update, push, set } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
+      authDomain: "yfned-fleet-nfc.firebaseapp.com",
+      databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
+      projectId: "yfned-fleet-nfc",
+      storageBucket: "yfned-fleet-nfc.appspot.com",
+      messagingSenderId: "482363667898",
+      appId: "1:482363667898:web:4b0364e891a221e9631983"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const statusDiv = document.getElementById('status');
+    const params = new URLSearchParams(window.location.search);
+    const vehicle = decodeURIComponent(params.get('vehicle') || '');
+
+    if (!vehicle) {
+      statusDiv.textContent = 'Error: No vehicle name in URL.';
+      throw new Error('Missing vehicle');
+    }
+
+    async function flipKeyStatus() {
+      const vehicleRef = ref(db, 'vehicles/' + vehicle);
+      const snap = await get(vehicleRef);
+
+      if (!snap.exists()) {
+        statusDiv.textContent = 'Vehicle not found in database.';
+        return;
+      }
+
+      const data = snap.val();
+      const currentStatus = data.keyStatus || 'atFrontDesk';
+      const newStatus = currentStatus === 'atFrontDesk' ? 'withStaff' : 'atFrontDesk';
+
+      await update(vehicleRef, { keyStatus: newStatus });
+
+      const logRef = push(ref(db, `vehicleLogs/${vehicle}`));
+      await set(logRef, {
+        action: `keyStatus changed to ${newStatus}`,
+        timestamp: Date.now()
+      });
+
+      statusDiv.textContent = `✅ Key status for "${vehicle}" changed to: ${newStatus}`;
+    }
+
+    flipKeyStatus();
+  </script>
+</body>
+</html>
