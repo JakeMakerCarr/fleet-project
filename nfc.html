@@ -116,22 +116,40 @@
     }
   }
 
-  async function signOutVehicle(vehicleName) {
-    await update(ref(db, 'vehicles/' + vehicleName), {
-      status: 'signedOut',
-      CurrentlySignedOutBy: currentUser.email
-    });
+ async function signOutVehicle(vehicleName) {
+  const vehicleRef = ref(db, 'vehicles/' + vehicleName);
+  const snap = await get(vehicleRef);
 
-    const logRef = push(ref(db, `vehicleLogs/${vehicleName}`));
-    await set(logRef, {
-      userEmail: currentUser.email,
-      action: 'signedOut',
-      timestamp: Date.now()
-    });
-
-    messageEl.textContent = `✅ Signed out ${vehicleName}.`;
+  if (!snap.exists()) {
+    messageEl.textContent = 'Vehicle not found in database.';
     actionBtn.style.display = 'none';
+    return;
   }
+
+  const vehicleData = snap.val();
+
+  if (vehicleData.keyStatus !== 'withStaff') {
+    messageEl.textContent = '❌ Cannot sign out vehicle until keys are handed over by front desk.';
+    actionBtn.style.display = 'none';
+    return;
+  }
+
+  await update(vehicleRef, {
+    status: 'signedOut',
+    CurrentlySignedOutBy: currentUser.email
+  });
+
+  const logRef = push(ref(db, `vehicleLogs/${vehicleName}`));
+  await set(logRef, {
+    userEmail: currentUser.email,
+    action: 'signedOut',
+    timestamp: Date.now()
+  });
+
+  messageEl.textContent = `✅ Signed out ${vehicleName}.`;
+  actionBtn.style.display = 'none';
+}
+
 
   async function returnVehicle(vehicleName) {
     await update(ref(db, 'vehicles/' + vehicleName), {
