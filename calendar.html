@@ -618,31 +618,30 @@ async function handleSignOutVehicle(paramVehicle = null) {
   let activeBookingFound = false;
   let belongsToCurrentUser = false;
 
-  for(const bId in allBookings) {
+  for (const bId in allBookings) {
     const b = allBookings[bId];
-    const startTS = toTimestamp(b.date, b.startTime);
-    const endTS = toTimestamp(b.date, b.endTime);
+    const startTS = new Date(b.startTimeISO).getTime();
+    const endTS = new Date(b.endTimeISO).getTime();
 
-    if(now >= startTS && now < endTS) {
+    if (now >= startTS && now < endTS) {
       activeBookingFound = true;
-      if(b.userName === currentUser.email) {
+      if (b.userName === currentUser.email) {
         belongsToCurrentUser = true;
       }
       break;
     }
   }
 
-  if(activeBookingFound) {
-    if(belongsToCurrentUser) {
+  if (activeBookingFound) {
+    if (belongsToCurrentUser) {
       await signOutVehicleInDB(selectedVehicle);
     } else {
-      alert('Vehicle is currently booked by someone else at this time!');
+      alert('⛔ This vehicle is currently booked by someone else at this time!');
     }
   } else {
     await signOutVehicleInDB(selectedVehicle);
   }
 }
-
 
   // handleReturnVehicle
   async function handleReturnVehicle(paramVehicle=null) {
