@@ -501,7 +501,27 @@ function toTimestamp(dateStr, timeStr) {
   const localDate = new Date(year, month - 1, day, hours, minutes, 0);
   return localDate.getTime();
 }
+  
+// Check for overlapping bookings
+async function isBookingOverlapping(vehicleName, newStart, newEnd) {
+  const bookingsRef = ref(db, 'bookings/' + vehicleName);
+  const snap = await get(bookingsRef);
 
+  if (!snap.exists()) return false;
+
+  const bookings = snap.val();
+  for (const key in bookings) {
+    const b = bookings[key];
+    const existingStart = new Date(b.startTimeISO).getTime();
+    const existingEnd = new Date(b.endTimeISO).getTime();
+
+    const overlap = newStart < existingEnd && newEnd > existingStart;
+    if (overlap) return true;
+  }
+
+  return false;
+}
+  
 async function handleBooking() {
   const selectedVehicle = vehicleSelect.value;
   if (!selectedVehicle) {
