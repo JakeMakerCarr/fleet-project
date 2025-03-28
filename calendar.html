@@ -532,7 +532,7 @@ async function isBookingOverlapping(vehicleName, newStartTS, newEndTS) {
   // handleBooking(...)
   async function handleBooking() {
   const selectedVehicle = vehicleSelect.value;
-  if(!selectedVehicle) {
+  if (!selectedVehicle) {
     alert('No vehicle selected for booking.');
     return;
   }
@@ -541,8 +541,16 @@ async function isBookingOverlapping(vehicleName, newStartTS, newEndTS) {
   const startVal = bookingStartInput.value;
   const endVal = bookingEndInput.value;
 
-  if(!dateVal || !startVal || !endVal) {
+  if (!dateVal || !startVal || !endVal) {
     alert('Please provide date, start time, and end time.');
+    return;
+  }
+
+  // ⛔️ Block weekends (0 = Sunday, 6 = Saturday)
+  const dateObj = new Date(dateVal);
+  const dayOfWeek = dateObj.getDay();
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    alert('Bookings are only allowed Monday to Friday.');
     return;
   }
 
@@ -562,8 +570,10 @@ async function isBookingOverlapping(vehicleName, newStartTS, newEndTS) {
   }
 
   const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
-  const startTimeISO = new Date(startTS).toISOString();
-  const endTimeISO = new Date(endTS).toISOString();
+
+  // ✅ Use local time format instead of toISOString to avoid timezone shifting
+  const startTimeISO = new Date(startTS).toLocaleString('sv-SE'); // YYYY-MM-DD HH:mm:ss
+  const endTimeISO = new Date(endTS).toLocaleString('sv-SE');
 
   await set(bookingRef, {
     userName: currentUser.email,
@@ -577,7 +587,7 @@ async function isBookingOverlapping(vehicleName, newStartTS, newEndTS) {
   alert('Booking created!');
   calendar.refetchEvents();
 }
-
+  
   // handleSignOutVehicle
 async function handleSignOutVehicle(paramVehicle = null) {
   const selectedVehicle = paramVehicle || vehicleSelect.value;
