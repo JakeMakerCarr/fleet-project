@@ -681,24 +681,24 @@ async function handleSignOutVehicle(paramVehicle = null) {
   }
 
   // NFC flow
-  async function handleNfcFlow(nfcVeh) {
-    alert(`NFC tap detected for ${nfcVeh}. Checking vehicle status...`);
-    const vehicleRef = ref(db, 'vehicles/' + nfcVeh);
-    const vehicleSnap = await get(vehicleRef);
-    if(vehicleSnap.exists()) {
-      const vehData = vehicleSnap.val();
-      if(vehData.status === 'signedOut' && vehData.CurrentlySignedOutBy === currentUser.email) {
-        alert(`You're returning ${nfcVeh} via NFC tap.`);
-        await handleReturnVehicle(nfcVeh);
-      } else {
-        alert(`Attempting to sign out ${nfcVeh} via NFC tap.`);
-        await handleSignOutVehicle(nfcVeh);
-      }
+async function handleNfcFlow(nfcVeh) {
+  alert(`NFC tap detected for ${nfcVeh}. Checking vehicle status...`);
+  const vehicleRef = ref(db, 'vehicles/' + nfcVeh);
+  const vehicleSnap = await get(vehicleRef);
+
+  if (vehicleSnap.exists()) {
+    const vehData = vehicleSnap.val();
+    if (vehData.status === 'signedOut' && vehData.CurrentlySignedOutBy === currentUser.email) {
+      alert(`You're returning ${nfcVeh} via NFC tap.`);
+      await handleReturnVehicle(nfcVeh);
     } else {
-      alert(`${nfcVeh} not found in the DB. Signing out anyway?`);
-      await signOutVehicleInDB(nfcVeh);
+      alert(`Attempting to sign out ${nfcVeh} via NFC tap.`);
+      await handleSignOutVehicle(nfcVeh);  // ✅ This now includes booking logic!
     }
+  } else {
+    alert(`${nfcVeh} not found in the DB. Sign-out blocked.`);
   }
+}
 
   // Actually sign out in DB
   async function signOutVehicleInDB(vehicleName) {
