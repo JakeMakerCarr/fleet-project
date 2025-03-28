@@ -518,7 +518,6 @@ async function handleBooking() {
     return;
   }
 
-  // 🛑 Block weekends
   const dateObj = new Date(dateVal + "T00:00:00");
   const dayOfWeek = dateObj.getDay();
   if (dayOfWeek === 0 || dayOfWeek === 6) {
@@ -534,7 +533,6 @@ async function handleBooking() {
     return;
   }
 
-  // Conflict check
   const conflict = await isBookingOverlapping(selectedVehicle, startTS, endTS);
   if (conflict) {
     alert('That time range is already booked for this vehicle!');
@@ -542,8 +540,6 @@ async function handleBooking() {
   }
 
   const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
-
-  // 🟢 Store ISO timestamps for Firebase but using local times
   const startTimeISO = new Date(startTS).toISOString();
   const endTimeISO = new Date(endTS).toISOString();
 
@@ -559,48 +555,6 @@ async function handleBooking() {
   alert('Booking created!');
   calendar.refetchEvents();
 }
-  // Parse time strings (format: "h:mm AM/PM")
-  function parseTimeTo24h(timeStr) {
-    const [time, meridian] = timeStr.split(' ');
-    let [hours, minutes] = time.split(':').map(Number);
-    if (meridian === 'PM' && hours !== 12) hours += 12;
-    if (meridian === 'AM' && hours === 12) hours = 0;
-    return { hours, minutes };
-  }
-
-  const { hours: startH, minutes: startM } = parseTimeTo24h(startVal);
-  const { hours: endH, minutes: endM } = parseTimeTo24h(endVal);
-
-  // Create local datetime objects
-  const startDate = new Date(year, month - 1, day, startH, startM);
-  const endDate = new Date(year, month - 1, day, endH, endM);
-
-  if (endDate <= startDate) {
-    alert('End time must be after start time!');
-    return;
-  }
-
-  const conflict = await isBookingOverlapping(selectedVehicle, startDate.getTime(), endDate.getTime());
-  if (conflict) {
-    alert('That time range is already booked for this vehicle!');
-    return;
-  }
-
-  const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
-
-  await set(bookingRef, {
-    userName: currentUser.email,
-    date: dateVal,
-    startTime: startVal,
-    endTime: endVal,
-    startTimeISO: startDate.toISOString(),
-    endTimeISO: endDate.toISOString()
-  });
-
-  alert('Booking created!');
-  calendar.refetchEvents();
-}
-
   
   // handleSignOutVehicle
 async function handleSignOutVehicle(paramVehicle = null) {
