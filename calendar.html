@@ -606,7 +606,16 @@ async function handleSignOutVehicle(paramVehicle = null) {
     return;
   }
 
-  const now = Date.now();
+  const now = new Date();
+const localNowTS = new Date(
+  now.getFullYear(),
+  now.getMonth(),
+  now.getDate(),
+  now.getHours(),
+  now.getMinutes(),
+  now.getSeconds()
+).getTime();
+
   const bookingSnap = await get(ref(db, 'bookings/' + selectedVehicle));
 
   if (!bookingSnap.exists()) {
@@ -623,7 +632,7 @@ async function handleSignOutVehicle(paramVehicle = null) {
     const startTS = new Date(b.startTimeISO).getTime();
     const endTS = new Date(b.endTimeISO).getTime();
 
-    if (now >= startTS && now < endTS) {
+    if(localNowTS >= startTS && localNowTS < endTS) {
       activeBookingFound = true;
       if (b.userName === currentUser.email) {
         belongsToCurrentUser = true;
