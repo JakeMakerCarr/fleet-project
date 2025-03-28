@@ -58,29 +58,38 @@
       throw new Error('Missing vehicle');
     }
 
-    async function flipKeyStatus() {
-      const vehicleRef = ref(db, 'vehicles/' + vehicle);
-      const snap = await get(vehicleRef);
+async function flipKeyStatus() {
+  try {
+    console.log('Attempting to read:', vehicle);
+    const vehicleRef = ref(db, 'vehicles/' + vehicle);
+    const snap = await get(vehicleRef);
 
-      if (!snap.exists()) {
-        statusDiv.textContent = 'Vehicle not found in database.';
-        return;
-      }
-
-      const data = snap.val();
-      const currentStatus = data.keyStatus || 'atFrontDesk';
-      const newStatus = currentStatus === 'atFrontDesk' ? 'withStaff' : 'atFrontDesk';
-
-      await update(vehicleRef, { keyStatus: newStatus });
-
-      const logRef = push(ref(db, `vehicleLogs/${vehicle}`));
-      await set(logRef, {
-        action: `keyStatus changed to ${newStatus}`,
-        timestamp: Date.now()
-      });
-
-      statusDiv.textContent = `✅ Key status for "${vehicle}" changed to: ${newStatus}`;
+    if (!snap.exists()) {
+      console.error('Vehicle not found');
+      statusDiv.textContent = 'Vehicle not found in database.';
+      return;
     }
+
+    const data = snap.val();
+    const currentStatus = data.keyStatus || 'atFrontDesk';
+    const newStatus = currentStatus === 'atFrontDesk' ? 'withStaff' : 'atFrontDesk';
+
+    console.log(`Flipping keyStatus: ${currentStatus} → ${newStatus}`);
+
+    await update(vehicleRef, { keyStatus: newStatus });
+
+    const logRef = push(ref(db, `vehicleLogs/${vehicle}`));
+    await set(logRef, {
+      action: `keyStatus changed to ${newStatus}`,
+      timestamp: Date.now()
+    });
+
+    statusDiv.textContent = `✅ Key status for "${vehicle}" changed to: ${newStatus}`;
+  } catch (error) {
+    console.error('Error flipping key status:', error);
+    statusDiv.textContent = 'Error flipping key status. Check console.';
+  }
+}
 
     flipKeyStatus();
   </script>
