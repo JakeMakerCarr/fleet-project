@@ -76,7 +76,7 @@ async function flipKeyStatus() {
 
     console.log(`Flipping keyStatus: ${currentStatus} → ${newStatus}`);
 
-    await update(vehicleRef, { keyStatus: newStatus });
+    await set(ref(db, 'vehicles/' + vehicle + '/keyStatus'), newStatus);
 
     const logRef = push(ref(db, `vehicleLogs/${vehicle}`));
     await set(logRef, {
