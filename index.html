@@ -108,14 +108,14 @@
   }
 
       // Get role and redirect
-      const roleSnap = await get(child(ref(db), users/${user.uid}/role));
-      const role = roleSnap.exists() ? roleSnap.val() : 'staff';
+const roleSnap = await get(child(ref(db), `users/${user.uid}/role`));
+const role = roleSnap.exists() ? roleSnap.val() : 'staff';
 
-      if (role === 'fleetmaster') {
-        window.location.href = 'fleetmaster.html';
-      } else {
-        window.location.href = 'calendar.html';
-      }
+if (role === 'fleetmaster') {
+  window.location.href = 'fleetmaster.html';
+} else {
+  window.location.href = 'calendar.html';
+}
 
     } catch (err) {
   console.error("Auth Error:", err);
