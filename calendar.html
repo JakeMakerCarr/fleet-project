@@ -546,24 +546,39 @@ async function isBookingOverlapping(vehicleName, newStartTS, newEndTS) {
     return;
   }
 
-  // ⛔️ Block weekends (0 = Sunday, 6 = Saturday)
-  const dateObj = new Date(dateVal);
-  const dayOfWeek = dateObj.getDay();
+  const dateParts = dateVal.split('-');
+  const [year, month, day] = dateParts.map(Number); // month is 1-indexed here
+
+  // Check for weekend
+  const tempDate = new Date(year, month - 1, day);
+  const dayOfWeek = tempDate.getDay();
   if (dayOfWeek === 0 || dayOfWeek === 6) {
     alert('Bookings are only allowed Monday to Friday.');
     return;
   }
 
-  const startTS = toTimestamp(dateVal, startVal);
-  const endTS = toTimestamp(dateVal, endVal);
+  // Parse time strings (format: "h:mm AM/PM")
+  function parseTimeTo24h(timeStr) {
+    const [time, meridian] = timeStr.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    if (meridian === 'PM' && hours !== 12) hours += 12;
+    if (meridian === 'AM' && hours === 12) hours = 0;
+    return { hours, minutes };
+  }
 
-  if (endTS <= startTS) {
+  const { hours: startH, minutes: startM } = parseTimeTo24h(startVal);
+  const { hours: endH, minutes: endM } = parseTimeTo24h(endVal);
+
+  // Create local datetime objects
+  const startDate = new Date(year, month - 1, day, startH, startM);
+  const endDate = new Date(year, month - 1, day, endH, endM);
+
+  if (endDate <= startDate) {
     alert('End time must be after start time!');
     return;
   }
 
-  // Check for booking conflicts
-  const conflict = await isBookingOverlapping(selectedVehicle, startTS, endTS);
+  const conflict = await isBookingOverlapping(selectedVehicle, startDate.getTime(), endDate.getTime());
   if (conflict) {
     alert('That time range is already booked for this vehicle!');
     return;
@@ -571,22 +586,19 @@ async function isBookingOverlapping(vehicleName, newStartTS, newEndTS) {
 
   const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
 
-  // ✅ Use local time format instead of toISOString to avoid timezone shifting
-  const startTimeISO = new Date(startTS).toLocaleString('sv-SE'); // YYYY-MM-DD HH:mm:ss
-  const endTimeISO = new Date(endTS).toLocaleString('sv-SE');
-
   await set(bookingRef, {
     userName: currentUser.email,
     date: dateVal,
     startTime: startVal,
     endTime: endVal,
-    startTimeISO,
-    endTimeISO
+    startTimeISO: startDate.toISOString(),
+    endTimeISO: endDate.toISOString()
   });
 
   alert('Booking created!');
   calendar.refetchEvents();
 }
+
   
   // handleSignOutVehicle
 async function handleSignOutVehicle(paramVehicle = null) {
