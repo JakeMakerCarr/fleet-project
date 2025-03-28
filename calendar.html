@@ -378,44 +378,41 @@ function initCalendar() {
   calendar.render();
 }
 
-
   // Fetch events from /bookings/{vehicleName}
-  async function fetchVehicleBookings(info, successCallback, failureCallback) {
-    try {
-      const selectedVehicle = vehicleSelect.value;
-      if(!selectedVehicle) {
-        successCallback([]);
-        return;
-      }
-
-      const snap = await get(ref(db, 'bookings/' + selectedVehicle));
-      if(!snap.exists()) {
-        successCallback([]);
-        return;
-      }
-
-      const data = snap.val();
-      const events = Object.keys(data).map(bookingId => {
-        const b = data[bookingId];
-        return {
-          // We'll store the push key as "id" so we know how to remove it
-          id: bookingId,
-          // e.g. "06:00 Booked by: user"
-          title: `${b.startTime}-${b.endTime}`,
-          start: b.startTimeISO,
-          end: b.endTimeISO,
-          // We'll keep track of the booking creator email in extendedProps
-          extendedProps: {
-            creatorEmail: b.userName // or rename it to b.ownerEmail if you prefer
-          }
-        };
-      });
-      successCallback(events);
-    } catch(err) {
-      console.error(err);
-      failureCallback(err);
+  // Fetch events from /bookings/{vehicleName}
+async function fetchVehicleBookings(info, successCallback, failureCallback) {
+  try {
+    const selectedVehicle = vehicleSelect.value;
+    if (!selectedVehicle) {
+      successCallback([]);
+      return;
     }
+
+    const snap = await get(ref(db, 'bookings/' + selectedVehicle));
+    if (!snap.exists()) {
+      successCallback([]);
+      return;
+    }
+    const data = snap.val();
+    const events = Object.keys(data).map(bookingId => {
+      const b = data[bookingId];
+      return {
+        id: bookingId,
+        title: `${b.startTime}-${b.endTime}`,
+        start: new Date(b.startTimeISO), // ✅ Patch 3 inserted here
+        end: new Date(b.endTimeISO),     // ✅ Patch 3 inserted here
+        extendedProps: {
+          creatorEmail: b.userName
+        }
+      };
+    });
+
+    successCallback(events);
+  } catch (err) {
+    console.error(err);
+    failureCallback(err);
   }
+}
 
   // DAY-BASED approach: match events if they overlap the 24h block of clickedDate
   function getEventsForDate(clickedDate) {
@@ -493,44 +490,19 @@ function initCalendar() {
 
   // Convert date/time to timestamp
 function toTimestamp(dateStr, timeStr) {
-  const date = new Date(dateStr);
+  const [year, month, day] = dateStr.split('-').map(Number);
   const [time, modifier] = timeStr.split(' ');
   let [hours, minutes] = time.split(':').map(Number);
 
-  if (modifier === 'PM' && hours !== 12) {
-    hours += 12;
-  }
-  if (modifier === 'AM' && hours === 12) {
-    hours = 0;
-  }
+  if (modifier === 'PM' && hours !== 12) hours += 12;
+  if (modifier === 'AM' && hours === 12) hours = 0;
 
-  date.setHours(hours, minutes, 0, 0);
-  return date.getTime();
+  // 🟢 Creates a local time Date object
+  const localDate = new Date(year, month - 1, day, hours, minutes, 0);
+  return localDate.getTime();
 }
 
-
-  // Check for booking conflicts
-async function isBookingOverlapping(vehicleName, newStartTS, newEndTS) {
-  const snap = await get(ref(db, 'bookings/' + vehicleName));
-  if (!snap.exists()) return false;
-
-  const bookings = snap.val();
-  for (const id in bookings) {
-    const b = bookings[id];
-    const existingStart = new Date(b.startTimeISO).getTime();
-    const existingEnd = new Date(b.endTimeISO).getTime();
-
-    // Check for time overlap
-    if (newStartTS < existingEnd && newEndTS > existingStart) {
-      return true;
-    }
-  }
-  return false;
-}
-
-  
-  // handleBooking(...)
-  async function handleBooking() {
+async function handleBooking() {
   const selectedVehicle = vehicleSelect.value;
   if (!selectedVehicle) {
     alert('No vehicle selected for booking.');
@@ -546,17 +518,47 @@ async function isBookingOverlapping(vehicleName, newStartTS, newEndTS) {
     return;
   }
 
-  const dateParts = dateVal.split('-');
-  const [year, month, day] = dateParts.map(Number); // month is 1-indexed here
-
-  // Check for weekend
-  const tempDate = new Date(year, month - 1, day);
-  const dayOfWeek = tempDate.getDay();
+  // 🛑 Block weekends
+  const dateObj = new Date(dateVal + "T00:00:00");
+  const dayOfWeek = dateObj.getDay();
   if (dayOfWeek === 0 || dayOfWeek === 6) {
     alert('Bookings are only allowed Monday to Friday.');
     return;
   }
 
+  const startTS = toTimestamp(dateVal, startVal);
+  const endTS = toTimestamp(dateVal, endVal);
+
+  if (endTS <= startTS) {
+    alert('End time must be after start time!');
+    return;
+  }
+
+  // Conflict check
+  const conflict = await isBookingOverlapping(selectedVehicle, startTS, endTS);
+  if (conflict) {
+    alert('That time range is already booked for this vehicle!');
+    return;
+  }
+
+  const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
+
+  // 🟢 Store ISO timestamps for Firebase but using local times
+  const startTimeISO = new Date(startTS).toISOString();
+  const endTimeISO = new Date(endTS).toISOString();
+
+  await set(bookingRef, {
+    userName: currentUser.email,
+    date: dateVal,
+    startTime: startVal,
+    endTime: endVal,
+    startTimeISO,
+    endTimeISO
+  });
+
+  alert('Booking created!');
+  calendar.refetchEvents();
+}
   // Parse time strings (format: "h:mm AM/PM")
   function parseTimeTo24h(timeStr) {
     const [time, meridian] = timeStr.split(' ');
