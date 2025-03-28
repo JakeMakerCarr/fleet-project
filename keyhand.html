@@ -85,10 +85,10 @@ async function flipKeyStatus() {
     });
 
     statusDiv.textContent = `✅ Key status for "${vehicle}" changed to: ${newStatus}`;
-  } catch (error) {
-    console.error('Error flipping key status:', error);
-    statusDiv.textContent = 'Error flipping key status. Check console.';
+    } catch (error) {
+    statusDiv.textContent = '❌ Error: ' + (error.message || error);
   }
+
 }
 
     flipKeyStatus();
