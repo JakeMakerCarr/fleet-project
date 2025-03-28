@@ -92,22 +92,23 @@
     }
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-      const user = userCredential.user;
+  const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+  const user = userCredential.user;
+  console.log("Signed in:", user);
 
-      const userRef = ref(db, 'users/' + user.uid);
-      const userSnap = await get(userRef);
+  const userRef = ref(db, 'users/' + user.uid);
+  const userSnap = await get(userRef);
+  console.log("User snapshot:", userSnap.exists());
 
-      // If user doesn't exist in DB, create them with default role "staff"
-      if (!userSnap.exists()) {
-        await set(userRef, {
-          email: user.email,
-          role: 'staff'
-        });
-      }
+  if (!userSnap.exists()) {
+    await set(userRef, {
+      email: user.email,
+      role: 'staff'
+    });
+  }
 
       // Get role and redirect
-      const roleSnap = await get(child(ref(db), `users/${user.uid}/role`));
+      const roleSnap = await get(child(ref(db), users/${user.uid}/role));
       const role = roleSnap.exists() ? roleSnap.val() : 'staff';
 
       if (role === 'fleetmaster') {
@@ -117,8 +118,9 @@
       }
 
     } catch (err) {
-      msgDiv.textContent = 'Login failed: ' + err.message;
-    }
+  console.error("Auth Error:", err);
+  msgDiv.textContent = 'Login failed: ' + err.message;
+}
   });
 </script>
 
