@@ -34,7 +34,7 @@
     }
 
     .container {
-      max-width: 900px;
+      max-width: 1000px;
       margin: 2rem auto;
       background: white;
       padding: 2rem;
@@ -76,6 +76,16 @@
       background-color: #2ecc71;
       color: white;
     }
+
+    .available {
+      background-color: #3498db;
+      color: white;
+    }
+
+    .signedOut {
+      background-color: #e74c3c;
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -91,7 +101,8 @@
     <thead>
       <tr>
         <th>Vehicle Name</th>
-        <th>Toggle</th>
+        <th>Key Toggle</th>
+        <th>Status Toggle</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -132,25 +143,47 @@
         const vehicles = snap.val();
         Object.keys(vehicles).forEach(name => {
           const keyStatus = vehicles[name].keyStatus || 'atFrontDesk';
+          const vehicleStatus = vehicles[name].status || 'available';
+
           const row = document.createElement('tr');
 
+          // Vehicle name
           const nameCell = document.createElement('td');
           nameCell.textContent = name;
+          row.appendChild(nameCell);
 
-          const toggleCell = document.createElement('td');
-          const toggleBtn = document.createElement('button');
-          toggleBtn.textContent = keyStatus === 'atFrontDesk' ? 'Pass to Staff' : 'Return to Front Desk';
-          toggleBtn.className = 'toggle-btn ' + (keyStatus === 'atFrontDesk' ? 'atFrontDesk' : 'withStaff');
-
-          toggleBtn.onclick = async () => {
+          // Key toggle
+          const keyCell = document.createElement('td');
+          const keyBtn = document.createElement('button');
+          keyBtn.textContent = keyStatus === 'atFrontDesk' ? 'Pass to Staff' : 'Return to Front Desk';
+          keyBtn.className = 'toggle-btn ' + (keyStatus === 'atFrontDesk' ? 'atFrontDesk' : 'withStaff');
+          keyBtn.onclick = async () => {
             const newStatus = keyStatus === 'atFrontDesk' ? 'withStaff' : 'atFrontDesk';
             await update(ref(db, 'vehicles/' + name), { keyStatus: newStatus });
             location.reload();
           };
+          keyCell.appendChild(keyBtn);
+          row.appendChild(keyCell);
 
-          toggleCell.appendChild(toggleBtn);
-          row.appendChild(nameCell);
-          row.appendChild(toggleCell);
+          // Vehicle status toggle
+          const statusCell = document.createElement('td');
+          const statusBtn = document.createElement('button');
+          statusBtn.textContent = vehicleStatus === 'available' ? 'Mark as Signed Out' : 'Mark as Available';
+          statusBtn.className = 'toggle-btn ' + (vehicleStatus === 'available' ? 'available' : 'signedOut');
+          statusBtn.onclick = async () => {
+            const newStatus = vehicleStatus === 'available' ? 'signedOut' : 'available';
+            const updates = {
+              status: newStatus
+            };
+            if (newStatus === 'available') {
+              updates.CurrentlySignedOutBy = null;
+            }
+            await update(ref(db, 'vehicles/' + name), updates);
+            location.reload();
+          };
+          statusCell.appendChild(statusBtn);
+          row.appendChild(statusCell);
+
           tableBody.appendChild(row);
         });
       }
