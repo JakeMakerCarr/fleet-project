@@ -116,72 +116,69 @@
     }
   }
 
- async function signOutVehicle(vehicleName) {
-  const vehicleRef = ref(db, 'vehicles/' + vehicleName);
-  const snap = await get(vehicleRef);
+  async function signOutVehicle(vehicleName) {
+    const vehicleRef = ref(db, 'vehicles/' + vehicleName);
+    const snap = await get(vehicleRef);
 
-  if (!snap.exists()) {
-    messageEl.textContent = 'Vehicle not found in database.';
-    actionBtn.style.display = 'none';
-    return;
-  }
+    if (!snap.exists()) {
+      messageEl.textContent = 'Vehicle not found in database.';
+      actionBtn.style.display = 'none';
+      return;
+    }
 
-  const vehicleData = snap.val();
+    const vehicleData = snap.val();
 
-  if (vehicleData.keyStatus !== 'withStaff') {
-    messageEl.textContent = '❌ Cannot sign out vehicle until keys are handed over by front desk.';
-    actionBtn.style.display = 'none';
-    return;
-  }
+    if (vehicleData.keyStatus !== 'withStaff') {
+      messageEl.textContent = '❌ Cannot sign out vehicle until keys are handed over by front desk.';
+      actionBtn.style.display = 'none';
+      return;
+    }
 
-  // 🕒 Get current local time
-  const now = new Date();
-  const localNowTS = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    now.getHours(),
-    now.getMinutes(),
-    now.getSeconds()
-  ).getTime();
+    const now = new Date();
+    const localNowTS = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      now.getHours(),
+      now.getMinutes(),
+      now.getSeconds()
+    ).getTime();
 
-  // 🔍 Check for booking conflicts
-  const bookingSnap = await get(ref(db, 'bookings/' + vehicleName));
-  if (bookingSnap.exists()) {
-    const allBookings = bookingSnap.val();
-    for (const bId in allBookings) {
-      const b = allBookings[bId];
-      const startTS = new Date(b.startTimeISO).getTime();
-      const endTS = new Date(b.endTimeISO).getTime();
+    const bookingSnap = await get(ref(db, 'bookings/' + vehicleName));
+    if (bookingSnap.exists()) {
+      const allBookings = bookingSnap.val();
+      for (const bId in allBookings) {
+        const b = allBookings[bId];
+        const startTS = new Date(b.startTimeISO).getTime();
+        const endTS = new Date(b.endTimeISO).getTime();
 
-      if (localNowTS >= startTS && localNowTS < endTS) {
-        if (b.userName !== currentUser.email) {
-          messageEl.textContent = `⛔ Vehicle is currently booked by ${b.userName}. You can't sign it out.`;
-          actionBtn.style.display = 'none';
-          return;
+        if (localNowTS >= startTS && localNowTS < endTS) {
+          if (b.userName !== currentUser.email) {
+            messageEl.textContent = `⛔ Vehicle is currently booked by ${b.userName}. You can't sign it out.`;
+            actionBtn.style.display = 'none';
+            return;
+          }
+          break;
         }
-        break;
       }
     }
+
+    await update(vehicleRef, {
+      status: 'signedOut',
+      CurrentlySignedOutBy: currentUser.email,
+      alarm: false // ✅ disable alarm on sign out
+    });
+
+    const logRef = push(ref(db, `vehicleLogs/${vehicleName}`));
+    await set(logRef, {
+      userEmail: currentUser.email,
+      action: 'signedOut',
+      timestamp: Date.now()
+    });
+
+    messageEl.textContent = `✅ Signed out ${vehicleName}.`;
+    actionBtn.style.display = 'none';
   }
-
-  // ✅ Proceed with sign out
-  await update(vehicleRef, {
-    status: 'signedOut',
-    CurrentlySignedOutBy: currentUser.email
-  });
-
-  const logRef = push(ref(db, `vehicleLogs/${vehicleName}`));
-  await set(logRef, {
-    userEmail: currentUser.email,
-    action: 'signedOut',
-    timestamp: Date.now()
-  });
-
-  messageEl.textContent = `✅ Signed out ${vehicleName}.`;
-  actionBtn.style.display = 'none';
-}
-
 
   async function returnVehicle(vehicleName) {
     await update(ref(db, 'vehicles/' + vehicleName), {
