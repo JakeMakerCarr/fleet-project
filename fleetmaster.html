@@ -31,7 +31,7 @@
       cursor: pointer;
     }
     .container {
-      max-width: 1100px;
+      max-width: 1000px;
       margin: 2rem auto;
       background: white;
       padding: 2rem;
@@ -61,14 +61,11 @@
     }
     .atFrontDesk { background-color: #f5a623; color: white; }
     .withStaff { background-color: #2ecc71; color: white; }
-    .available { background-color: #3498db; color: white; }
-    .signedOut { background-color: #9b59b6; color: white; }
-    .alarmed { background-color: #ff4d4d !important; }
-    .alarm-icon {
-      color: red;
-      font-weight: bold;
-      margin-right: 0.5rem;
-    }
+    .signedOut { background-color: #3498db; color: white; }
+    .available { background-color: #bdc3c7; color: black; }
+    .alarm { background-color: #e74c3c; color: white; }
+    .alarm-icon { font-size: 1.2rem; margin-right: 0.5rem; color: red; }
+    .alarm-row { background-color: #ffdddd !important; }
   </style>
 </head>
 <body>
@@ -98,7 +95,7 @@
   import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
   import { getDatabase, ref, get, update } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
 
-  const firebaseConfig = {
+  const app = initializeApp({
     apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
     authDomain: "yfned-fleet-nfc.firebaseapp.com",
     databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
@@ -106,9 +103,8 @@
     storageBucket: "yfned-fleet-nfc.appspot.com",
     messagingSenderId: "482363667898",
     appId: "1:482363667898:web:4b0364e891a221e9631983"
-  };
+  });
 
-  const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getDatabase(app);
 
@@ -118,81 +114,84 @@
   const tableBody = document.querySelector('#vehicle-table tbody');
 
   onAuthStateChanged(auth, async user => {
-    if (!user) {
-      window.location.href = 'index.html';
-    } else {
-      const now = Date.now();
-      const vehiclesRef = ref(db, 'vehicles');
-      const snap = await get(vehiclesRef);
-      if (snap.exists()) {
-        const vehicles = snap.val();
-        Object.entries(vehicles).forEach(([name, data]) => {
-          const keyStatus = data.keyStatus || 'atFrontDesk';
-          const vehStatus = data.status || 'available';
-          const alarmEnabled = data.alarm || false;
-          const logs = data.logs || {};
-          const row = document.createElement('tr');
+    if (!user) return window.location.href = 'index.html';
 
-          const nameCell = document.createElement('td');
-          nameCell.textContent = name;
+    const vehiclesSnap = await get(ref(db, 'vehicles'));
+    if (!vehiclesSnap.exists()) return;
 
-          const keyBtn = document.createElement('button');
-          keyBtn.textContent = keyStatus === 'atFrontDesk' ? 'Pass to Staff' : 'Return to Front Desk';
-          keyBtn.className = 'toggle-btn ' + keyStatus;
-          keyBtn.onclick = async () => {
-            const newStatus = keyStatus === 'atFrontDesk' ? 'withStaff' : 'atFrontDesk';
-            await update(ref(db, 'vehicles/' + name), {
-              keyStatus: newStatus,
-              lastKeyChange: Date.now()
-            });
-            location.reload();
-          };
+    const vehicles = vehiclesSnap.val();
+    const now = Date.now();
 
-          const vehBtn = document.createElement('button');
-          vehBtn.textContent = vehStatus === 'available' ? 'Mark as Signed Out' : 'Mark as Available';
-          vehBtn.className = 'toggle-btn ' + vehStatus;
-          vehBtn.onclick = async () => {
-            const newStatus = vehStatus === 'available' ? 'signedOut' : 'available';
-            await update(ref(db, 'vehicles/' + name), { status: newStatus });
-            location.reload();
-          };
+    Object.entries(vehicles).forEach(([name, data]) => {
+      const keyStatus = data.keyStatus || 'atFrontDesk';
+      const vehicleStatus = data.status || 'available';
+      const lastKeyChange = data.lastKeyChange || 0;
+      const alarmActive = data.alarm === true;
 
-          const alarmBtn = document.createElement('button');
-          alarmBtn.textContent = alarmEnabled ? 'Disable Alarm' : 'Enable Alarm';
-          alarmBtn.className = 'toggle-btn';
-          alarmBtn.onclick = async () => {
-            await update(ref(db, 'vehicles/' + name), { alarm: !alarmEnabled });
-            location.reload();
-          };
+      const elapsedMs = now - lastKeyChange;
+      const overHour = elapsedMs > 3600000;
+      const shouldTriggerAlarm = keyStatus === 'withStaff' && vehicleStatus === 'available' && alarmActive && overHour;
 
-          const keyCell = document.createElement('td');
-          const vehCell = document.createElement('td');
-          const alarmCell = document.createElement('td');
+      const row = document.createElement('tr');
+      if (shouldTriggerAlarm) row.classList.add('alarm-row');
 
-          keyCell.appendChild(keyBtn);
-          vehCell.appendChild(vehBtn);
-          alarmCell.appendChild(alarmBtn);
+      const nameCell = document.createElement('td');
+      nameCell.innerHTML = shouldTriggerAlarm ? '🚨 ' + name : name;
 
-          const lastChange = data.lastKeyChange || 0;
-          const oneHour = 60 * 60 * 1000;
-          const overdue = (keyStatus === 'withStaff' && vehStatus === 'available' && now - lastChange > oneHour && alarmEnabled);
-
-          if (overdue) {
-            row.classList.add('alarmed');
-            const alertIcon = document.createElement('span');
-            alertIcon.textContent = '🚨';
-            alertIcon.className = 'alarm-icon';
-            nameCell.prepend(alertIcon);
-          }
-
-          row.appendChild(nameCell);
-          row.appendChild(keyCell);
-          row.appendChild(vehCell);
-          row.appendChild(alarmCell);
-          tableBody.appendChild(row);
+      // --- Key Status Button ---
+      const keyBtn = document.createElement('button');
+      keyBtn.textContent = keyStatus === 'atFrontDesk' ? 'Pass to Staff' : 'Return to Front Desk';
+      keyBtn.className = 'toggle-btn ' + keyStatus;
+      keyBtn.onclick = async () => {
+        const newStatus = keyStatus === 'atFrontDesk' ? 'withStaff' : 'atFrontDesk';
+        await update(ref(db, 'vehicles/' + name), {
+          keyStatus: newStatus,
+          lastKeyChange: Date.now(),
+          alarm: newStatus === 'withStaff' // auto enable alarm
         });
-      }
-    }
+        location.reload();
+      };
+
+      // --- Vehicle Status Button ---
+      const statusBtn = document.createElement('button');
+      statusBtn.textContent = vehicleStatus === 'available' ? 'Mark as Signed Out' : 'Mark as Available';
+      statusBtn.className = 'toggle-btn ' + (vehicleStatus === 'available' ? 'available' : 'signedOut');
+      statusBtn.onclick = async () => {
+        const newStatus = vehicleStatus === 'available' ? 'signedOut' : 'available';
+        const alarmReset = newStatus === 'signedOut'; // auto disable
+        await update(ref(db, 'vehicles/' + name), {
+          status: newStatus,
+          alarm: alarmReset ? false : alarmActive
+        });
+        location.reload();
+      };
+
+      // --- Alarm Toggle ---
+      const alarmBtn = document.createElement('button');
+      alarmBtn.textContent = alarmActive ? 'Disable Alarm' : 'Enable Alarm';
+      alarmBtn.className = 'toggle-btn alarm';
+      alarmBtn.onclick = async () => {
+        await update(ref(db, 'vehicles/' + name), {
+          alarm: !alarmActive
+        });
+        location.reload();
+      };
+
+      const keyCell = document.createElement('td');
+      const statusCell = document.createElement('td');
+      const alarmCell = document.createElement('td');
+
+      keyCell.appendChild(keyBtn);
+      statusCell.appendChild(statusBtn);
+      alarmCell.appendChild(alarmBtn);
+
+      row.appendChild(nameCell);
+      row.appendChild(keyCell);
+      row.appendChild(statusCell);
+      row.appendChild(alarmCell);
+
+      tableBody.appendChild(row);
+    });
   });
 </script>
 
