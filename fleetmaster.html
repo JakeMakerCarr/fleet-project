@@ -22,13 +22,14 @@
       justify-content: space-between;
       align-items: center;
     }
-    #logout-btn {
+    #logout-btn, #export-btn {
       background: #666;
       color: white;
       border: none;
       padding: 0.5rem 1rem;
       border-radius: 4px;
       cursor: pointer;
+      margin-left: 1rem;
     }
     .container {
       max-width: 1200px;
@@ -71,7 +72,10 @@
 
 <header>
   <div>YFNED Fleetmaster Controls</div>
-  <button id="logout-btn">Logout</button>
+  <div>
+    <button id="export-btn">Export Logs to Excel</button>
+    <button id="logout-btn">Logout</button>
+  </div>
 </header>
 
 <div class="container">
@@ -94,7 +98,7 @@
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
   import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
-  import { getDatabase, ref, get, update } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
+  import { getDatabase, ref, get, update, child } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
 
   const app = initializeApp({
     apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
@@ -111,6 +115,9 @@
 
   const logoutBtn = document.getElementById('logout-btn');
   logoutBtn.addEventListener('click', () => signOut(auth));
+
+  const exportBtn = document.getElementById('export-btn');
+  exportBtn.addEventListener('click', exportLogsToCSV);
 
   const tableBody = document.querySelector('#vehicle-table tbody');
 
@@ -190,28 +197,41 @@
         location.reload();
       };
 
-      const keyCell = document.createElement('td');
-      keyCell.appendChild(keyBtn);
-
-      const vehicleCell = document.createElement('td');
-      vehicleCell.appendChild(vehicleBtn);
-
-      const alarmCell = document.createElement('td');
-      alarmCell.appendChild(alarmBtn);
-
-      const triggerCell = document.createElement('td');
-      triggerCell.appendChild(triggerBtn);
-
+      row.innerHTML = '';
       row.appendChild(nameCell);
-      row.appendChild(keyCell);
+      row.appendChild(Object.assign(document.createElement('td'), { appendChild: () => keyBtn }));
       row.appendChild(heldByCell);
-      row.appendChild(vehicleCell);
-      row.appendChild(alarmCell);
-      row.appendChild(triggerCell);
-
+      row.appendChild(Object.assign(document.createElement('td'), { appendChild: () => vehicleBtn }));
+      row.appendChild(Object.assign(document.createElement('td'), { appendChild: () => alarmBtn }));
+      row.appendChild(Object.assign(document.createElement('td'), { appendChild: () => triggerBtn }));
       tableBody.appendChild(row);
     });
   });
+
+  async function exportLogsToCSV() {
+    const logsSnap = await get(ref(db, 'vehicleLogs'));
+    if (!logsSnap.exists()) {
+      alert('No logs to export.');
+      return;
+    }
+
+    const logs = logsSnap.val();
+    const rows = [["Vehicle", "User Email", "Action", "Timestamp (Yukon Time)"]];
+
+    Object.entries(logs).forEach(([vehicle, logEntries]) => {
+      Object.values(logEntries).forEach(log => {
+        const date = new Date(log.timestamp).toLocaleString('en-CA', { timeZone: 'America/Whitehorse' });
+        rows.push([vehicle, log.userEmail || '', log.action, date]);
+      });
+    });
+
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'fleet_logs.csv';
+    a.click();
+  }
 </script>
 
 </body>
