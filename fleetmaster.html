@@ -213,4 +213,23 @@
     if (!snap.exists()) return alert('No logs to export.');
 
     const logs = snap.val();
-    const rows = [["Vehicle",
+    const rows = [["Vehicle", "User Email", "Action", "Timestamp (Yukon Time)"]];
+
+    Object.entries(logs).forEach(([vehicle, entries]) => {
+      Object.values(entries).forEach(entry => {
+        const time = new Date(entry.timestamp).toLocaleString('en-CA', { timeZone: 'America/Whitehorse' });
+        rows.push([vehicle, entry.userEmail || '', entry.action, time]);
+      });
+    });
+
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'fleet_logs.csv';
+    a.click();
+  }
+</script>
+
+</body>
+</html>
