@@ -140,11 +140,15 @@
       const row = document.createElement('tr');
       if (overdue) row.classList.add('alarm-row');
 
-      // Cells
-      const nameCell = document.createElement('td');
-      nameCell.innerHTML = overdue ? `🚨 ${name}` : name;
+      const createCell = (content) => {
+        const td = document.createElement('td');
+        if (content instanceof HTMLElement) td.appendChild(content);
+        else td.textContent = content;
+        return td;
+      };
 
-      const keyCell = document.createElement('td');
+      const nameCell = createCell(overdue ? `🚨 ${name}` : name);
+
       const keyBtn = document.createElement('button');
       keyBtn.textContent = keyStatus === 'atFrontDesk' ? 'Pass to Staff' : 'Return to Front Desk';
       keyBtn.className = 'toggle-btn ' + keyStatus;
@@ -158,12 +162,7 @@
         });
         location.reload();
       };
-      keyCell.appendChild(keyBtn);
 
-      const heldByCell = document.createElement('td');
-      heldByCell.textContent = keyHeldBy;
-
-      const vehicleCell = document.createElement('td');
       const vehicleBtn = document.createElement('button');
       vehicleBtn.textContent = vehicleStatus === 'available' ? 'Mark as Signed Out' : 'Mark as Available';
       vehicleBtn.className = 'toggle-btn ' + (vehicleStatus === 'available' ? 'available' : 'signedOut');
@@ -175,9 +174,7 @@
         });
         location.reload();
       };
-      vehicleCell.appendChild(vehicleBtn);
 
-      const alarmCell = document.createElement('td');
       const alarmBtn = document.createElement('button');
       alarmBtn.textContent = alarm ? 'Disable Alarm' : 'Enable Alarm';
       alarmBtn.className = 'toggle-btn alarm';
@@ -185,9 +182,7 @@
         await update(ref(db, 'vehicles/' + name), { alarm: !alarm });
         location.reload();
       };
-      alarmCell.appendChild(alarmBtn);
 
-      const triggerCell = document.createElement('td');
       const triggerBtn = document.createElement('button');
       triggerBtn.textContent = '🔔 Trigger';
       triggerBtn.className = 'toggle-btn alarm';
@@ -201,15 +196,14 @@
         });
         location.reload();
       };
-      triggerCell.appendChild(triggerBtn);
 
-      // Append cells
       row.appendChild(nameCell);
-      row.appendChild(keyCell);
-      row.appendChild(heldByCell);
-      row.appendChild(vehicleCell);
-      row.appendChild(alarmCell);
-      row.appendChild(triggerCell);
+      row.appendChild(createCell(keyBtn));
+      row.appendChild(createCell(keyHeldBy));
+      row.appendChild(createCell(vehicleBtn));
+      row.appendChild(createCell(alarmBtn));
+      row.appendChild(createCell(triggerBtn));
+
       tableBody.appendChild(row);
     });
   });
@@ -219,23 +213,4 @@
     if (!snap.exists()) return alert('No logs to export.');
 
     const logs = snap.val();
-    const rows = [["Vehicle", "User Email", "Action", "Timestamp (Yukon Time)"]];
-
-    Object.entries(logs).forEach(([vehicle, entries]) => {
-      Object.values(entries).forEach(entry => {
-        const time = new Date(entry.timestamp).toLocaleString('en-CA', { timeZone: 'America/Whitehorse' });
-        rows.push([vehicle, entry.userEmail || '', entry.action, time]);
-      });
-    });
-
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'fleet_logs.csv';
-    a.click();
-  }
-</script>
-
-</body>
-</html>
+    const rows = [["Vehicle",
