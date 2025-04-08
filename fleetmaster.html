@@ -59,7 +59,7 @@
       cursor: pointer;
       font-weight: bold;
     }
-    .atFrontDesk { background-color: #e0e257; color: black; }
+    .atFrontDesk { background-color: #e0e257; color: white; }
     .withStaff { background-color: #2ecc71; color: black; }
     .signedOut { background-color: #e7bbd2; color: black; }
     .available { background-color: #5cbde5; color: black; }
@@ -129,6 +129,7 @@
       const vehicleStatus = data.status || 'available';
       const lastKeyChange = data.lastKeyChange || 0;
       const alarm = data.alarm === true;
+
       const elapsed = now - lastKeyChange;
       const overdue = elapsed > 3600000 && keyStatus === 'withStaff' && vehicleStatus === 'available' && alarm;
 
@@ -179,26 +180,34 @@
       triggerBtn.textContent = '🔔 Trigger';
       triggerBtn.className = 'toggle-btn alarm';
       triggerBtn.onclick = async () => {
-        await update(ref(db, 'vehicles/' + name), { alarm: true });
+        const oneHourAgo = Date.now() - 3600001;
+        await update(ref(db, 'vehicles/' + name), {
+          alarm: true,
+          lastKeyChange: oneHourAgo,
+          keyStatus: 'withStaff',
+          status: 'available'
+        });
         location.reload();
       };
 
-      const cells = [
-        nameCell,
-        Object.assign(document.createElement('td'), { appendChild: () => keyBtn }),
-        heldByCell,
-        Object.assign(document.createElement('td'), { appendChild: () => vehicleBtn }),
-        Object.assign(document.createElement('td'), { appendChild: () => alarmBtn }),
-        Object.assign(document.createElement('td'), { appendChild: () => triggerBtn })
-      ];
+      const keyCell = document.createElement('td');
+      keyCell.appendChild(keyBtn);
 
-      const rowCells = [nameCell, keyBtn, heldByCell, vehicleBtn, alarmBtn, triggerBtn];
-      rowCells.forEach(c => {
-        const td = document.createElement('td');
-        if (c instanceof HTMLElement) td.appendChild(c);
-        else td.textContent = c;
-        row.appendChild(td);
-      });
+      const vehicleCell = document.createElement('td');
+      vehicleCell.appendChild(vehicleBtn);
+
+      const alarmCell = document.createElement('td');
+      alarmCell.appendChild(alarmBtn);
+
+      const triggerCell = document.createElement('td');
+      triggerCell.appendChild(triggerBtn);
+
+      row.appendChild(nameCell);
+      row.appendChild(keyCell);
+      row.appendChild(heldByCell);
+      row.appendChild(vehicleCell);
+      row.appendChild(alarmCell);
+      row.appendChild(triggerCell);
 
       tableBody.appendChild(row);
     });
