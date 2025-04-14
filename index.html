@@ -25,8 +25,11 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
       text-align: center;
     }
-    h1 {
-      margin-bottom: 1rem;
+    .login-logo {
+      max-width: 300px;
+      height: auto;
+      display: block;
+      margin: 0 auto 1.5rem;
     }
     input {
       display: block;
@@ -50,7 +53,7 @@
 <body>
 
 <div class="login-container">
-  <h1>Fleet Login</h1>
+  <img src="./images/YFNED_fleet_logo_navy.svg" alt="YFNED Fleet Logo" class="login-logo" />
   <input type="email" id="login-email" placeholder="Email" />
   <input type="password" id="login-password" placeholder="Password" />
   <button id="login-btn">Login</button>
