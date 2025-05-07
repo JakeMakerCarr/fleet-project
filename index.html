@@ -42,6 +42,14 @@
       font-size: 1rem;
       cursor: pointer;
     }
+    #forgot-btn {
+      background: none;
+      border: none;
+      color: #007BFF;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-top: 0.5rem;
+    }
     #message {
       margin-top: 1rem;
       color: red;
@@ -51,21 +59,30 @@
 <body>
 
 <div class="login-container">
-  <!-- LOGO IMAGE HERE -->
   <img src="YFNED_fleet_logo_navy.svg" alt="YFNED Logo" class="logo" />
-  
-  <!-- REMOVED <h1>Fleet Login</h1> -->
-  
+
   <input type="email" id="login-email" placeholder="Email" />
   <input type="password" id="login-password" placeholder="Password" />
   <button id="login-btn">Login</button>
+  <button id="forgot-btn">Forgot Password?</button>
+
   <div id="message"></div>
 </div>
 
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
-  import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
-  import { getDatabase, ref, get, set, child } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
+  import {
+    getAuth,
+    signInWithEmailAndPassword,
+    sendPasswordResetEmail
+  } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+  import {
+    getDatabase,
+    ref,
+    get,
+    set,
+    child
+  } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
@@ -83,11 +100,13 @@
   const db = getDatabase(app);
 
   const loginBtn = document.getElementById('login-btn');
+  const forgotBtn = document.getElementById('forgot-btn');
   const emailInput = document.getElementById('login-email');
   const passInput = document.getElementById('login-password');
   const msgDiv = document.getElementById('message');
 
   loginBtn.addEventListener('click', async () => {
+    msgDiv.style.color = 'red';
     msgDiv.textContent = '';
     const email = emailInput.value;
     const pass = passInput.value;
@@ -128,6 +147,26 @@
       }
     } catch (err) {
       msgDiv.textContent = 'Login failed: ' + err.message;
+    }
+  });
+
+  forgotBtn.addEventListener('click', async () => {
+    msgDiv.textContent = '';
+    msgDiv.style.color = 'red';
+    const email = emailInput.value;
+
+    if (!email) {
+      msgDiv.textContent = 'Please enter your email to reset your password.';
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      msgDiv.style.color = 'green';
+      msgDiv.textContent = 'Password reset email sent. Please check your inbox.';
+    } catch (error) {
+      msgDiv.style.color = 'red';
+      msgDiv.textContent = 'Error: ' + error.message;
     }
   });
 </script>
