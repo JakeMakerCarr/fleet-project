@@ -42,6 +42,17 @@
       font-size: 1rem;
       cursor: pointer;
     }
+    .styled-btn {
+      background-color: white;
+      border: 1px solid #333;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      margin-top: 1rem;
+      cursor: pointer;
+    }
+      .styled-btn:hover {
+      background-color: #eee;
+    }
     #forgot-btn {
       background: none;
       border: none;
@@ -64,7 +75,7 @@
   <input type="email" id="login-email" placeholder="Email" />
   <input type="password" id="login-password" placeholder="Password" />
   <button id="login-btn">Login</button>
-  <button id="forgot-btn">Forgot Password?</button>
+  <button id="forgot-btn" class="styled-btn">Forgot Password?</button>
 
   <div id="message"></div>
 </div>
