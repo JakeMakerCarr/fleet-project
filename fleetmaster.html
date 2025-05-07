@@ -147,7 +147,7 @@
         if (overdue) row.classList.add('alarm-row');
 
         const keyBtn = document.createElement('button');
-        keyBtn.textContent = keyStatus === 'atFrontDesk' ? 'Pass to Staff' : 'Return to Front Desk';
+        keyBtn.textContent = keyStatus === 'atFrontDesk' ? 'At The Front Desk' : 'Out With Staff Member';
         keyBtn.className = 'toggle-btn ' + keyStatus;
         keyBtn.onclick = async () => {
           const toStaff = keyStatus === 'atFrontDesk';
@@ -160,7 +160,7 @@
         };
 
         const vehicleBtn = document.createElement('button');
-        vehicleBtn.textContent = vehicleStatus === 'available' ? 'Mark as Signed Out' : 'Mark as Available';
+        vehicleBtn.textContent = vehicleStatus === 'available' ? 'Available' : 'Signed Out by Staff';
         vehicleBtn.className = 'toggle-btn ' + (vehicleStatus === 'available' ? 'available' : 'signedOut');
         vehicleBtn.onclick = async () => {
           const isOut = vehicleStatus === 'available';
