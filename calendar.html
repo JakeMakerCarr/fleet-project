@@ -555,11 +555,10 @@ async function handleBooking() {
     d <= repeatUntilDate;
     d.setDate(d.getDate() + 1)
   ) {
-    const date = new Date(d); // Clone to prevent mutation issues
-    const dayOfWeek = date.getDay();
+    const date = new Date(d); // Clone date to avoid mutation
+    const day = date.getDay();
 
-    // Skip weekends: 0 = Sunday, 6 = Saturday
-    if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+    if (day === 0 || day === 6) continue; // Skip Sundays and Saturdays
 
     const dateStr = date.toISOString().split('T')[0];
     const startTS = toTimestamp(dateStr, startTimeVal);
@@ -572,7 +571,7 @@ async function handleBooking() {
 
     const conflict = await isBookingOverlapping(selectedVehicle, startTS, endTS);
     if (conflict) {
-      alert(`Booking conflict on ${dateStr}. Booking canceled.`);
+      alert(`Conflict detected on ${dateStr}. Booking canceled.`);
       return;
     }
 
@@ -589,7 +588,7 @@ async function handleBooking() {
 
   const user = auth.currentUser;
   if (!user) {
-    alert('Please log in to book a vehicle.');
+    alert('Please log in.');
     return;
   }
 
@@ -610,7 +609,6 @@ async function handleBooking() {
   alert('Booking(s) successful!');
   loadCalendarEvents(selectedVehicle);
 }
-
   
   // handleSignOutVehicle
 async function handleSignOutVehicle(paramVehicle = null) {
