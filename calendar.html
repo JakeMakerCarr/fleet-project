@@ -2,89 +2,46 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Fleet Calendar (YFNED Fleet + NFC One-Sticker Method)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.9.0/main.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YFNED Fleet Calendar</title>
+  <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.css' rel='stylesheet' />
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js'></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.js"></script>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-timepicker/1.13.18/jquery.timepicker.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-timepicker/1.13.18/jquery.timepicker.min.js"></script>
   <style>
-    body { margin: 0; padding: 0; font-family: sans-serif; }
-    header {
-      background: #333; color: white; display: flex; justify-content: space-between;
-      align-items: center; padding: 1rem;
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: url('featherbg.png') no-repeat center center fixed;
+      background-size: cover;
     }
-    #user-info { margin-right: 1rem; }
-    #logout-btn {
-      cursor: pointer; padding: 0.5rem 1rem; border: none;
-      background: #666; color: white; border-radius: 4px;
+    #calendar {
+      max-width: 900px;
+      margin: 20px auto;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
     }
-    .container {
-      max-width: 1200px; margin: 1rem auto; background: white; padding: 1rem;
-      border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    select, input[type="date"], input[type="text"] {
+      margin: 5px;
+      padding: 5px;
     }
-    h2 { margin-top: 0; }
-    .vehicle-select-container { margin-bottom: 1rem; }
-    select, input[type="date"], input[type="time"] {
-      font-size: 1rem; padding: 0.3rem; margin: 0.3rem 0;
+    button {
+      margin: 5px;
+      padding: 10px;
     }
-    #booking-form {
-      display: flex; flex-wrap: wrap; gap: 1rem;
-      margin-bottom: 1rem; align-items: center;
+    #selected-date-events {
+      margin-top: 20px;
+      background: #f9f9f9;
+      padding: 10px;
     }
-    #booking-form label {
-      display: flex; flex-direction: column;
-      font-weight: bold;
-    }
-    #signOutBtn, #returnVehicleBtn {
-      margin-bottom: 1rem; margin-right: 1rem;
-    }
-    .calendar-and-details { display: block; }
-    @media (min-width: 800px) {
-      .calendar-and-details { display: flex; gap: 1rem; }
-    }
-    .calendar-section { flex: 1; min-width: 0; }
-    #vehicle-schedule-heading {
-      width: 100%; text-align: center; font-size: 2rem;
-      font-weight: bold; color: #333; margin: 0 0 1rem 0;
-    }
-    #calendar { margin-top: 2rem; }
-    .details-section {
-      flex: 0 0 300px; border-left: 1px solid #ccc;
-      padding-left: 1rem; margin-top: 1rem;
-    }
-    @media (min-width: 800px) {
-      .details-section { margin-top: 0; }
-    }
-    #selected-date-info {
-      background: #fafafa; border-radius: 6px; padding: 1rem;
-    }
-    #selected-date-info h3 { font-size: 1.25rem; margin: 0 0 0.5rem; }
-    #date-bookings-list { font-size: 1rem; line-height: 1.4; }
-    #date-bookings-list div { margin-bottom: 0.75rem; }
-    #booking-start, #booking-end {
-      font-size: 1.1rem; padding: 0.5rem; width: 260px;
-    }
-    .ui-timepicker-wrapper {
-      width: 140px !important; font-size: 1rem;
-      z-index: 9999 !important;
-    }
-    .ui-timepicker-list li {
-      white-space: nowrap; padding: 6px 10px;
-    }
-    small { font-weight: normal; font-size: 0.8rem; color: #666; }
   </style>
 </head>
-<body>
-
-<header>
-  <div>Fleet Calendar</div>
-  <div id="user-info">Checking auth...</div>
-  <button id="logout-btn" style="display:none;">Logout</button>
-</header>
-
-<div class="container">
+  <div class="container">
   <h2>YFNED Fleet Calendar</h2>
   
   <!-- VEHICLE SELECT DROPDOWN -->
@@ -112,53 +69,23 @@
     </select>
   </div>
 
-  <div id="booking-section">
-    <h3>Book This Vehicle</h3>
-    <form id="booking-form">
-      <label>
-        Start Date (Mon–Fri only):
-        <input type="date" id="booking-start-date" />
-      </label>
-      <label>
-        End Date (Mon–Fri only):
-        <input type="date" id="booking-end-date" placeholder="Optional" />
-        <small>Leave blank to book only one day</small>
-      </label>
-      <label>
-        Start Time (6AM - 9PM):
-        <input type="text" id="booking-start" placeholder="Select Start Time" />
-      </label>
-      <label>
-        End Time (6AM - 9PM):
-        <input type="text" id="booking-end" placeholder="Select End Time" />
-      </label>
-      <button type="submit" id="bookVehicleBtn" class="action-button">Book Vehicle</button>
-    </form>
-    <button id="signOutBtn" class="action-button">Sign Out Selected Vehicle Now</button>
-    <button id="returnVehicleBtn" class="action-button">Return Vehicle Now</button>
-  </div>
+<body>
+  <h2>YFNED Fleet Calendar</h2>
+  <label for="vehicle-select">Select a Vehicle:</label>
+  <select id="vehicle-select"></select>
+  <h4>Book This Vehicle</h4>
+  <label>Start Date (Mon–Fri only): <input type="date" id="booking-start-date" /></label>
+  <label>End Date (Mon–Fri only): <input type="date" id="booking-end-date" placeholder="Optional" /></label>
+  <label>Start Time (6AM–9PM): <input type="text" id="booking-start-time" /></label>
+  <label>End Time (6AM–9PM): <input type="text" id="booking-end-time" /></label>
+  <button onclick="handleBooking()">Book Vehicle</button>
+  <button onclick="signOutVehicle()">Sign Out Selected Vehicle Now</button>
+  <button onclick="returnVehicle()">Return Vehicle Now</button>
+  <div id="calendar"></div>
+  <div id="selected-date-events"></div>
 
-  <div class="calendar-and-details">
-    <div class="calendar-section">
-      <h1 id="vehicle-schedule-heading"></h1>
-      <div id="calendar"></div>
-    </div>
-    <div class="details-section">
-      <div id="selected-date-info">
-        <h3>Selected Date: <span id="selected-date-text"></span></h3>
-        <div id="date-bookings-list">No date selected yet.</div>
-      </div>
-    </div>
-  </div>
-</div>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.9.0/main.min.js"></script>
-
-<script>
-  // Firebase config
-  const firebaseConfig = {
+  <script>
+      const firebaseConfig = {
   apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
   authDomain: "yfned-fleet-nfc.firebaseapp.com",
   databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
@@ -169,199 +96,167 @@
   measurementId: "G-LK66DQVKW4"
 };
 
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.database();
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
+    let calendar, currentVehicle = null, currentUser = null;
 
-  let currentUser = null;
-  let calendar = null;
+    document.addEventListener("DOMContentLoaded", function () {
+      $('#booking-start-time, #booking-end-time').timepicker({
+        timeFormat: 'h:mm p',
+        interval: 30,
+        minTime: '6:00am',
+        maxTime: '9:00pm',
+        dynamic: false,
+        dropdown: true,
+        scrollbar: true
+      });
 
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      currentUser = user;
-      document.getElementById("user-info").innerText = user.email;
-      document.getElementById("logout-btn").style.display = "inline-block";
-      initCalendar();
-    } else {
-      window.location.href = "index.html";
-    }
-  });
+      auth.onAuthStateChanged(user => {
+        if (user) {
+          currentUser = user;
+          loadVehicles();
+        } else {
+          window.location.href = "index.html";
+        }
+      });
 
-  document.getElementById("logout-btn").onclick = () => auth.signOut();
-
-  const getVehicle = () => document.getElementById("vehicle-select").value;
-
-  function initCalendar() {
-    const calendarEl = document.getElementById("calendar");
-    calendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: "dayGridMonth",
-      selectable: true,
-      dateClick: info => displayDateDetails(info.dateStr),
-      events: fetchEvents
+      calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+        initialView: 'dayGridMonth',
+        selectable: true,
+        eventClick: showEventDetails
+      });
+      calendar.render();
     });
-    calendar.render();
-    displayDateDetails(new Date().toISOString().split("T")[0]);
-  }
 
-  function fetchEvents(fetchInfo, successCallback, failureCallback) {
-    const vehicle = getVehicle();
-    db.ref(`bookings/${vehicle}`).once("value", snapshot => {
-      const events = [];
-      snapshot.forEach(daySnap => {
-        const date = daySnap.key;
-        daySnap.forEach(bookingSnap => {
-          const data = bookingSnap.val();
-          events.push({
-            title: `${data.startTime} - ${data.endTime}`,
-            start: `${date}`,
-            allDay: true
+    function loadVehicles() {
+      const select = document.getElementById("vehicle-select");
+      db.ref("vehicles").once("value", snap => {
+        select.innerHTML = "";
+        snap.forEach(child => {
+          const option = document.createElement("option");
+          option.value = child.key;
+          option.textContent = child.key;
+          select.appendChild(option);
+        });
+        currentVehicle = select.value;
+        select.addEventListener("change", () => {
+          currentVehicle = select.value;
+          fetchEvents();
+        });
+        fetchEvents();
+      });
+    }
+
+    function fetchEvents() {
+      calendar.removeAllEvents();
+      db.ref(`bookings/${currentVehicle}`).once("value", snap => {
+        snap.forEach(daySnap => {
+          const date = daySnap.key;
+          Object.values(daySnap.val()).forEach(event => {
+            calendar.addEvent({
+              title: `${event.startTime} - ${event.endTime}`,
+              start: date,
+              allDay: true
+            });
           });
         });
       });
-      successCallback(events);
-    });
-  }
-
-  function displayDateDetails(dateStr) {
-    document.getElementById("selected-date-text").innerText = dateStr;
-    const list = document.getElementById("date-bookings-list");
-    list.innerHTML = "Loading...";
-    const vehicle = getVehicle();
-    db.ref(`bookings/${vehicle}/${dateStr}`).once("value", snapshot => {
-      if (!snapshot.exists()) {
-        list.innerText = "No bookings on " + dateStr + ".";
-        return;
-      }
-      let html = "";
-      snapshot.forEach(snap => {
-        const data = snap.val();
-        html += `<div>
-            ${data.user} <br>
-            Start: ${data.startTime}<br>
-            End: ${data.endTime}
-            <br><button onclick="removeBooking('${vehicle}', '${dateStr}', '${snap.key}')">Remove</button>
-          </div>`;
-      });
-      list.innerHTML = html;
-    });
-  }
-
-  function removeBooking(vehicle, date, key) {
-    db.ref(`bookings/${vehicle}/${date}/${key}`).remove().then(() => {
-      calendar.refetchEvents();
-      displayDateDetails(date);
-    });
-  }
-
-  function getWeekdayDatesInRange(start, end) {
-    const dates = [];
-    const curr = new Date(start);
-    const final = new Date(end);
-    while (curr <= final) {
-      const day = curr.getDay(); // 0 = Sunday, 6 = Saturday
-      if (day >= 1 && day <= 5) {
-        dates.push(new Date(curr).toISOString().split("T")[0]);
-      }
-      curr.setDate(curr.getDate() + 1);
-    }
-    return dates;
-  }
-
-  document.getElementById("booking-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const vehicle = getVehicle();
-    const startDateInput = document.getElementById("booking-start-date").value;
-    const endDateInput = document.getElementById("booking-end-date").value;
-    const startTime = document.getElementById("booking-start").value;
-    const endTime = document.getElementById("booking-end").value;
-
-    if (!startDateInput || !startTime || !endTime) {
-      alert("Please fill in all required fields.");
-      return;
     }
 
-    const endDate = endDateInput ? new Date(endDateInput) : new Date(startDateInput);
-    const bookingDates = getWeekdayDatesInRange(new Date(startDateInput), endDate);
-
-    for (let date of bookingDates) {
-      const ref = db.ref(`bookings/${vehicle}/${date}`);
-      const snapshot = await ref.once("value");
-      let conflict = false;
-      snapshot.forEach(snap => {
-        const existing = snap.val();
-        if (
-          (startTime < existing.endTime && endTime > existing.startTime)
-        ) {
-          conflict = true;
+    function getWeekdayDatesInRange(start, end) {
+      const dates = [];
+      const curr = new Date(start);
+      const final = new Date(end);
+      curr.setHours(0,0,0,0);
+      final.setHours(0,0,0,0);
+      while (curr <= final) {
+        const day = curr.getDay();
+        if (day >= 1 && day <= 5) { // Mon–Fri only
+          dates.push(new Date(curr).toISOString().split("T")[0]);
         }
-      });
-      if (conflict) {
-        alert(`Conflict detected on ${date}. Booking cancelled.`);
-        return;
+        curr.setDate(curr.getDate() + 1);
       }
+      return dates;
     }
 
-    for (let date of bookingDates) {
-      await db.ref(`bookings/${vehicle}/${date}`).push({
-        user: currentUser.email,
-        startTime,
-        endTime,
-        timestamp: new Date().toISOString()
+    function handleBooking() {
+      const startDateStr = document.getElementById("booking-start-date").value;
+      const endDateStr = document.getElementById("booking-end-date").value;
+      const startTime = document.getElementById("booking-start-time").value;
+      const endTime = document.getElementById("booking-end-time").value;
+      if (!startDateStr || !startTime || !endTime) return alert("Please complete all fields.");
+
+      const weekdays = getWeekdayDatesInRange(startDateStr, endDateStr || startDateStr);
+      const updates = {};
+
+      const checkPromises = weekdays.map(date =>
+        db.ref(`bookings/${currentVehicle}/${date}`).once("value").then(snap => {
+          const bookings = snap.val() || {};
+          return Object.values(bookings).some(b => !(endTime <= b.startTime || startTime >= b.endTime));
+        })
+      );
+
+      Promise.all(checkPromises).then(results => {
+        if (results.includes(true)) {
+          alert("Conflict on one or more dates.");
+          return;
+        }
+        weekdays.forEach(date => {
+          const key = db.ref().child(`bookings/${currentVehicle}/${date}`).push().key;
+          updates[`bookings/${currentVehicle}/${date}/${key}`] = {
+            user: currentUser.email,
+            startTime,
+            endTime
+          };
+          updates[`vehicleLogs/${currentVehicle}/${Date.now()}`] = `${currentUser.email} booked for ${date} ${startTime} to ${endTime}`;
+        });
+        db.ref().update(updates, err => {
+          if (err) return alert("Booking failed.");
+          alert("Booked successfully.");
+          fetchEvents();
+        });
       });
     }
 
-    calendar.refetchEvents();
-    alert("Booking successful.");
-  });
+    function showEventDetails(info) {
+      const date = info.event.startStr;
+      db.ref(`bookings/${currentVehicle}/${date}`).once("value", snap => {
+        const container = document.getElementById("selected-date-events");
+        container.innerHTML = `<strong>Selected Date: ${date}</strong><br/>`;
+        if (!snap.exists()) {
+          container.innerHTML += "No bookings.";
+          return;
+        }
+        Object.entries(snap.val()).forEach(([key, val]) => {
+          container.innerHTML += `${val.user}<br>Start: ${val.startTime}<br>End: ${val.endTime}<br><button onclick="removeBooking('${date}','${key}')">Remove</button><hr>`;
+        });
+      });
+    }
 
-  $("#booking-start").timepicker({
-    timeFormat: "h:i A",
-    interval: 30,
-    minTime: "6:00am",
-    maxTime: "9:00pm",
-    startTime: "6:00",
-    dynamic: false,
-    dropdown: true,
-    scrollbar: true
-  });
+    function removeBooking(date, key) {
+      db.ref(`bookings/${currentVehicle}/${date}/${key}`).remove(err => {
+        if (err) return alert("Failed to remove.");
+        alert("Removed.");
+        fetchEvents();
+      });
+    }
 
-  $("#booking-end").timepicker({
-    timeFormat: "h:i A",
-    interval: 30,
-    minTime: "6:00am",
-    maxTime: "9:00pm",
-    startTime: "6:00",
-    dynamic: false,
-    dropdown: true,
-    scrollbar: true
-  });
+    function signOutVehicle() {
+      const today = new Date().toISOString().split("T")[0];
+      db.ref(`vehicleStatus/${currentVehicle}`).set({ status: "signedOut", user: currentUser.email, time: Date.now() });
+      db.ref(`vehicleLogs/${currentVehicle}/${Date.now()}`)
+        .set(`${currentUser.email} signed out vehicle on ${today}`);
+      alert("Vehicle signed out.");
+    }
 
-  document.getElementById("vehicle-select").addEventListener("change", () => {
-    calendar.refetchEvents();
-    const vehicle = getVehicle();
-    document.getElementById("vehicle-schedule-heading").innerText = vehicle + " schedule: Available";
-  });
-
-  document.getElementById("signOutBtn").addEventListener("click", () => {
-    const vehicle = getVehicle();
-    const today = new Date().toISOString().split("T")[0];
-    db.ref(`vehicleStatus/${vehicle}`).set({
-      status: "out",
-      user: currentUser.email,
-      time: new Date().toISOString()
-    });
-    alert("Vehicle signed out.");
-  });
-
-  document.getElementById("returnVehicleBtn").addEventListener("click", () => {
-    const vehicle = getVehicle();
-    db.ref(`vehicleStatus/${vehicle}`).set({
-      status: "in",
-      user: currentUser.email,
-      time: new Date().toISOString()
-    });
-    alert("Vehicle returned.");
-  });
-</script>
+    function returnVehicle() {
+      const today = new Date().toISOString().split("T")[0];
+      db.ref(`vehicleStatus/${currentVehicle}`).set({ status: "available" });
+      db.ref(`vehicleLogs/${currentVehicle}/${Date.now()}`)
+        .set(`${currentUser.email} returned vehicle on ${today}`);
+      alert("Vehicle returned.");
+    }
+  </script>
 </body>
 </html>
