@@ -534,39 +534,32 @@ async function isBookingOverlapping(vehicleName, newStart, newEnd) {
 }
   
 async function handleBooking() {
-  const selectedVehicle = vehicleSelect.value;
-  if (!selectedVehicle) {
-    alert('No vehicle selected for booking.');
-    return;
-  }
+  const selectedVehicle = vehicleDropdown.value;
+  const startDateVal = bookingDate.value;
+  const repeatUntilVal = repeatUntilDate.value;
+  const startTimeVal = startTime.value;
+  const endTimeVal = endTime.value;
 
-  const startDateVal = bookingDateInput.value;
-  const repeatUntilVal = document.getElementById('repeat-until-date')?.value;
-  const startTimeVal = bookingStartInput.value;
-  const endTimeVal = bookingEndInput.value;
-
-  if (!startDateVal || !startTimeVal || !endTimeVal) {
-    alert('Please provide a date, start time, and end time.');
+  if (!selectedVehicle || !startDateVal || !startTimeVal || !endTimeVal) {
+    alert('Please fill out all fields.');
     return;
   }
 
   const startDate = new Date(startDateVal);
   const repeatUntilDate = repeatUntilVal ? new Date(repeatUntilVal) : new Date(startDateVal);
 
-  if (repeatUntilDate < startDate) {
-    alert('Repeat-until date must be the same or after the start date.');
-    return;
-  }
-
   const bookingsToCreate = [];
 
   for (
-    let date = new Date(startDate);
-    date <= repeatUntilDate;
-    date.setDate(date.getDate() + 1)
+    let d = new Date(startDate);
+    d <= repeatUntilDate;
+    d.setDate(d.getDate() + 1)
   ) {
+    const date = new Date(d); // Clone to prevent mutation issues
     const dayOfWeek = date.getDay();
-    if (dayOfWeek === 0 || dayOfWeek === 6) continue; // Skip weekends
+
+    // Skip weekends: 0 = Sunday, 6 = Saturday
+    if (dayOfWeek === 0 || dayOfWeek === 6) continue;
 
     const dateStr = date.toISOString().split('T')[0];
     const startTS = toTimestamp(dateStr, startTimeVal);
@@ -594,11 +587,19 @@ async function handleBooking() {
     });
   }
 
+  const user = auth.currentUser;
+  if (!user) {
+    alert('Please log in to book a vehicle.');
+    return;
+  }
+
+  const uid = user.uid;
+
   for (const booking of bookingsToCreate) {
-    const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
-    await set(bookingRef, {
-      userName: currentUser.email,
-      date: booking.dateStr,
+    const newBookingRef = push(ref(db, `bookings/${selectedVehicle}/${booking.dateStr}`));
+    await set(newBookingRef, {
+      uid,
+      vehicle: selectedVehicle,
       startTime: booking.startTime,
       endTime: booking.endTime,
       startTimeISO: booking.startTimeISO,
@@ -606,8 +607,8 @@ async function handleBooking() {
     });
   }
 
-  alert('Booking(s) created!');
-  calendar.refetchEvents();
+  alert('Booking(s) successful!');
+  loadCalendarEvents(selectedVehicle);
 }
 
   
