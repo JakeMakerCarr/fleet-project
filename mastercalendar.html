@@ -15,10 +15,27 @@
       background-repeat: repeat;
       background-size: 400px;
     }
-    h1 {
-      text-align: center;
-      color: #333;
+
+    header {
+      background: #333;
+      color: white;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
     }
+
+    .header-btn {
+      background: #666;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 1rem;
+    }
+
     #container {
       display: flex;
       gap: 20px;
@@ -26,6 +43,7 @@
       margin: 0 auto;
       align-items: flex-start;
     }
+
     #legend {
       width: 260px;
       background: white;
@@ -33,32 +51,38 @@
       border-radius: 10px;
       box-shadow: 0 0 8px rgba(0, 0, 0, 0.08);
     }
+
     .legend-item {
       display: flex;
       align-items: center;
       margin-bottom: 10px;
       font-size: 14px;
     }
+
     .legend-color {
       width: 16px;
       height: 16px;
       border-radius: 4px;
       margin-right: 8px;
     }
+
     #rightPanel {
       flex: 1;
     }
+
     #calendar {
       background: white;
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
+
     .fc .fc-daygrid-day-frame {
       max-height: 100px;
       height: 100px;
       overflow-y: auto;
     }
+
     #dateInfo {
       margin-top: 10px;
       background: #ffffff;
@@ -66,24 +90,39 @@
       border-radius: 10px;
       box-shadow: 0 0 8px rgba(0, 0, 0, 0.08);
     }
+
     .booking-box {
       padding: 10px;
       border-radius: 8px;
       margin-bottom: 10px;
       color: white;
     }
+
     .booking-box hr {
       border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .remove-btn {
+      background: #fff;
+      color: #000;
+      border: none;
+      padding: 4px 8px;
+      font-size: 13px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-top: 6px;
     }
   </style>
 </head>
 <body>
-  <header style="display: flex; justify-content: space-between; align-items: center; background: #333; color: white; padding: 1rem;">
-    <div>All Vehicle Bookings</div>
-    <button onclick="location.href='fleetmaster.html'">Fleetmaster View</button>
-</header>
 
-  <h1>All Vehicle Bookings</h1>
+  <header>
+    <div>YFNED Master Calendar</div>
+    <div>
+      <button class="header-btn" onclick="location.href='fleetmaster.html'">Fleetmaster View</button>
+      <button id="logout-btn" class="header-btn">Logout</button>
+    </div>
+  </header>
 
   <div id="container">
     <div id="legend"></div>
@@ -96,10 +135,10 @@
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+    import { getDatabase, ref, get, remove } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 
-    const firebaseConfig = {
+    const app = initializeApp({
       apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
       authDomain: "yfned-fleet-nfc.firebaseapp.com",
       databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
@@ -107,12 +146,10 @@
       storageBucket: "yfned-fleet-nfc.appspot.com",
       messagingSenderId: "482363667898",
       appId: "1:482363667898:web:4b0364e891a221e9631983"
-    };
+    });
 
-    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
     const db = getDatabase(app);
-    const auth = getAuth();
-
     const calendarEl = document.getElementById("calendar");
     const dateInfoPanel = document.getElementById("dateInfo");
     const legendEl = document.getElementById("legend");
@@ -137,6 +174,8 @@
       "18-25 2024 White Ford F750 CVVVVV": "#fd9644"
     };
 
+    let allBookings = [];
+
     function renderLegend() {
       legendEl.innerHTML = "";
       Object.entries(vehicleColors).forEach(([vehicle, color]) => {
@@ -156,23 +195,21 @@
         snapshot.forEach(vehicleSnap => {
           const vehicleName = vehicleSnap.key;
 
-          if (!vehicleColors[vehicleName]) {
-            vehicleColors[vehicleName] = `hsl(${Math.floor(Math.random() * 360)}, 70%, 60%)`;
-          }
-
           vehicleSnap.forEach(bookingSnap => {
             const booking = bookingSnap.val();
+            const bookingId = bookingSnap.key;
             bookings.push({
+              id: bookingId,
               title: `${booking.startTime.split(":")[0]} ${vehicleName}`,
               start: booking.startTimeISO,
               end: booking.endTimeISO,
-              backgroundColor: vehicleColors[vehicleName],
-              borderColor: vehicleColors[vehicleName],
+              backgroundColor: vehicleColors[vehicleName] || "#333",
+              borderColor: vehicleColors[vehicleName] || "#333",
               textColor: "#fff",
               extendedProps: {
                 user: booking.userName,
                 vehicle: vehicleName,
-                bookingId: bookingSnap.key
+                firebasePath: `bookings/${vehicleName}/${bookingId}`
               }
             });
           });
@@ -203,8 +240,8 @@
 
     function showBookingsForDate(dateStr, allEvents) {
       const matching = allEvents.filter(event => event.start.startsWith(dateStr));
-      let html = `<h3>Selected Date: ${dateStr}</h3>`;
 
+      let html = `<h3>Selected Date: ${dateStr}</h3>`;
       if (matching.length === 0) {
         html += `<p>No bookings.</p>`;
       } else {
@@ -214,52 +251,38 @@
             <div class="booking-box" style="background:${color}">
               <strong>${ev.extendedProps.vehicle}</strong><br>
               ${ev.extendedProps.user}<br>
-              ${new Date(ev.start).toLocaleTimeString()} – ${new Date(ev.end).toLocaleTimeString()}
-              <br><button onclick="deleteBooking('${ev.extendedProps.vehicle}', '${ev.extendedProps.bookingId}')">Remove</button>
+              ${new Date(ev.start).toLocaleTimeString()} – ${new Date(ev.end).toLocaleTimeString()}<br>
+              <button class="remove-btn" onclick="removeBooking('${ev.extendedProps.firebasePath}')">Remove</button>
               <hr>
             </div>`;
         });
       }
-
       dateInfoPanel.innerHTML = html;
     }
 
-    onAuthStateChanged(auth, user => {
-      renderLegend();
-      fetchAllBookings().then(renderCalendar);
-    });
-  </script>
-
-  <script>
-    function deleteBooking(vehicleName, bookingId) {
-      if (!confirm("Are you sure you want to delete this booking?")) return;
-
-      import('https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js').then(({ initializeApp }) => {
-        import('https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js').then(({ getDatabase, ref, remove }) => {
-          const firebaseConfig = {
-            apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
-            authDomain: "yfned-fleet-nfc.firebaseapp.com",
-            databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
-            projectId: "yfned-fleet-nfc",
-            storageBucket: "yfned-fleet-nfc.appspot.com",
-            messagingSenderId: "482363667898",
-            appId: "1:482363667898:web:4b0364e891a221e9631983"
-          };
-
-          const app = initializeApp(firebaseConfig);
-          const db = getDatabase(app);
-
-          const bookingRef = ref(db, `bookings/${vehicleName}/${bookingId}`);
-          remove(bookingRef).then(() => {
+    window.removeBooking = function(path) {
+      if (confirm("Are you sure you want to delete this booking?")) {
+        remove(ref(db, path))
+          .then(() => {
             alert("Booking removed successfully.");
             location.reload();
-          }).catch(err => {
-            console.error(err);
-            alert("Failed to remove booking.");
-          });
-        });
+          })
+          .catch(() => alert("Failed to remove booking."));
+      }
+    };
+
+    document.getElementById("logout-btn").addEventListener("click", () => {
+      signOut(auth);
+    });
+
+    onAuthStateChanged(auth, user => {
+      if (!user) return;
+      renderLegend();
+      fetchAllBookings().then(events => {
+        allBookings = events;
+        renderCalendar(allBookings);
       });
-    }
+    });
   </script>
 </body>
 </html>
