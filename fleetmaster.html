@@ -14,6 +14,15 @@
       margin: 0;
       padding: 0;
     }
+    .nav-btn {
+      background: #666;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 1rem;
+    }
     header {
       background: #333;
       color: white;
@@ -73,9 +82,9 @@
 <header>
   <div>YFNED Fleetmaster Controls</div>
   <div>
-    <button onclick="location.href='mastercalendar.html'">Master Calendar</button>
-    <button id="export-btn">Export Logs to Excel</button>
-    <button id="logout-btn">Logout</button>
+    <button id="master-btn" class="nav-btn" onclick="location.href='mastercalendar.html'">Master Calendar</button>
+    <button id="export-btn" class="nav-btn">Export Logs to Excel</button>
+    <button id="logout-btn" class="nav-btn">Logout</button>
   </div>
 </header>
 
