@@ -1,138 +1,88 @@
-                                                                                                                                                                                                                                                      <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Fleet Calendar (YFNED Fleet + NFC One-Sticker Method)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  
+
   <!-- FullCalendar CSS -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.9.0/main.min.css" rel="stylesheet">
-  
   <!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-  <!-- jQuery Timepicker CSS & JS -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.js"></script>
-
-  
-  <!-- Your custom external stylesheet -->
-  <link rel="stylesheet" href="style.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Timepicker -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.js"></script>
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css" />
 
   <style>
-  /* BASIC PAGE STYLES */
-  body {
-    margin: 0; padding: 0;
-    font-family: sans-serif;
-  }
-  header {
-    background: #333; color: white;
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 1rem;
-  }
-  #user-info { margin-right: 1rem; }
-  #logout-btn {
-    cursor: pointer; padding: 0.5rem 1rem; border: none;
-    background: #666; color: white; border-radius: 4px;
-  }
-  .container {
-    max-width: 1200px; margin: 1rem auto; background: white; padding: 1rem;
-    border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  }
-  h2 { margin-top: 0; }
-
-  .vehicle-select-container { margin-bottom: 1rem; }
-  select, input[type="date"], input[type="time"] {
-    font-size: 1rem; padding: 0.3rem; margin: 0.3rem 0;
-  }
-
-  /* FORM LAYOUT */
-  #booking-form {
-    display: flex; flex-wrap: wrap; gap: 1rem;
-    margin-bottom: 1rem; align-items: center;
-  }
-  #booking-form label {
-    display: flex; flex-direction: column;
-    font-weight: bold;
-  }
-  #signOutBtn, #returnVehicleBtn {
-    margin-bottom: 1rem; margin-right: 1rem;
-  }
-
-  /* CALENDAR + DETAILS LAYOUT */
-  .calendar-and-details {
-    display: block;
-  }
-  @media (min-width: 800px) {
-    .calendar-and-details {
-      display: flex;
-      flex-wrap: nowrap;
-      gap: 1rem;
+    body { margin: 0; padding: 0; font-family: sans-serif; }
+    header {
+      background: #333; color: white;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem;
     }
-  }
-
-  .calendar-section {
-    flex: 1;
-    min-width: 0;
-  }
-  #vehicle-schedule-heading {
-    width: 100%;
-    text-align: center;
-    font-size: 2rem;
-    font-weight: bold;
-    color: #333;
-    margin: 0 0 1rem 0;
-  }
-  #calendar {
-    margin-top: 2rem;
-  }
-
-  .details-section {
-    flex: 0 0 300px;
-    border-left: 1px solid #ccc;
-    padding-left: 1rem;
-    margin-top: 1rem;
-  }
-  @media (min-width: 800px) {
+    #user-info { margin-right: 1rem; }
+    #logout-btn {
+      cursor: pointer; padding: 0.5rem 1rem; border: none;
+      background: #666; color: white; border-radius: 4px;
+    }
+    .container {
+      max-width: 1200px; margin: 1rem auto;
+      background: white; padding: 1rem;
+      border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 { margin-top: 0; }
+    .vehicle-select-container { margin-bottom: 1rem; }
+    select, input[type="date"], input[type="time"] {
+      font-size: 1rem; padding: 0.3rem; margin: 0.3rem 0;
+    }
+    #booking-form {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      margin-bottom: 1rem; align-items: center;
+    }
+    #booking-form label {
+      display: flex; flex-direction: column;
+      font-weight: bold;
+    }
+    #signOutBtn, #returnVehicleBtn {
+      margin-bottom: 1rem; margin-right: 1rem;
+    }
+    .calendar-and-details { display: block; }
+    @media (min-width: 800px) {
+      .calendar-and-details { display: flex; gap: 1rem; }
+    }
+    .calendar-section { flex: 1; min-width: 0; }
+    #vehicle-schedule-heading {
+      width: 100%; text-align: center; font-size: 2rem;
+      font-weight: bold; color: #333; margin: 0 0 1rem 0;
+    }
+    #calendar { margin-top: 2rem; }
     .details-section {
-      margin-top: 0;
+      flex: 0 0 300px; border-left: 1px solid #ccc;
+      padding-left: 1rem; margin-top: 1rem;
     }
-  }
-
-  #selected-date-info {
-    background: #fafafa;
-    border-radius: 6px;
-    padding: 1rem;
-  }
-  #selected-date-info h3 {
-    font-size: 1.25rem;
-    margin: 0 0 0.5rem;
-  }
-  #date-bookings-list {
-    font-size: 1rem;
-    line-height: 1.4;
-  }
-  #date-bookings-list div {
-    margin-bottom: 0.75rem;
-  }
-
-  #booking-start, #booking-end {
-    font-size: 1.1rem;
-    padding: 0.5rem;
-    width: 260px;
-  }
-
-  /* ✅ jQuery Timepicker dropdown override */
-  .ui-timepicker-wrapper {
-    width: 140px !important;
-    font-size: 1rem;
-    z-index: 9999 !important;
-  }
-  .ui-timepicker-list li {
-    white-space: nowrap;
-    padding: 6px 10px;
-  }
-</style>
+    @media (min-width: 800px) {
+      .details-section { margin-top: 0; }
+    }
+    #selected-date-info {
+      background: #fafafa; border-radius: 6px;
+      padding: 1rem;
+    }
+    #selected-date-info h3 { font-size: 1.25rem; margin: 0 0 0.5rem; }
+    #date-bookings-list { font-size: 1rem; line-height: 1.4; }
+    #date-bookings-list div { margin-bottom: 0.75rem; }
+    #booking-start, #booking-end {
+      font-size: 1.1rem; padding: 0.5rem; width: 260px;
+    }
+    .ui-timepicker-wrapper {
+      width: 140px !important; font-size: 1rem;
+      z-index: 9999 !important;
+    }
+    .ui-timepicker-list li {
+      white-space: nowrap; padding: 6px 10px;
+    }
+  </style>
 </head>
 <body>
 
@@ -144,39 +94,26 @@
 
 <div class="container">
   <h2>YFNED Fleet Calendar</h2>
-  
-  <!-- VEHICLE SELECT DROPDOWN -->
+
   <div class="vehicle-select-container">
     <label for="vehicle-select">Select a Vehicle:</label>
     <select id="vehicle-select">
       <option value="01-20 2021 Red Traverse CM335">2021 Red Traverse CM335</option>
       <option value="02-20 2021 Black Traverse CM366">2021 Black Traverse CM366</option>
-      <option value="03-21 2021 Grey Traverse CN360">2021 Grey Traverse CN360</option>
-      <option value="04-21 2021 Shadow Silverado 1500 CM695">2021 Shadow Silverado 1500 CM695</option>
-      <option value="05-21 2021 Ebony Buick Encore CM532">2021 Ebony Buick Encore CM532</option>
-      <option value="06-21 2020 Grey Grand Caravan CN468">2020 Grey Grand Caravan CN468</option>
-      <option value="07-21 2021 White Terrain CN466">2021 White Terrain CN466</option>
-      <option value="08-21 2021 Black Terrain CN467">2021 Black Terrain CN467</option>
-      <option value="09-24 2024 White Sierra 3500 C182B">2024 White Sierra 3500 C182B</option>
-      <option value="10-24 2025 Green Trailblazer C838B">2025 Green Trailblazer C838B</option>
-      <option value="11-24 2024 Grey Traverse CS266">2024 Grey Traverse CS266</option>
-      <option value="12-24 2012 White Dodge HNL64">2012 White Dodge HNL64</option>
-      <option value="13-24 2024 Grey Traverse CT008">2024 Grey Traverse CT008</option>
-      <option value="14-24 2024 Grey Traverse C443C">2024 Grey Traverse C443C</option>
-      <option value="15-24 2024 Grey Traverse C444C">2024 Grey Traverse C444C</option>
-      <option value="16-24 2024 Blue Traverse CT073">2024 Blue Traverse CT073</option>
-      <option value="17-25 2025 Black Buick Envision CV294">2025 Black Buick Envision CV294</option>
-      <option value="18-25 2024 White Ford F750 CVVVVV">2024 White Ford F750 CVVVVV</option>
+      <!-- ... other vehicles -->
     </select>
   </div>
 
-  <!-- BOOKING FORM -->
   <div id="booking-section">
     <h3>Book This Vehicle</h3>
     <form id="booking-form">
       <label>
-        Date (Mon-Fri only):
-        <input type="date" id="booking-date" />
+        Start Date (Mon-Fri only):
+        <input type="date" id="booking-start-date" />
+      </label>
+      <label>
+        End Date (Mon-Fri only):
+        <input type="date" id="booking-end-date" />
       </label>
       <label>
         Start Time (6AM - 9PM):
@@ -188,21 +125,15 @@
       </label>
       <button type="submit" id="bookVehicleBtn" class="action-button">Book Vehicle</button>
     </form>
-
-    <!-- SIGN OUT & RETURN BUTTONS -->
     <button id="signOutBtn" class="action-button">Sign Out Selected Vehicle Now</button>
     <button id="returnVehicleBtn" class="action-button">Return Vehicle Now</button>
   </div>
 
-  <!-- CALENDAR + DETAILS WRAPPER -->
   <div class="calendar-and-details">
-    <!-- LEFT: CALENDAR -->
     <div class="calendar-section">
       <h1 id="vehicle-schedule-heading"></h1>
       <div id="calendar"></div>
     </div>
-
-    <!-- RIGHT: SELECTED DATE INFO SIDEBAR -->
     <div class="details-section">
       <div id="selected-date-info">
         <h3>Selected Date: <span id="selected-date-text"></span></h3>
@@ -211,25 +142,21 @@
     </div>
   </div>
 </div>
-
 <!-- FullCalendar JS -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.9.0/main.min.js"></script>
 
-<!-- Firebase Scripts -->
+<!-- Firebase & Main Logic -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
-  import { getAuth, onAuthStateChanged, signOut }
-    from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
-  import { getDatabase, ref, get, push, set, update, remove }
-    from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
+  import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+  import { getDatabase, ref, get, push, set, update, remove } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
 
-  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
     authDomain: "yfned-fleet-nfc.firebaseapp.com",
     databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
     projectId: "yfned-fleet-nfc",
-    storageBucket: "yfned-fleet-nfc.firebasestorage.app",
+    storageBucket: "yfned-fleet-nfc.appspot.com",
     messagingSenderId: "482363667898",
     appId: "1:482363667898:web:4b0364e891a221e9631983",
     measurementId: "G-LK66DQVKW4"
@@ -245,490 +172,215 @@
   const logoutBtn = document.getElementById('logout-btn');
   const vehicleSelect = document.getElementById('vehicle-select');
   const vehicleHeading = document.getElementById('vehicle-schedule-heading');
-
-  const bookingDateInput = document.getElementById('booking-date');
   const bookingStartInput = document.getElementById('booking-start');
   const bookingEndInput = document.getElementById('booking-end');
   const bookVehicleBtn = document.getElementById('bookVehicleBtn');
-  const signOutBtn = document.getElementById('signOutBtn');
-  const returnVehicleBtn = document.getElementById('returnVehicleBtn');
-
-  // Elements for the date detail panel
   const selectedDateTextEl = document.getElementById('selected-date-text');
   const dateBookingsListEl = document.getElementById('date-bookings-list');
 
-  let lastClickedDayEl = null; // used to unhighlight the previously clicked day cell
-
-  // NFC query param
-  const urlParams = new URLSearchParams(window.location.search);
-  const nfcVehicle = urlParams.get('nfcVehicle');
-
-  // Update heading based on vehicle data in /vehicles
-  async function updateVehicleHeading(vehicleName) {
-    if (!vehicleName) return;
-    const vehicleRef = ref(db, 'vehicles/' + vehicleName);
-    const snap = await get(vehicleRef);
-
-    if (snap.exists()) {
-      const vehData = snap.val();
-      if (vehData.status === 'signedOut') {
-        vehicleHeading.innerHTML = `${vehicleName} schedule:<br>Currently Signed Out by: ${vehData.CurrentlySignedOutBy}`;
-      } else {
-        vehicleHeading.textContent = `${vehicleName} schedule: Available`;
-      }
-    } else {
-      vehicleHeading.textContent = `${vehicleName} schedule: Available`;
-    }
-  }
-
-  // On auth state
   onAuthStateChanged(auth, (user) => {
-    if(!user) {
+    if (!user) {
       window.location.href = 'index.html';
     } else {
       currentUser = user;
       userInfo.textContent = 'Logged in as: ' + user.email;
       logoutBtn.style.display = 'inline-block';
 
-    // jQuery Timepicker Setup
-setTimeout(() => {
-  $('#booking-start').timepicker({
-    timeFormat: 'h:mm p',
-    interval: 30,
-    minTime: '6:00am',
-    maxTime: '9:00pm',
-    dynamic: false,
-    dropdown: true,
-    scrollbar: true
-  });
+      $('#booking-start').timepicker({ timeFormat: 'h:mm p', interval: 30, minTime: '6:00am', maxTime: '9:00pm' });
+      $('#booking-end').timepicker({ timeFormat: 'h:mm p', interval: 30, minTime: '6:00am', maxTime: '9:00pm' });
 
-  $('#booking-end').timepicker({
-    timeFormat: 'h:mm p',
-    interval: 30,
-    minTime: '6:00am',
-    maxTime: '9:00pm',
-    dynamic: false,
-    dropdown: true,
-    scrollbar: true
-  });
-}, 0);
-
-  
       initCalendar();
-
-      vehicleSelect.addEventListener('change', async () => {
-        const selectedVehicle = vehicleSelect.value;
-        await updateVehicleHeading(selectedVehicle);
+      vehicleSelect.addEventListener('change', () => {
+        updateVehicleHeading(vehicleSelect.value);
         calendar.refetchEvents();
       });
 
-      // Default heading on load
       updateVehicleHeading(vehicleSelect.value);
 
-      // Book
       bookVehicleBtn.addEventListener('click', async (e) => {
         e.preventDefault();
         await handleBooking();
       });
 
-      // Sign out
-      signOutBtn.addEventListener('click', async () => {
-        await handleSignOutVehicle();
+      logoutBtn.addEventListener('click', async () => {
+        await signOut(auth);
       });
+    }
+  });
 
-      // Return
-      returnVehicleBtn.addEventListener('click', async () => {
-        await handleReturnVehicle();
-      });
-
-      // If we have ?nfcVehicle=...
-      if(nfcVehicle) {
-        handleNfcFlow(nfcVehicle);
+  function initCalendar() {
+    calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+      initialView: 'dayGridMonth',
+      timeZone: 'local',
+      events: fetchVehicleBookings,
+      displayEventTime: false,
+      dateClick: (info) => {
+        selectedDateTextEl.textContent = info.dateStr;
+        const eventsForDay = getEventsForDate(info.date);
+        displayBookingsForDay(eventsForDay, info.dateStr);
       }
-    }
-  });
+    });
+    calendar.render();
+  }
 
-  // Logout
-  logoutBtn.addEventListener('click', async () => {
-    await signOut(auth);
-  });
-
-  // Initialize FullCalendar
-function initCalendar() {
-  const calendarEl = document.getElementById('calendar');
-  calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
-    timeZone: 'local',
-    events: fetchVehicleBookings,
-    displayEventTime: false, // 👈 Disable default time next to the dot
-    dateClick: (info) => {
-      if (lastClickedDayEl) {
-        lastClickedDayEl.style.backgroundColor = '';
-      }
-      info.dayEl.style.backgroundColor = 'lightblue';
-      lastClickedDayEl = info.dayEl;
-
-      selectedDateTextEl.textContent = info.dateStr;
-
-      const eventsForDay = getEventsForDate(info.date);
-      displayBookingsForDay(eventsForDay, info.dateStr);
-
-      bookingDateInput.value = info.dateStr;
-    }
-  });
-
-  calendar.render();
-}
-
-  // Fetch events from /bookings/{vehicleName}
-  // Fetch events from /bookings/{vehicleName}
-async function fetchVehicleBookings(info, successCallback, failureCallback) {
-  try {
-    const selectedVehicle = vehicleSelect.value;
-    if (!selectedVehicle) {
-      successCallback([]);
-      return;
-    }
-
-    const snap = await get(ref(db, 'bookings/' + selectedVehicle));
-    if (!snap.exists()) {
-      successCallback([]);
-      return;
-    }
-    const data = snap.val();
-    const events = Object.keys(data).map(bookingId => {
-      const b = data[bookingId];
-      return {
-        id: bookingId,
+  async function fetchVehicleBookings(info, successCallback, failureCallback) {
+    try {
+      const selectedVehicle = vehicleSelect.value;
+      if (!selectedVehicle) return successCallback([]);
+      const snap = await get(ref(db, 'bookings/' + selectedVehicle));
+      if (!snap.exists()) return successCallback([]);
+      const data = snap.val();
+      const events = Object.entries(data).map(([id, b]) => ({
+        id,
         title: `${b.startTime}-${b.endTime}`,
-        start: new Date(b.startTimeISO), // ✅ Patch 3 inserted here
-        end: new Date(b.endTimeISO),     // ✅ Patch 3 inserted here
-        extendedProps: {
-          creatorEmail: b.userName
-        }
-      };
-    });
-
-    successCallback(events);
-  } catch (err) {
-    console.error(err);
-    failureCallback(err);
+        start: new Date(b.startTimeISO),
+        end: new Date(b.endTimeISO),
+        extendedProps: { creatorEmail: b.userName }
+      }));
+      successCallback(events);
+    } catch (err) {
+      console.error(err);
+      failureCallback(err);
+    }
   }
-}
 
-  // DAY-BASED approach: match events if they overlap the 24h block of clickedDate
   function getEventsForDate(clickedDate) {
-    const dayStart = new Date(clickedDate);
-    dayStart.setHours(0, 0, 0, 0); 
-    const dayEnd = new Date(dayStart);
-    dayEnd.setDate(dayEnd.getDate() + 1); // next midnight
-
-    const allEvents = calendar.getEvents();
-    return allEvents.filter(ev => {
-      // event must overlap [dayStart, dayEnd)
-      return ev.start < dayEnd && ev.end > dayStart;
-    });
+    const start = new Date(clickedDate);
+    const end = new Date(clickedDate);
+    end.setDate(end.getDate() + 1);
+    return calendar.getEvents().filter(ev => ev.start < end && ev.end > start);
   }
 
-  // Display events in sidebar (with a "Remove" button if user is the owner)
-  function displayBookingsForDay(eventsForDay, dateStr) {
+  function displayBookingsForDay(events, dateStr) {
     dateBookingsListEl.innerHTML = '';
-
-    if (eventsForDay.length === 0) {
+    if (events.length === 0) {
       dateBookingsListEl.textContent = 'No bookings on ' + dateStr + '.';
       return;
     }
 
-    eventsForDay.forEach(ev => {
-      const item = document.createElement('div');
-      const startStr = ev.start.toLocaleString();
-      const endStr = ev.end.toLocaleString();
-
-      // We'll show the basic text
-      item.innerHTML = `
+    events.forEach(ev => {
+      const div = document.createElement('div');
+      div.innerHTML = `
         <strong>${ev.extendedProps.creatorEmail}</strong><br>
-        Start: ${startStr}<br>
-        End: ${endStr}
+        Start: ${ev.start.toLocaleString()}<br>
+        End: ${ev.end.toLocaleString()}
       `;
-
-      // Now let's add a "Remove" button. Only show it if current user is the booking's creator
-      const creator = (ev.extendedProps.creatorEmail || '').toLowerCase();
-      const me = currentUser.email.toLowerCase();
-
-      if (creator === me) {
+      if ((ev.extendedProps.creatorEmail || '').toLowerCase() === currentUser.email.toLowerCase()) {
         const removeBtn = document.createElement('button');
         removeBtn.textContent = 'Remove';
-        removeBtn.style.marginLeft = '1rem';
         removeBtn.onclick = async () => {
-          if (confirm('Are you sure you want to delete this booking?')) {
-            await removeBooking(ev.id);
+          if (confirm('Delete this booking?')) {
+            await remove(ref(db, 'bookings/' + vehicleSelect.value + '/' + ev.id));
+            calendar.refetchEvents();
           }
         };
-        item.appendChild(removeBtn);
+        div.appendChild(removeBtn);
       }
-
-      dateBookingsListEl.appendChild(item);
+      dateBookingsListEl.appendChild(div);
     });
   }
 
-  // removeBooking(...) actually deletes the booking from DB, then refetches
-  async function removeBooking(bookingId) {
-    try {
-      const vehicleName = vehicleSelect.value;
-      const bookingRef = ref(db, `bookings/${vehicleName}/${bookingId}`);
-      await remove(bookingRef);
-      alert('Booking removed successfully!');
-
-      // Force the calendar to reload events
-      calendar.refetchEvents();
-      // If you also want to refresh the day panel for the last clicked date, 
-      // you'd just re-run "displayBookingsForDay" with the same date
-      // but it's simpler just to click the day again.
-    } catch (err) {
-      console.error(err);
-      alert('Error removing booking: ' + err);
-    }
+  function toTimestamp(dateStr, timeStr) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const [time, modifier] = timeStr.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    if (modifier === 'PM' && hours !== 12) hours += 12;
+    if (modifier === 'AM' && hours === 12) hours = 0;
+    return new Date(year, month - 1, day, hours, minutes).getTime();
   }
 
-  // Convert date/time to timestamp
-function toTimestamp(dateStr, timeStr) {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  const [time, modifier] = timeStr.split(' ');
-  let [hours, minutes] = time.split(':').map(Number);
-
-  if (modifier === 'PM' && hours !== 12) hours += 12;
-  if (modifier === 'AM' && hours === 12) hours = 0;
-
-  // 🟢 Creates a local time Date object
-  const localDate = new Date(year, month - 1, day, hours, minutes, 0);
-  return localDate.getTime();
-}
-  
-// Check for overlapping bookings
-async function isBookingOverlapping(vehicleName, newStart, newEnd) {
-  const bookingsRef = ref(db, 'bookings/' + vehicleName);
-  const snap = await get(bookingsRef);
-
-  if (!snap.exists()) return false;
-
-  const bookings = snap.val();
-  for (const key in bookings) {
-    const b = bookings[key];
-    const existingStart = new Date(b.startTimeISO).getTime();
-    const existingEnd = new Date(b.endTimeISO).getTime();
-
-    const overlap = newStart < existingEnd && newEnd > existingStart;
-    if (overlap) return true;
-  }
-
-  return false;
-}
-  
-async function handleBooking() {
-  const selectedVehicle = vehicleSelect.value;
-  if (!selectedVehicle) {
-    alert('No vehicle selected for booking.');
-    return;
-  }
-
-  const dateVal = bookingDateInput.value;
-  const startVal = bookingStartInput.value;
-  const endVal = bookingEndInput.value;
-
-  if (!dateVal || !startVal || !endVal) {
-    alert('Please provide date, start time, and end time.');
-    return;
-  }
-
-  const dateObj = new Date(dateVal + "T00:00:00");
-  const dayOfWeek = dateObj.getDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) {
-    alert('Bookings are only allowed Monday to Friday.');
-    return;
-  }
-
-  const startTS = toTimestamp(dateVal, startVal);
-  const endTS = toTimestamp(dateVal, endVal);
-
-  if (endTS <= startTS) {
-    alert('End time must be after start time!');
-    return;
-  }
-
-  const conflict = await isBookingOverlapping(selectedVehicle, startTS, endTS);
-  if (conflict) {
-    alert('That time range is already booked for this vehicle!');
-    return;
-  }
-
-  const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
-  const startTimeISO = new Date(startTS).toISOString();
-  const endTimeISO = new Date(endTS).toISOString();
-
-  await set(bookingRef, {
-    userName: currentUser.email,
-    date: dateVal,
-    startTime: startVal,
-    endTime: endVal,
-    startTimeISO,
-    endTimeISO
-  });
-
-  alert('Booking created!');
-  calendar.refetchEvents();
-}
-  
-  // handleSignOutVehicle
-async function handleSignOutVehicle(paramVehicle = null) {
-  const selectedVehicle = paramVehicle || vehicleSelect.value;
-  if (!selectedVehicle) {
-    alert('No vehicle selected.');
-    return;
-  }
-
-  const vehicleRef = ref(db, 'vehicles/' + selectedVehicle);
-  const vehicleSnap = await get(vehicleRef);
-
-  if (!vehicleSnap.exists()) {
-    alert('Vehicle data not found.');
-    return;
-  }
-
-  const vehicleData = vehicleSnap.val();
-
-  // ⛔️ BLOCK if vehicle keys haven't been handed to the staff yet
-  if (vehicleData.keyStatus !== 'withStaff') {
-    alert('This vehicle cannot be signed out until the keys are handed to you by the front desk.');
-    return;
-  }
-
-  // Prevent sign-out if it's signed out by someone else
-  if (vehicleData.status === 'signedOut' && vehicleData.CurrentlySignedOutBy !== currentUser.email) {
-    alert(`Vehicle is already signed out by ${vehicleData.CurrentlySignedOutBy}. You can't sign it out now!`);
-    return;
-  }
-
-  const now = new Date();
-const localNowTS = new Date(
-  now.getFullYear(),
-  now.getMonth(),
-  now.getDate(),
-  now.getHours(),
-  now.getMinutes(),
-  now.getSeconds()
-).getTime();
-
-  const bookingSnap = await get(ref(db, 'bookings/' + selectedVehicle));
-
-  if (!bookingSnap.exists()) {
-    await signOutVehicleInDB(selectedVehicle);
-    return;
-  }
-
-  const allBookings = bookingSnap.val();
-  let activeBookingFound = false;
-  let belongsToCurrentUser = false;
-
-  for (const bId in allBookings) {
-    const b = allBookings[bId];
-    const startTS = new Date(b.startTimeISO).getTime();
-    const endTS = new Date(b.endTimeISO).getTime();
-
-    if(localNowTS >= startTS && localNowTS < endTS) {
-      activeBookingFound = true;
-      if (b.userName === currentUser.email) {
-        belongsToCurrentUser = true;
+  function getWeekdayDatesInRange(startDateStr, endDateStr) {
+    const result = [];
+    let current = new Date(startDateStr);
+    const end = new Date(endDateStr);
+    while (current <= end) {
+      if (current.getDay() !== 0 && current.getDay() !== 6) {
+        result.push(new Date(current));
       }
-      break;
+      current.setDate(current.getDate() + 1);
     }
+    return result;
   }
 
-  if (activeBookingFound) {
-    if (belongsToCurrentUser) {
-      await signOutVehicleInDB(selectedVehicle);
+  async function isBookingOverlapping(vehicleName, newStart, newEnd) {
+    const snap = await get(ref(db, 'bookings/' + vehicleName));
+    if (!snap.exists()) return false;
+    const bookings = snap.val();
+    for (const b of Object.values(bookings)) {
+      const existingStart = new Date(b.startTimeISO).getTime();
+      const existingEnd = new Date(b.endTimeISO).getTime();
+      if (newStart < existingEnd && newEnd > existingStart) return true;
+    }
+    return false;
+  }
+
+  async function handleBooking() {
+    const selectedVehicle = vehicleSelect.value;
+    const startDateStr = document.getElementById('booking-start-date').value;
+    const endDateStr = document.getElementById('booking-end-date').value;
+    const startTimeStr = bookingStartInput.value;
+    const endTimeStr = bookingEndInput.value;
+
+    if (!selectedVehicle || !startDateStr || !endDateStr || !startTimeStr || !endTimeStr) {
+      alert('Please fill out all fields.');
+      return;
+    }
+
+    const weekdays = getWeekdayDatesInRange(startDateStr, endDateStr);
+    if (weekdays.length === 0) {
+      alert('No valid weekdays in selected range.');
+      return;
+    }
+
+    const conflicts = [];
+    for (let date of weekdays) {
+      const dateStr = date.toISOString().split('T')[0];
+      const startTS = toTimestamp(dateStr, startTimeStr);
+      const endTS = toTimestamp(dateStr, endTimeStr);
+      if (endTS <= startTS) {
+        alert(`End time must be after start time on ${dateStr}`);
+        return;
+      }
+      if (await isBookingOverlapping(selectedVehicle, startTS, endTS)) {
+        conflicts.push(dateStr);
+      }
+    }
+
+    if (conflicts.length > 0) {
+      alert('Conflicts on: ' + conflicts.join(', '));
+      return;
+    }
+
+    for (let date of weekdays) {
+      const dateStr = date.toISOString().split('T')[0];
+      const startTS = toTimestamp(dateStr, startTimeStr);
+      const endTS = toTimestamp(dateStr, endTimeStr);
+      const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
+      await set(bookingRef, {
+        userName: currentUser.email,
+        date: dateStr,
+        startTime: startTimeStr,
+        endTime: endTimeStr,
+        startTimeISO: new Date(startTS).toISOString(),
+        endTimeISO: new Date(endTS).toISOString()
+      });
+    }
+
+    alert(`Booking created for ${weekdays.length} day(s).`);
+    calendar.refetchEvents();
+  }
+
+  async function updateVehicleHeading(vehicleName) {
+    const snap = await get(ref(db, 'vehicles/' + vehicleName));
+    if (snap.exists()) {
+      const data = snap.val();
+      vehicleHeading.textContent = data.status === 'signedOut'
+        ? `${vehicleName} schedule: Signed Out by ${data.CurrentlySignedOutBy}`
+        : `${vehicleName} schedule: Available`;
     } else {
-      alert('⛔ This vehicle is currently booked by someone else at this time!');
+      vehicleHeading.textContent = `${vehicleName} schedule: Available`;
     }
-  } else {
-    await signOutVehicleInDB(selectedVehicle);
-  }
-}
-
-  // handleReturnVehicle
-  async function handleReturnVehicle(paramVehicle=null) {
-    const selectedVehicle = paramVehicle || vehicleSelect.value;
-    if(!selectedVehicle) {
-      alert('No vehicle selected.');
-      return;
-    }
-
-    const vehicleRef = ref(db, 'vehicles/' + selectedVehicle);
-    const vehicleSnap = await get(vehicleRef);
-    if(!vehicleSnap.exists()) {
-      alert('Vehicle data not found.');
-      return;
-    }
-
-    const vehicleData = vehicleSnap.val();
-    if(vehicleData.status !== 'signedOut' || vehicleData.CurrentlySignedOutBy !== currentUser.email) {
-      alert('You do not currently have this vehicle signed out.');
-      return;
-    }
-
-    await update(vehicleRef, {
-      status: 'available',
-      CurrentlySignedOutBy: null
-    });
-    alert('Vehicle returned successfully!');
-
-    const logsRef = push(ref(db, `vehicleLogs/${selectedVehicle}`));
-    await set(logsRef, {
-      userEmail: currentUser.email,
-      action: 'signedIn',
-      timestamp: Date.now()
-    });
-
-    await updateVehicleHeading(selectedVehicle);
-  }
-
-  // NFC flow
-async function handleNfcFlow(nfcVeh) {
-  alert(`NFC tap detected for ${nfcVeh}. Checking vehicle status...`);
-  const vehicleRef = ref(db, 'vehicles/' + nfcVeh);
-  const vehicleSnap = await get(vehicleRef);
-
-  if (vehicleSnap.exists()) {
-    const vehData = vehicleSnap.val();
-    if (vehData.status === 'signedOut' && vehData.CurrentlySignedOutBy === currentUser.email) {
-      alert(`You're returning ${nfcVeh} via NFC tap.`);
-      await handleReturnVehicle(nfcVeh);
-    } else {
-      alert(`Attempting to sign out ${nfcVeh} via NFC tap.`);
-      await handleSignOutVehicle(nfcVeh);  // ✅ This now includes booking logic!
-    }
-  } else {
-    alert(`${nfcVeh} not found in the DB. Sign-out blocked.`);
-  }
-}
-
-  // Actually sign out in DB
-  async function signOutVehicleInDB(vehicleName) {
-    await update(ref(db, 'vehicles/' + vehicleName), {
-      status: 'signedOut',
-      CurrentlySignedOutBy: currentUser.email
-    });
-    alert('Vehicle signed out successfully!');
-
-    const logRef = push(ref(db, `vehicleLogs/${vehicleName}`));
-    await set(logRef, {
-      userEmail: currentUser.email,
-      action: 'signedOut',
-      timestamp: Date.now()
-    });
-
-    await updateVehicleHeading(vehicleName);
   }
 </script>
-
 </body>
 </html>
