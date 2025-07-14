@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+                                                                                                                                                                                                                                                    <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -166,6 +166,7 @@
       <option value="15-24 2024 Grey Traverse C444C">2024 Grey Traverse C444C</option>
       <option value="16-24 2024 Blue Traverse CT073">2024 Blue Traverse CT073</option>
       <option value="17-25 2025 Black Buick Envision CV294">2025 Black Buick Envision CV294</option>
+      <option value="18-25 2024 White Ford F750 CVVVVV">2024 White Ford F750 CVVVVV</option>
     </select>
   </div>
 
@@ -177,20 +178,10 @@
         Date (Mon-Fri only):
         <input type="date" id="booking-date" />
       </label>
-      
-       <label>
-      Repeat Until (optional):
-      <input type="date" id="repeat-until-date" />
-      <small style="font-size: 0.9rem; color: #555;">
-        Leave blank to book for one day only. Only weekdays will be booked.
-      </small>
-      </label>
-      
       <label>
         Start Time (6AM - 9PM):
         <input type="text" id="booking-start" placeholder="Select Start Time" />
       </label>
-      
       <label>
         End Time (6AM - 9PM):
         <input type="text" id="booking-end" placeholder="Select End Time" />
@@ -198,10 +189,10 @@
       <button type="submit" id="bookVehicleBtn" class="action-button">Book Vehicle</button>
     </form>
 
-    <!--
-<button id="signOutNowBtn">Sign Out Selected Vehicle Now</button>
-<button id="returnNowBtn">Return Vehicle Now</button>
--->
+    <!-- SIGN OUT & RETURN BUTTONS -->
+    <button id="signOutBtn" class="action-button">Sign Out Selected Vehicle Now</button>
+    <button id="returnVehicleBtn" class="action-button">Return Vehicle Now</button>
+  </div>
 
   <!-- CALENDAR + DETAILS WRAPPER -->
   <div class="calendar-and-details">
@@ -534,80 +525,57 @@ async function isBookingOverlapping(vehicleName, newStart, newEnd) {
 }
   
 async function handleBooking() {
-  const selectedVehicle = vehicleDropdown.value;
-  const startDateVal = bookingDate.value;
-  const repeatUntilVal = repeatUntilDate.value;
-  const startTimeVal = startTime.value;
-  const endTimeVal = endTime.value;
-
-  if (!selectedVehicle || !startDateVal || !startTimeVal || !endTimeVal) {
-    alert('Please fill out all fields.');
+  const selectedVehicle = vehicleSelect.value;
+  if (!selectedVehicle) {
+    alert('No vehicle selected for booking.');
     return;
   }
 
-  const startDate = new Date(startDateVal);
-  const repeatUntilDate = repeatUntilVal ? new Date(repeatUntilVal) : new Date(startDateVal);
+  const dateVal = bookingDateInput.value;
+  const startVal = bookingStartInput.value;
+  const endVal = bookingEndInput.value;
 
-  const bookingsToCreate = [];
-
-  for (
-    let d = new Date(startDate);
-    d <= repeatUntilDate;
-    d.setDate(d.getDate() + 1)
-  ) {
-    const date = new Date(d); // Clone date to avoid mutation
-    const day = date.getDay();
-
-    if (day === 0 || day === 6) continue; // Skip Sundays and Saturdays
-
-    const dateStr = date.toISOString().split('T')[0];
-    const startTS = toTimestamp(dateStr, startTimeVal);
-    const endTS = toTimestamp(dateStr, endTimeVal);
-
-    if (endTS <= startTS) {
-      alert(`End time must be after start time on ${dateStr}`);
-      return;
-    }
-
-    const conflict = await isBookingOverlapping(selectedVehicle, startTS, endTS);
-    if (conflict) {
-      alert(`Conflict detected on ${dateStr}. Booking canceled.`);
-      return;
-    }
-
-    bookingsToCreate.push({
-      dateStr,
-      startTS,
-      endTS,
-      startTime: startTimeVal,
-      endTime: endTimeVal,
-      startTimeISO: new Date(startTS).toISOString(),
-      endTimeISO: new Date(endTS).toISOString()
-    });
-  }
-
-  const user = auth.currentUser;
-  if (!user) {
-    alert('Please log in.');
+  if (!dateVal || !startVal || !endVal) {
+    alert('Please provide date, start time, and end time.');
     return;
   }
 
-  const uid = user.uid;
-
-  for (const booking of bookingsToCreate) {
-    const newBookingRef = push(ref(db, `bookings/${selectedVehicle}/${booking.dateStr}`));
-    await set(newBookingRef, {
-      uid,
-      vehicle: selectedVehicle,
-      startTime: booking.startTime,
-      endTime: booking.endTime,
-      startTimeISO: booking.startTimeISO,
-      endTimeISO: booking.endTimeISO
-    });
+  const dateObj = new Date(dateVal + "T00:00:00");
+  const dayOfWeek = dateObj.getDay();
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    alert('Bookings are only allowed Monday to Friday.');
+    return;
   }
 
-  alert('Booking(s) successful!');
-  loadCalendarEvents(selectedVehicle);
+  const startTS = toTimestamp(dateVal, startVal);
+  const endTS = toTimestamp(dateVal, endVal);
+
+  if (endTS <= startTS) {
+    alert('End time must be after start time!');
+    return;
+  }
+
+  const conflict = await isBookingOverlapping(selectedVehicle, startTS, endTS);
+  if (conflict) {
+    alert('That time range is already booked for this vehicle!');
+    return;
+  }
+
+  const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
+  const startTimeISO = new Date(startTS).toISOString();
+  const endTimeISO = new Date(endTS).toISOString();
+
+  await set(bookingRef, {
+    userName: currentUser.email,
+    date: dateVal,
+    startTime: startVal,
+    endTime: endVal,
+    startTimeISO,
+    endTimeISO
+  });
+
+  alert('Booking created!');
+  calendar.refetchEvents();
 }
   
   // handleSignOutVehicle
