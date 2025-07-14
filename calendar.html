@@ -177,10 +177,20 @@
         Date (Mon-Fri only):
         <input type="date" id="booking-date" />
       </label>
+      
+       <label>
+      Repeat Until (optional):
+      <input type="date" id="repeat-until-date" />
+      <small style="font-size: 0.9rem; color: #555;">
+        Leave blank to book for one day only. Only weekdays will be booked.
+      </small>
+      </label>
+      
       <label>
         Start Time (6AM - 9PM):
         <input type="text" id="booking-start" placeholder="Select Start Time" />
       </label>
+      
       <label>
         End Time (6AM - 9PM):
         <input type="text" id="booking-end" placeholder="Select End Time" />
@@ -530,52 +540,76 @@ async function handleBooking() {
     return;
   }
 
-  const dateVal = bookingDateInput.value;
-  const startVal = bookingStartInput.value;
-  const endVal = bookingEndInput.value;
+  const startDateVal = bookingDateInput.value;
+  const repeatUntilVal = document.getElementById('repeat-until-date')?.value;
+  const startTimeVal = bookingStartInput.value;
+  const endTimeVal = bookingEndInput.value;
 
-  if (!dateVal || !startVal || !endVal) {
-    alert('Please provide date, start time, and end time.');
+  if (!startDateVal || !startTimeVal || !endTimeVal) {
+    alert('Please provide a date, start time, and end time.');
     return;
   }
 
-  const dateObj = new Date(dateVal + "T00:00:00");
-  const dayOfWeek = dateObj.getDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) {
-    alert('Bookings are only allowed Monday to Friday.');
+  const startDate = new Date(startDateVal);
+  const repeatUntilDate = repeatUntilVal ? new Date(repeatUntilVal) : new Date(startDateVal);
+
+  if (repeatUntilDate < startDate) {
+    alert('Repeat-until date must be the same or after the start date.');
     return;
   }
 
-  const startTS = toTimestamp(dateVal, startVal);
-  const endTS = toTimestamp(dateVal, endVal);
+  const bookingsToCreate = [];
 
-  if (endTS <= startTS) {
-    alert('End time must be after start time!');
-    return;
+  for (
+    let date = new Date(startDate);
+    date <= repeatUntilDate;
+    date.setDate(date.getDate() + 1)
+  ) {
+    const dayOfWeek = date.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) continue; // Skip weekends
+
+    const dateStr = date.toISOString().split('T')[0];
+    const startTS = toTimestamp(dateStr, startTimeVal);
+    const endTS = toTimestamp(dateStr, endTimeVal);
+
+    if (endTS <= startTS) {
+      alert(`End time must be after start time on ${dateStr}`);
+      return;
+    }
+
+    const conflict = await isBookingOverlapping(selectedVehicle, startTS, endTS);
+    if (conflict) {
+      alert(`Booking conflict on ${dateStr}. Booking canceled.`);
+      return;
+    }
+
+    bookingsToCreate.push({
+      dateStr,
+      startTS,
+      endTS,
+      startTime: startTimeVal,
+      endTime: endTimeVal,
+      startTimeISO: new Date(startTS).toISOString(),
+      endTimeISO: new Date(endTS).toISOString()
+    });
   }
 
-  const conflict = await isBookingOverlapping(selectedVehicle, startTS, endTS);
-  if (conflict) {
-    alert('That time range is already booked for this vehicle!');
-    return;
+  for (const booking of bookingsToCreate) {
+    const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
+    await set(bookingRef, {
+      userName: currentUser.email,
+      date: booking.dateStr,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+      startTimeISO: booking.startTimeISO,
+      endTimeISO: booking.endTimeISO
+    });
   }
 
-  const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
-  const startTimeISO = new Date(startTS).toISOString();
-  const endTimeISO = new Date(endTS).toISOString();
-
-  await set(bookingRef, {
-    userName: currentUser.email,
-    date: dateVal,
-    startTime: startVal,
-    endTime: endVal,
-    startTimeISO,
-    endTimeISO
-  });
-
-  alert('Booking created!');
+  alert('Booking(s) created!');
   calendar.refetchEvents();
 }
+
   
   // handleSignOutVehicle
 async function handleSignOutVehicle(paramVehicle = null) {
