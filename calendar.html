@@ -2,86 +2,97 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>YFNED Fleet Calendar</title>
-  <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.css' rel='stylesheet' />
-  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js'></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-timepicker/1.13.18/jquery.timepicker.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-timepicker/1.13.18/jquery.timepicker.min.js"></script>
+
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet"/>
+
+  <!-- Timepicker CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.css"/>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css" />
+
   <style>
     body {
-      font-family: sans-serif;
-      padding: 20px;
-      background: url('featherbg.png') no-repeat center center fixed;
+      background: url('skybackgroundmidnightfeather.png') no-repeat center center fixed;
       background-size: cover;
+      font-family: Arial, sans-serif;
+      color: #000;
+      padding: 20px;
     }
-    #calendar {
-      max-width: 900px;
-      margin: 20px auto;
-      background: white;
-      padding: 10px;
-      border-radius: 8px;
+    .controls {
+      margin-bottom: 20px;
     }
-    select, input[type="date"], input[type="text"] {
+    input, select, button {
       margin: 5px;
       padding: 5px;
     }
-    button {
-      margin: 5px;
+    #calendar {
+      background-color: #fff;
       padding: 10px;
-    }
-    #selected-date-events {
-      margin-top: 20px;
-      background: #f9f9f9;
-      padding: 10px;
+      border-radius: 8px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
   <h2>YFNED Fleet Calendar</h2>
-  
-  <!-- VEHICLE SELECT DROPDOWN -->
-  <div class="vehicle-select-container">
+
+  <div class="controls">
     <label for="vehicle-select">Select a Vehicle:</label>
     <select id="vehicle-select">
-      <option value="01-20 2021 Red Traverse CM335">2021 Red Traverse CM335</option>
-      <option value="02-20 2021 Black Traverse CM366">2021 Black Traverse CM366</option>
-      <option value="03-21 2021 Grey Traverse CN360">2021 Grey Traverse CN360</option>
-      <option value="04-21 2021 Shadow Silverado 1500 CM695">2021 Shadow Silverado 1500 CM695</option>
-      <option value="05-21 2021 Ebony Buick Encore CM532">2021 Ebony Buick Encore CM532</option>
-      <option value="06-21 2020 Grey Grand Caravan CN468">2020 Grey Grand Caravan CN468</option>
-      <option value="07-21 2021 White Terrain CN466">2021 White Terrain CN466</option>
-      <option value="08-21 2021 Black Terrain CN467">2021 Black Terrain CN467</option>
-      <option value="09-24 2024 White Sierra 3500 C182B">2024 White Sierra 3500 C182B</option>
-      <option value="10-24 2025 Green Trailblazer C838B">2025 Green Trailblazer C838B</option>
-      <option value="11-24 2024 Grey Traverse CS266">2024 Grey Traverse CS266</option>
-      <option value="12-24 2012 White Dodge HNL64">2012 White Dodge HNL64</option>
-      <option value="13-24 2024 Grey Traverse CT008">2024 Grey Traverse CT008</option>
-      <option value="14-24 2024 Grey Traverse C443C">2024 Grey Traverse C443C</option>
-      <option value="15-24 2024 Grey Traverse C444C">2024 Grey Traverse C444C</option>
-      <option value="16-24 2024 Blue Traverse CT073">2024 Blue Traverse CT073</option>
-      <option value="17-25 2025 Black Buick Envision CV294">2025 Black Buick Envision CV294</option>
-      <option value="18-25 2024 White Ford F750 CVVVVV">2024 White Ford F750 CVVVVV</option>
+      <option value="01-20 2021 Red Traverse CM335">01-20 2021 Red Traverse CM335</option>
+      <option value="Grey Traverse">Grey Traverse</option>
+      <option value="Black Traverse">Black Traverse</option>
+      <option value="Ebony Buick Encore">Ebony Buick Encore</option>
+      <option value="Grey Grand Caravan">Grey Grand Caravan</option>
+      <option value="Silver Pathfinder">Silver Pathfinder</option>
+      <option value="White Highlander">White Highlander</option>
+      <option value="Blue Escape">Blue Escape</option>
+      <option value="White Rav4">White Rav4</option>
+      <option value="Red Jeep Compass">Red Jeep Compass</option>
+      <option value="Silver Grand Caravan">Silver Grand Caravan</option>
+      <option value="White F150 Truck">White F150 Truck</option>
+      <option value="Silver Explorer">Silver Explorer</option>
+      <option value="Charcoal Acadia">Charcoal Acadia</option>
+      <option value="Gold Grand Caravan">Gold Grand Caravan</option>
+      <option value="Silver Outlander">Silver Outlander</option>
+      <option value="Black Edge">Black Edge</option>
+      <option value="Black Jeep Cherokee">Black Jeep Cherokee</option>
     </select>
+
+    <h4>Book This Vehicle</h4>
+    <label>Start Date (Mon-Fri only):</label>
+    <input type="date" id="booking-start-date"/>
+    <label>End Date (Mon-Fri only):</label>
+    <input type="date" id="booking-end-date"/>
+
+    <input type="text" id="booking-start-time" placeholder="e.g. 8:00 AM" readonly/>
+    <input type="text" id="booking-end-time" placeholder="e.g. 4:30 PM" readonly/>
+
+    <button onclick="bookVehicle()">Book Vehicle</button>
+    <button onclick="signOutNow()">Sign Out Selected Vehicle Now</button>
+    <button onclick="returnNow()">Return Vehicle Now</button>
   </div>
 
-  <h4>Book This Vehicle</h4>
-  <label>Start Date (Mon-Fri only): <input type="date" id="booking-start-date" /></label>
-  <label>End Date (Mon-Fri only): <input type="date" id="booking-end-date" /></label>
-  <input type="text" id="booking-start-time" placeholder="e.g. 8:00 AM" readonly />
-  <input type="text" id="booking-end-time" placeholder="e.g. 5:30 PM" readonly />
-  <button onclick="handleBooking()">Book Vehicle</button>
-  <button onclick="signOutVehicle()">Sign Out Selected Vehicle Now</button>
-  <button onclick="returnVehicle()">Return Vehicle Now</button>
   <div id="calendar"></div>
-  <div id="selected-date-events"></div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+  <!-- FullCalendar -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+  <!-- jQuery + Timepicker -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.js"></script>
+
   <script>
-      const firebaseConfig = {
+    // Replace this with your actual Firebase config
+    const firebaseConfig = {
   apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
   authDomain: "yfned-fleet-nfc.firebaseapp.com",
   databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
@@ -93,171 +104,67 @@
 };
 
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const auth = firebase.auth();
-    let calendar, currentVehicle = null, currentUser = null;
 
-    document.addEventListener("DOMContentLoaded", function () {
-      $('#booking-start-time, #booking-end-time').timepicker({
-        timeFormat: 'h:mm A',
-        interval: 30,
-        minTime: '6:00am',
-        maxTime: '9:00pm',
-        dynamic: false,
-        dropdown: true,
-        scrollbar: true,
-        disableTextInput: true
-      });
-
-      auth.onAuthStateChanged(user => {
-        if (user) {
-          currentUser = user;
-          loadVehicles();
-        } else {
-          window.location.href = "index.html";
-        }
-      });
-
-      calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+    // Setup FullCalendar
+    document.addEventListener('DOMContentLoaded', function () {
+      const calendarEl = document.getElementById('calendar');
+      const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
-        selectable: true,
-        eventClick: showEventDetails
+        height: 'auto',
+        events: [] // Later fill with Firebase data
       });
       calendar.render();
     });
 
-    function loadVehicles() {
-      const select = document.getElementById("vehicle-select");
-      db.ref("vehicles").once("value", snap => {
-        select.innerHTML = "";
-        snap.forEach(child => {
-          const option = document.createElement("option");
-          option.value = child.key;
-          option.textContent = child.key;
-          select.appendChild(option);
-        });
-        currentVehicle = select.value;
-        select.addEventListener("change", () => {
-          currentVehicle = select.value;
-          fetchEvents();
-        });
-        fetchEvents();
-      });
-    }
+    // Timepickers
+    $('#booking-start-time').timepicker({
+      timeFormat: 'h:mm p',
+      interval: 30,
+      minTime: '6:00am',
+      maxTime: '9:00pm',
+      defaultTime: '8:00am',
+      startTime: '6:00am',
+      dynamic: false,
+      dropdown: true,
+      scrollbar: true
+    });
 
-    function fetchEvents() {
-      calendar.removeAllEvents();
-      db.ref(`bookings/${currentVehicle}`).once("value", snap => {
-        snap.forEach(daySnap => {
-          const date = daySnap.key;
-          Object.values(daySnap.val()).forEach(event => {
-            calendar.addEvent({
-              title: `${event.startTime} - ${event.endTime}`,
-              start: date,
-              allDay: true
-            });
-          });
-        });
-      });
-    }
+    $('#booking-end-time').timepicker({
+      timeFormat: 'h:mm p',
+      interval: 30,
+      minTime: '6:00am',
+      maxTime: '9:00pm',
+      defaultTime: '4:30pm',
+      startTime: '6:00am',
+      dynamic: false,
+      dropdown: true,
+      scrollbar: true
+    });
 
-    function getWeekdayDatesInRange(start, end) {
-      const dates = [];
-      const curr = new Date(start);
-      const final = new Date(end);
-      curr.setHours(0,0,0,0);
-      final.setHours(0,0,0,0);
-      while (curr <= final) {
-        const day = curr.getDay();
-        if (day >= 1 && day <= 5) {
-          dates.push(new Date(curr).toISOString().split("T")[0]);
-        }
-        curr.setDate(curr.getDate() + 1);
-      }
-      return dates;
-    }
-
-    function handleBooking() {
-      const startDateStr = document.getElementById("booking-start-date").value;
-      const endDateStr = document.getElementById("booking-end-date").value;
+    function bookVehicle() {
+      const vehicle = document.getElementById("vehicle-select").value;
+      const startDate = document.getElementById("booking-start-date").value;
+      const endDate = document.getElementById("booking-end-date").value;
       const startTime = document.getElementById("booking-start-time").value;
       const endTime = document.getElementById("booking-end-time").value;
-      if (!startDateStr || !startTime || !endTime) return alert("Please complete all fields.");
 
-      const weekdays = getWeekdayDatesInRange(startDateStr, endDateStr || startDateStr);
-      const updates = {};
+      if (!vehicle || !startDate || !endDate || !startTime || !endTime) {
+        alert("Please fill in all booking details.");
+        return;
+      }
 
-      const checkPromises = weekdays.map(date =>
-        db.ref(`bookings/${currentVehicle}/${date}`).once("value").then(snap => {
-          const bookings = snap.val() || {};
-          return Object.values(bookings).some(b => !(endTime <= b.startTime || startTime >= b.endTime));
-        })
-      );
-
-      Promise.all(checkPromises).then(results => {
-        if (results.includes(true)) {
-          alert("Conflict on one or more dates.");
-          return;
-        }
-        weekdays.forEach(date => {
-          const key = db.ref().child(`bookings/${currentVehicle}/${date}`).push().key;
-          const startISO = new Date(`${date} ${startTime}`).toISOString();
-          const endISO = new Date(`${date} ${endTime}`).toISOString();
-          updates[`bookings/${currentVehicle}/${date}/${key}`] = {
-            userName: currentUser.email,
-            date: date,
-            startTime: startTime,
-            endTime: endTime,
-            startTimeISO: startISO,
-            endTimeISO: endISO
-          };
-          updates[`vehicleLogs/${currentVehicle}/${Date.now()}`] = `${currentUser.email} booked for ${date} ${startTime} to ${endTime}`;
-        });
-        db.ref().update(updates, err => {
-          if (err) return alert("Booking failed.");
-          alert("Booked successfully.");
-          fetchEvents();
-        });
-      });
+      // Logic to store booking in Firebase under bookings/vehicle/date
+      alert(`Booking ${vehicle} from ${startDate} ${startTime} to ${endDate} ${endTime}`);
     }
 
-    function showEventDetails(info) {
-      const date = info.event.startStr;
-      db.ref(`bookings/${currentVehicle}/${date}`).once("value", snap => {
-        const container = document.getElementById("selected-date-events");
-        container.innerHTML = `<strong>Selected Date: ${date}</strong><br/>`;
-        if (!snap.exists()) {
-          container.innerHTML += "No bookings.";
-          return;
-        }
-        Object.entries(snap.val()).forEach(([key, val]) => {
-          container.innerHTML += `${val.userName}<br>Start: ${val.startTime}<br>End: ${val.endTime}<br><button onclick="removeBooking('${date}','${key}')">Remove</button><hr>`;
-        });
-      });
+    function signOutNow() {
+      const vehicle = document.getElementById("vehicle-select").value;
+      alert(`Signing out vehicle now: ${vehicle}`);
     }
 
-    function removeBooking(date, key) {
-      db.ref(`bookings/${currentVehicle}/${date}/${key}`).remove(err => {
-        if (err) return alert("Failed to remove.");
-        alert("Removed.");
-        fetchEvents();
-      });
-    }
-
-    function signOutVehicle() {
-      const today = new Date().toISOString().split("T")[0];
-      db.ref(`vehicleStatus/${currentVehicle}`).set({ status: "signedOut", user: currentUser.email, time: Date.now() });
-      db.ref(`vehicleLogs/${currentVehicle}/${Date.now()}`)
-        .set(`${currentUser.email} signed out vehicle on ${today}`);
-      alert("Vehicle signed out.");
-    }
-
-    function returnVehicle() {
-      const today = new Date().toISOString().split("T")[0];
-      db.ref(`vehicleStatus/${currentVehicle}`).set({ status: "available" });
-      db.ref(`vehicleLogs/${currentVehicle}/${Date.now()}`)
-        .set(`${currentUser.email} returned vehicle on ${today}`);
-      alert("Vehicle returned.");
+    function returnNow() {
+      const vehicle = document.getElementById("vehicle-select").value;
+      alert(`Returning vehicle now: ${vehicle}`);
     }
   </script>
 </body>
