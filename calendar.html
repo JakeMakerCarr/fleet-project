@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YFNED Fleet Calendar</title>
-  <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.css' rel='stylesheet' />
-  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js'></script>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.0/main.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -41,9 +41,9 @@
     }
   </style>
 </head>
-  <div class="container">
+<body>
   <h2>YFNED Fleet Calendar</h2>
-  
+
   <!-- VEHICLE SELECT DROPDOWN -->
   <div class="vehicle-select-container">
     <label for="vehicle-select">Select a Vehicle:</label>
@@ -69,32 +69,29 @@
     </select>
   </div>
 
-<body>
-  <h2>YFNED Fleet Calendar</h2>
-  <label for="vehicle-select">Select a Vehicle:</label>
-  <select id="vehicle-select"></select>
   <h4>Book This Vehicle</h4>
   <label>Start Date (Mon–Fri only): <input type="date" id="booking-start-date" /></label>
-  <label>End Date (Mon–Fri only): <input type="date" id="booking-end-date" placeholder="Optional" /></label>
+  <label>End Date (optional – Mon–Fri only): <input type="date" id="booking-end-date" /></label>
   <label>Start Time (6AM–9PM): <input type="text" id="booking-start-time" /></label>
   <label>End Time (6AM–9PM): <input type="text" id="booking-end-time" /></label>
   <button onclick="handleBooking()">Book Vehicle</button>
   <button onclick="signOutVehicle()">Sign Out Selected Vehicle Now</button>
   <button onclick="returnVehicle()">Return Vehicle Now</button>
+
   <div id="calendar"></div>
   <div id="selected-date-events"></div>
 
   <script>
-      const firebaseConfig = {
-  apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
-  authDomain: "yfned-fleet-nfc.firebaseapp.com",
-  databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
-  projectId: "yfned-fleet-nfc",
-  storageBucket: "yfned-fleet-nfc.firebasestorage.app",
-  messagingSenderId: "482363667898",
-  appId: "1:482363667898:web:4b0364e891a221e9631983",
-  measurementId: "G-LK66DQVKW4"
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
+      authDomain: "yfned-fleet-nfc.firebaseapp.com",
+      databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
+      projectId: "yfned-fleet-nfc",
+      storageBucket: "yfned-fleet-nfc.appspot.com",
+      messagingSenderId: "482363667898",
+      appId: "1:482363667898:web:4b0364e891a221e9631983",
+      measurementId: "G-LK66DQVKW4"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -172,7 +169,7 @@
       final.setHours(0,0,0,0);
       while (curr <= final) {
         const day = curr.getDay();
-        if (day >= 1 && day <= 5) { // Mon–Fri only
+        if (day >= 1 && day <= 5) { // Monday–Friday
           dates.push(new Date(curr).toISOString().split("T")[0]);
         }
         curr.setDate(curr.getDate() + 1);
@@ -185,9 +182,15 @@
       const endDateStr = document.getElementById("booking-end-date").value;
       const startTime = document.getElementById("booking-start-time").value;
       const endTime = document.getElementById("booking-end-time").value;
-      if (!startDateStr || !startTime || !endTime) return alert("Please complete all fields.");
 
-      const weekdays = getWeekdayDatesInRange(startDateStr, endDateStr || startDateStr);
+      if (!startDateStr || !startTime || !endTime) return alert("Please complete all required fields.");
+
+      const effectiveEndDate = endDateStr || startDateStr;
+      if (new Date(effectiveEndDate) < new Date(startDateStr)) {
+        return alert("End date must be after or equal to start date.");
+      }
+
+      const weekdays = getWeekdayDatesInRange(startDateStr, effectiveEndDate);
       const updates = {};
 
       const checkPromises = weekdays.map(date =>
@@ -199,9 +202,10 @@
 
       Promise.all(checkPromises).then(results => {
         if (results.includes(true)) {
-          alert("Conflict on one or more dates.");
+          alert("Conflict on one or more selected dates.");
           return;
         }
+
         weekdays.forEach(date => {
           const key = db.ref().child(`bookings/${currentVehicle}/${date}`).push().key;
           updates[`bookings/${currentVehicle}/${date}/${key}`] = {
@@ -209,11 +213,12 @@
             startTime,
             endTime
           };
-          updates[`vehicleLogs/${currentVehicle}/${Date.now()}`] = `${currentUser.email} booked for ${date} ${startTime} to ${endTime}`;
+          updates[`vehicleLogs/${currentVehicle}/${Date.now()}`] = `${currentUser.email} booked for ${date} from ${startTime} to ${endTime}`;
         });
+
         db.ref().update(updates, err => {
           if (err) return alert("Booking failed.");
-          alert("Booked successfully.");
+          alert("Booking successful.");
           fetchEvents();
         });
       });
@@ -236,8 +241,8 @@
 
     function removeBooking(date, key) {
       db.ref(`bookings/${currentVehicle}/${date}/${key}`).remove(err => {
-        if (err) return alert("Failed to remove.");
-        alert("Removed.");
+        if (err) return alert("Failed to remove booking.");
+        alert("Booking removed.");
         fetchEvents();
       });
     }
@@ -245,16 +250,14 @@
     function signOutVehicle() {
       const today = new Date().toISOString().split("T")[0];
       db.ref(`vehicleStatus/${currentVehicle}`).set({ status: "signedOut", user: currentUser.email, time: Date.now() });
-      db.ref(`vehicleLogs/${currentVehicle}/${Date.now()}`)
-        .set(`${currentUser.email} signed out vehicle on ${today}`);
+      db.ref(`vehicleLogs/${currentVehicle}/${Date.now()}`).set(`${currentUser.email} signed out vehicle on ${today}`);
       alert("Vehicle signed out.");
     }
 
     function returnVehicle() {
       const today = new Date().toISOString().split("T")[0];
       db.ref(`vehicleStatus/${currentVehicle}`).set({ status: "available" });
-      db.ref(`vehicleLogs/${currentVehicle}/${Date.now()}`)
-        .set(`${currentUser.email} returned vehicle on ${today}`);
+      db.ref(`vehicleLogs/${currentVehicle}/${Date.now()}`).set(`${currentUser.email} returned vehicle on ${today}`);
       alert("Vehicle returned.");
     }
   </script>
