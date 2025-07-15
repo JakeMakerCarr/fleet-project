@@ -415,11 +415,14 @@ if (returnVehicleBtn) {
     const notes = notesSnap.val();
     for (const noteId in notes) {
       const n = notes[noteId];
+      const end = new Date(n.endDate || n.startDate);
+      end.setDate(end.getDate() + 1);  // Make end inclusive
+
       events.push({
         id: noteId,
         title: `📝 ${n.note}`,
         start: n.startDate,
-        end: addOneDay(n.endDate || n.startDate), // FullCalendar excludes end date by default
+        end: end.toISOString(),
         allDay: true,
         backgroundColor: '#ffd966',
         borderColor: '#999',
@@ -431,6 +434,7 @@ if (returnVehicleBtn) {
 
   successCallback(events);
 }
+
 
   
 async function editGhostNote(noteId, noteDate) {
