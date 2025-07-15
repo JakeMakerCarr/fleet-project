@@ -80,14 +80,31 @@
 
 <div class="container">
   <h2>YFNED Fleet Calendar</h2>
+  <!-- VEHICLE SELECT DROPDOWN -->
+  <div class="vehicle-select-container">
+    <label for="vehicle-select">Select a Vehicle:</label>
+    <select id="vehicle-select">
+      <option value="01-20 2021 Red Traverse CM335">2021 Red Traverse CM335</option>
+      <option value="02-20 2021 Black Traverse CM366">2021 Black Traverse CM366</option>
+      <option value="03-21 2021 Grey Traverse CN360">2021 Grey Traverse CN360</option>
+      <option value="04-21 2021 Shadow Silverado 1500 CM695">2021 Shadow Silverado 1500 CM695</option>
+      <option value="05-21 2021 Ebony Buick Encore CM532">2021 Ebony Buick Encore CM532</option>
+      <option value="06-21 2020 Grey Grand Caravan CN468">2020 Grey Grand Caravan CN468</option>
+      <option value="07-21 2021 White Terrain CN466">2021 White Terrain CN466</option>
+      <option value="08-21 2021 Black Terrain CN467">2021 Black Terrain CN467</option>
+      <option value="09-24 2024 White Sierra 3500 C182B">2024 White Sierra 3500 C182B</option>
+      <option value="10-24 2025 Green Trailblazer C838B">2025 Green Trailblazer C838B</option>
+      <option value="11-24 2024 Grey Traverse CS266">2024 Grey Traverse CS266</option>
+      <option value="12-24 2012 White Dodge HNL64">2012 White Dodge HNL64</option>
+      <option value="13-24 2024 Grey Traverse CT008">2024 Grey Traverse CT008</option>
+      <option value="14-24 2024 Grey Traverse C443C">2024 Grey Traverse C443C</option>
+      <option value="15-24 2024 Grey Traverse C444C">2024 Grey Traverse C444C</option>
+      <option value="16-24 2024 Blue Traverse CT073">2024 Blue Traverse CT073</option>
+      <option value="17-25 2025 Black Buick Envision CV294">2025 Black Buick Envision CV294</option>
+      <option value="18-25 2024 White Ford F750 CVVVVV">2024 White Ford F750 CVVVVV</option>
+    </select>
+  </div>
 
-  <label for="vehicle-select">Select a Vehicle:</label>
-  <select id="vehicle-select">
-    <option value="01-20 2021 Red Traverse CM335">2021 Red Traverse CM335</option>
-    <option value="02-20 2021 Black Traverse CM366">2021 Black Traverse CM366</option>
-    <option value="03-21 2021 Grey Traverse CN360">2021 Grey Traverse CN360</option>
-    <!-- Add the rest of your vehicles here -->
-  </select>
 
   <form id="booking-form">
     <label>
@@ -139,6 +156,8 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 
 let currentUser = null;
+let calendar = null;
+const dateBookingsList = $('#date-bookings-list')[0];
 
 onAuthStateChanged(auth, (user) => {
   if (!user) {
@@ -175,15 +194,13 @@ $('#bookVehicleBtn').click(async (e) => {
   const bookingRef = push(ref(db, 'bookings/' + veh));
   await set(bookingRef, {
     userName: currentUser.email,
-    date, start, end,
+    date, startTime: start, endTime: end,
     startTimeISO: new Date(`${date} ${start}`).toISOString(),
     endTimeISO: new Date(`${date} ${end}`).toISOString()
   });
   alert('Booking created!');
   calendar.refetchEvents();
 });
-
-let calendar;
 
 function initCalendar() {
   calendar = new FullCalendar.Calendar($('#calendar')[0], {
@@ -192,31 +209,62 @@ function initCalendar() {
     dateClick: (info) => {
       $('#booking-date').val(info.dateStr);
       $('#selected-date-text').text(info.dateStr);
+      displayEventsForDay(info.date);  // Now correctly calls to show bookings
     }
   });
   calendar.render();
 }
 
-async function fetchEvents(info, successCallback) {
-  const veh = $('#vehicle-select').val();
-  const snap = await get(ref(db, `bookings/${veh}`));
-  const bookings = snap.val() || {};
-  const events = Object.values(bookings).map(b => ({
-    title: `${b.start} - ${b.end}`,
-    start: b.startTimeISO,
-    end: b.endTimeISO
-  }));
+async function fetchEvents(info, successCallback, failureCallback) {
+  const vehicle = $('#vehicle-select').val();
+  if (!vehicle) return successCallback([]);
+
+  const snapshot = await get(ref(db, `bookings/${vehicle}`));
+  const bookings = snapshot.val() || {};
+  const events = [];
+
+  for (const bookingId in bookings) {
+    const booking = bookings[bookingId];
+
+    events.push({
+      id: bookingId,
+      title: `${booking.startTime} - ${booking.endTime}`,
+      start: booking.startTimeISO,
+      end: booking.endTimeISO,
+      extendedProps: {
+        userName: booking.userName,
+        date: booking.date,
+        startTime: booking.startTime,
+        endTime: booking.endTime
+      }
+    });
+  }
+
   successCallback(events);
+}
+
+function displayEventsForDay(date) {
+  const events = calendar.getEvents().filter(ev => {
+    const d = new Date(ev.start);
+    return d.toDateString() === date.toDateString();
+  });
+
+  dateBookingsList.innerHTML = events.length
+    ? events.map(ev => `
+        <div>
+          <strong>${ev.extendedProps.userName}</strong><br>
+          ${ev.extendedProps.startTime} - ${ev.extendedProps.endTime}
+        </div>
+      `).join('')
+    : 'No bookings on this day.';
+}
+
+function updateHeading(vehicle) {
+  $('#vehicle-schedule-heading').text(`${vehicle} Schedule`);
 }
 
 $('#vehicle-select').change(() => {
   updateHeading($('#vehicle-select').val());
   calendar.refetchEvents();
 });
-
-function updateHeading(vehicle) {
-  $('#vehicle-schedule-heading').text(`${vehicle} Schedule`);
-}
 </script>
-</body>
-</html>
