@@ -416,28 +416,28 @@ if (returnVehicleBtn) {
 
   // Ghost notes — already visible to all, just display inclusively
   if (notesSnap.exists()) {
-    const notes = notesSnap.val();
-    for (const noteId in notes) {
-      const n = notes[noteId];
-      const end = new Date(n.endDate || n.startDate);
-      end.setDate(end.getDate() + 1); // Make inclusive
+  const notes = notesSnap.val();
+  for (const noteId in notes) {
+    const n = notes[noteId];
 
-      events.push({
-        id: noteId,
-        title: `📝 ${n.note}`,
-        start: n.startDate,
-        end: end.toISOString(),
-        allDay: true,
-        backgroundColor: '#ffd966',
-        borderColor: '#999',
-        textColor: '#000',
-        extendedProps: { creatorEmail: n.createdBy }
-      });
-    }
+    // FullCalendar requires +1 day to include end date in allDay events
+    const endInclusive = new Date(n.endDate || n.startDate);
+    endInclusive.setDate(endInclusive.getDate() + 1); // <- fix here
+
+    events.push({
+      id: noteId,
+      title: `📝 ${n.note}`,
+      start: n.startDate,
+      end: endInclusive.toISOString(), // <- include final day
+      allDay: true,
+      backgroundColor: '#ffd966',
+      borderColor: '#999',
+      textColor: '#000',
+      extendedProps: { creatorEmail: n.createdBy }
+    });
   }
-
-  successCallback(events);
 }
+
 
 
   
