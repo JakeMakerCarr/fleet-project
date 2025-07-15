@@ -392,10 +392,9 @@ if (returnVehicleBtn) {
 
   const bookingsSnap = await get(ref(db, 'bookings/' + selectedVehicle));
   const notesSnap = await get(ref(db, 'ghostNotes/' + selectedVehicle));
-
   const events = [];
 
-  // Regular bookings
+  // Regular time-based bookings
   if (bookingsSnap.exists()) {
     const bookings = bookingsSnap.val();
     for (const bookingId in bookings) {
@@ -404,25 +403,26 @@ if (returnVehicleBtn) {
         id: bookingId,
         title: `${b.startTime}-${b.endTime}`,
         start: new Date(b.startTimeISO),
-        end: new Date(b.endTimeISO), // no +1 day
+        end: new Date(b.endTimeISO),
         extendedProps: { creatorEmail: b.userName }
       });
     }
   }
 
-  // Ghost notes
-    if (notesSnap.exists()) {
+  // All-day ghost notes (admin messages)
+  if (notesSnap.exists()) {
     const notes = notesSnap.val();
     for (const noteId in notes) {
       const n = notes[noteId];
-      const end = new Date(n.endDate || n.startDate);
-      end.setDate(end.getDate() + 1); // Make inclusive
+
+      const endInclusive = new Date(n.endDate || n.startDate);
+      endInclusive.setDate(endInclusive.getDate() + 1); // FullCalendar needs +1 to include last day
 
       events.push({
         id: noteId,
         title: `📝 ${n.note}`,
         start: n.startDate,
-        end: end.toISOString(),
+        end: endInclusive.toISOString(),
         allDay: true,
         backgroundColor: '#ffd966',
         borderColor: '#999',
@@ -584,8 +584,12 @@ async function handleMultiDayBooking() {
     return;
   }
 
-  const startDate = new Date(startDateVal);
-  const endDate = new Date(endDateVal);
+  // Parse dates in LOCAL TIME (not UTC)
+  const [sy, sm, sd] = startDateVal.split('-').map(Number);
+  const [ey, em, ed] = endDateVal.split('-').map(Number);
+  const startDate = new Date(sy, sm - 1, sd);
+  const endDate = new Date(ey, em - 1, ed);
+
   if (startDate > endDate) {
     alert('Start date cannot be after end date.');
     return;
@@ -596,13 +600,8 @@ async function handleMultiDayBooking() {
 
   while (currentDate <= endDate) {
     const dayOfWeek = currentDate.getDay();
-    console.log(`Checking date: ${currentDate.toLocaleDateString()}, dayOfWeek: ${dayOfWeek}`);
-
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday (1) to Friday (5)
-      const dateStr = currentDate.getFullYear() + '-' +
-                      String(currentDate.getMonth() + 1).padStart(2, '0') + '-' +
-                      String(currentDate.getDate()).padStart(2, '0');
-
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday only
+      const dateStr = currentDate.toISOString().split('T')[0];
       const startTS = toTimestamp(dateStr, startTimeVal);
       const endTS = toTimestamp(dateStr, endTimeVal);
 
@@ -625,8 +624,6 @@ async function handleMultiDayBooking() {
         startTimeISO: new Date(startTS).toISOString(),
         endTimeISO: new Date(endTS).toISOString()
       });
-    } else {
-      console.log(`Skipped date (weekend): ${currentDate.toLocaleDateString()}, dayOfWeek: ${dayOfWeek}`);
     }
 
     currentDate.setDate(currentDate.getDate() + 1);
@@ -644,7 +641,7 @@ async function handleMultiDayBooking() {
 
   alert('All bookings created successfully!');
   calendar.refetchEvents();
-} // <--- make sure this closing brace matches the while loop and function scope
+}
 
 
 // handleSignOutVehicle
