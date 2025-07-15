@@ -411,18 +411,18 @@ if (returnVehicleBtn) {
   }
 
   // Ghost notes
-  if (notesSnap.exists()) {
+    if (notesSnap.exists()) {
     const notes = notesSnap.val();
     for (const noteId in notes) {
       const n = notes[noteId];
-      const endInclusive = new Date(n.endDate || n.startDate);
-      endInclusive.setDate(endInclusive.getDate() + 1);
+      const end = new Date(n.endDate || n.startDate);
+      end.setDate(end.getDate() + 1); // Make inclusive
 
       events.push({
         id: noteId,
         title: `📝 ${n.note}`,
         start: n.startDate,
-        end: endInclusive.toISOString(),
+        end: end.toISOString(),
         allDay: true,
         backgroundColor: '#ffd966',
         borderColor: '#999',
@@ -432,9 +432,9 @@ if (returnVehicleBtn) {
     }
   }
 
-  successCallback(events); // ✅ This line was missing
+  successCallback(events);
 }
-
+  
   
 async function editGhostNote(noteId, noteDate) {
   const vehicle = vehicleSelect.value;
