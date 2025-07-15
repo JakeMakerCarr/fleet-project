@@ -27,24 +27,51 @@
     .calendar-section { flex: 1; }
     .details-section { flex: 0 0 300px; border-left: 1px solid #ccc; padding-left: 1rem; }
 
-    #booking-form {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-    }
+  #booking-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  max-width: 600px; /* ensures form doesn't stretch too wide */
+}
 
-    .form-row {
-      display: flex;
-      gap: 1rem;
-    }
+.form-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap; /* better responsiveness */
+}
 
-    #booking-form label {
-      display: flex;
-      flex-direction: column;
-      font-weight: bold;
-    }
-  </style>
+#booking-form label {
+  display: flex;
+  flex-direction: column;
+  font-weight: bold;
+  flex: 1; /* even spacing between columns */
+  min-width: 200px; /* consistent input field widths */
+}
+
+#booking-form input {
+  padding: 0.5rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.action-button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  background-color: #333;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  max-width: 200px;
+  margin-top: 0.5rem;
+}
+
+.action-button:hover {
+  background-color: #555;
+}
+
 </head>
 
 <body>
