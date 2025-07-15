@@ -410,16 +410,17 @@ if (returnVehicleBtn) {
     for (const noteId in notes) {
       const n = notes[noteId];
      events.push({
-      id: noteId,
-      title: `${n.note}`,
-      start: n.startDate,
-      end: new Date(new Date(n.endDate || n.startDate).setHours(23, 59, 59)).toISOString(),
-      allDay: true,
-      backgroundColor: '#ffd966',
-      borderColor: '#999',
-      textColor: '#000',
-      extendedProps: { creatorEmail: n.createdBy }
+  id: noteId,
+  title: `${n.note}`,
+  start: n.startDate,
+  end: addOneDay(n.endDate || n.startDate),
+  allDay: true,
+  backgroundColor: '#ffd966',
+  borderColor: '#999',
+  textColor: '#000',
+  extendedProps: { creatorEmail: n.createdBy }
 });
+
 
     }
   }
