@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -338,13 +338,17 @@ await set(newNoteRef, {
         await handleMultiDayBooking();
       });
 
+      if (signOutBtn) {
       signOutBtn.addEventListener('click', async () => {
         await handleSignOutVehicle();
       });
+}
+if (returnVehicleBtn) {
+  returnVehicleBtn.addEventListener('click', async () => {
+    await handleReturnVehicle();
+  });
+}
 
-      returnVehicleBtn.addEventListener('click', async () => {
-        await handleReturnVehicle();
-      });
 
       if(nfcVehicle) {
         handleNfcFlow(nfcVehicle);
@@ -452,11 +456,20 @@ async function editGhostNote(noteId, noteDate) {
 
 
   function getEventsForDate(clickedDate) {
-    const dayStart = new Date(clickedDate).setHours(0, 0, 0, 0);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setDate(dayEnd.getDate() + 1);
-    return calendar.getEvents().filter(ev => ev.start < dayEnd && ev.end > dayStart);
-  }
+  const dayStart = new Date(clickedDate);
+  dayStart.setHours(0, 0, 0, 0);
+
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+
+  return calendar.getEvents().filter(ev => {
+    const evStart = ev.start;
+    const evEnd = ev.end || ev.start;
+
+    return evStart < dayEnd && evEnd > dayStart;
+  });
+}
+
 
   function displayBookingsForDay(events, dateStr) {
   if (!events.length) {
