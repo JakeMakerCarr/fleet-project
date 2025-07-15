@@ -411,9 +411,9 @@ if (returnVehicleBtn) {
       const n = notes[noteId];
      events.push({
       id: noteId,
-      title: `📝 ${n.note}`,
+      title: `${n.note}`,
       start: n.startDate,
-      end: n.endDate ? new Date(new Date(n.endDate).getTime() + 24 * 60 * 60 * 1000).toISOString() : n.startDate,
+      end: new Date(new Date(n.endDate || n.startDate).setHours(23, 59, 59)).toISOString(),
       allDay: true,
       backgroundColor: '#ffd966',
       borderColor: '#999',
