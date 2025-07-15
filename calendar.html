@@ -1,13 +1,13 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Fleet Calendar (YFNED Fleet + NFC One-Sticker Method)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-
+  
   <!-- FullCalendar CSS -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.9.0/main.min.css" rel="stylesheet">
-
+  
   <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -18,107 +18,18 @@
   <link rel="stylesheet" href="style.css">
 
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: sans-serif;
-    }
-
-    header {
-      background: #333;
-      color: white;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem;
-    }
-
-    #user-info {
-      margin-right: 1rem;
-    }
-
-    #logout-btn {
-      cursor: pointer;
-      padding: 0.5rem 1rem;
-      background: #666;
-      color: white;
-      border-radius: 4px;
-      border: none;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: auto;
-      background: white;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .calendar-and-details {
-      display: flex;
-      gap: 1rem;
-    }
-
-    .calendar-section {
-      flex: 1;
-    }
-
-    .details-section {
-      flex: 0 0 300px;
-      border-left: 1px solid #ccc;
-      padding-left: 1rem;
-    }
-
-    #booking-form {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      margin-bottom: 1rem;
-      max-width: 600px;
-    }
-
-    .form-row {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    #booking-form label {
-      display: flex;
-      flex-direction: column;
-      font-weight: bold;
-      flex: 1;
-      min-width: 200px;
-    }
-
-    #booking-form input,
-    #booking-form select {
-      padding: 0.5rem;
-      font-size: 1rem;
-      box-sizing: border-box;
-      width: 100%;
-    }
-
-    .action-button {
-      padding: 0.5rem 1rem;
-      font-size: 1rem;
-      background-color: #333;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      max-width: 200px;
-      margin-top: 1rem;
-    }
-
-    .action-button:hover {
-      background-color: #555;
-    }
+    body { margin: 0; padding: 0; font-family: sans-serif; }
+    header { background: #333; color: white; display: flex; justify-content: space-between; align-items: center; padding: 1rem; }
+    #user-info { margin-right: 1rem; }
+    #logout-btn { cursor: pointer; padding: 0.5rem 1rem; background: #666; color: white; border-radius: 4px; border: none; }
+    .container { max-width: 1200px; margin: auto; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .calendar-and-details { display: flex; gap: 1rem; }
+    .calendar-section { flex: 1; }
+    .details-section { flex: 0 0 300px; border-left: 1px solid #ccc; padding-left: 1rem; }
   </style>
 </head>
-
 <body>
+
 <header>
   <div>Fleet Calendar</div>
   <div id="user-info">Checking auth...</div>
@@ -128,76 +39,40 @@
 <div class="container">
   <h2>YFNED Fleet Calendar</h2>
 
+  <div>
+    <label for="vehicle-select">Select a Vehicle:</label>
+    <select id="vehicle-select">
+      <option value="01-20 2021 Red Traverse CM335">2021 Red Traverse CM335</option>
+      <option value="02-20 2021 Black Traverse CM366">2021 Black Traverse CM366</option>
+      <option value="03-21 2021 Grey Traverse CN360">2021 Grey Traverse CN360</option>
+      <option value="04-21 2021 Shadow Silverado 1500 CM695">2021 Shadow Silverado 1500 CM695</option>
+      <option value="05-21 2021 Ebony Buick Encore CM532">2021 Ebony Buick Encore CM532</option>
+      <option value="06-21 2020 Grey Grand Caravan CN468">2020 Grey Grand Caravan CN468</option>
+      <option value="07-21 2021 White Terrain CN466">2021 White Terrain CN466</option>
+      <option value="08-21 2021 Black Terrain CN467">2021 Black Terrain CN467</option>
+      <option value="09-24 2024 White Sierra 3500 C182B">2024 White Sierra 3500 C182B</option>
+      <option value="10-24 2025 Green Trailblazer C838B">2025 Green Trailblazer C838B</option>
+      <option value="11-24 2024 Grey Traverse CS266">2024 Grey Traverse CS266</option>
+      <option value="12-24 2012 White Dodge HNL64">2012 White Dodge HNL64</option>
+      <option value="13-24 2024 Grey Traverse CT008">2024 Grey Traverse CT008</option>
+      <option value="14-24 2024 Grey Traverse C443C">2024 Grey Traverse C443C</option>
+      <option value="15-24 2024 Grey Traverse C444C">2024 Grey Traverse C444C</option>
+      <option value="16-24 2024 Blue Traverse CT073">2024 Blue Traverse CT073</option>
+      <option value="17-25 2025 Black Buick Envision CV294">2025 Black Buick Envision CV294</option>
+      <option value="18-25 2024 White Ford F750 CVVVVV">2024 White Ford F750 CVVVVV</option>
+    </select>
+  </div>
+
   <form id="booking-form">
-    <div class="form-row">
-      <label>
-        Select a Vehicle:
-        <select id="vehicle-select" required>
-          <option value="01-20 2021 Red Traverse CM335">2021 Red Traverse CM335</option>
-          <option value="02-20 2021 Black Traverse CM366">2021 Black Traverse CM366</option>
-          <option value="03-21 2021 Grey Traverse CN360">2021 Grey Traverse CN360</option>
-          <option value="04-21 2021 Shadow Silverado 1500 CM695">2021 Shadow Silverado 1500 CM695</option>
-          <option value="05-21 2021 Ebony Buick Encore CM532">2021 Ebony Buick Encore CM532</option>
-          <option value="06-21 2020 Grey Grand Caravan CN468">2020 Grey Grand Caravan CN468</option>
-          <option value="07-21 2021 White Terrain CN466">2021 White Terrain CN466</option>
-          <option value="08-21 2021 Black Terrain CN467">2021 Black Terrain CN467</option>
-          <option value="09-24 2024 White Sierra 3500 C182B">2024 White Sierra 3500 C182B</option>
-          <option value="10-24 2025 Green Trailblazer C838B">2025 Green Trailblazer C838B</option>
-          <option value="11-24 2024 Grey Traverse CS266">2024 Grey Traverse CS266</option>
-          <option value="12-24 2012 White Dodge HNL64">2012 White Dodge HNL64</option>
-          <option value="13-24 2024 Grey Traverse CT008">2024 Grey Traverse CT008</option>
-          <option value="14-24 2024 Grey Traverse C443C">2024 Grey Traverse C443C</option>
-          <option value="15-24 2024 Grey Traverse C444C">2024 Grey Traverse C444C</option>
-          <option value="16-24 2024 Blue Traverse CT073">2024 Blue Traverse CT073</option>
-          <option value="17-25 2025 Black Buick Envision CV294">2025 Black Buick Envision CV294</option>
-          <option value="18-25 2024 White Ford F750 CVVVVV">2024 White Ford F750 CVVVVV</option>
-        </select>
-      </label>
-    </div>
-
-    <div class="form-row">
-      <label>
-        Start Date (Mon-Fri):
-        <input type="date" id="booking-start-date" required>
-      </label>
-      <label>
-        End Date (optional, Mon-Fri):
-        <input type="date" id="booking-end-date">
-      </label>
-    </div>
-
-    <div class="form-row">
-      <label>
-        Start Time:
-        <input type="text" id="booking-start-time" required>
-      </label>
-      <label>
-        End Time:
-        <input type="text" id="booking-end-time" required>
-      </label>
-    </div>
-
-    <button id="bookVehicleBtn" class="action-button">Book Vehicle</button>
+    <label>Start Date (Mon-Fri): <input type="date" id="booking-start-date" required></label>
+    <label>End Date (optional, Mon-Fri): <input type="date" id="booking-end-date"></label>
+    <label>Start Time: <input type="text" id="booking-start-time" required></label>
+    <label>End Time: <input type="text" id="booking-end-time" required></label>
+    <button id="bookVehicleBtn">Book Vehicle</button>
   </form>
-  
-  <div id="ghost-note-form" style="margin-top:2rem; display:none;">
-  <h4>Ghost Note (Admin Only)</h4>
-  <div class="form-row">
-  <label>
-    Start Date:
-    <input type="date" id="ghost-note-start-date">
-  </label>
-  <label>
-    End Date:
-    <input type="date" id="ghost-note-end-date">
-  </label>
-  <label>
-    Note:
-    <input type="text" id="ghost-note-text">
-  </label>
-  <button class="action-button" id="submit-ghost-note">Add Note</button>
-</div>
 
+  <button id="signOutBtn">Sign Out Vehicle Now</button>
+  <button id="returnVehicleBtn">Return Vehicle Now</button>
 
   <div class="calendar-and-details">
     <div class="calendar-section">
@@ -213,7 +88,6 @@
     </div>
   </div>
 </div>
-
 <!-- FullCalendar JS -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.9.0/main.min.js"></script>
 
@@ -294,35 +168,6 @@
         dropdown: true,
         scrollbar: true
       });
-      
-      if (user.email === "jake.carr@yfned.ca") {
-  document.getElementById("ghost-note-form").style.display = "block";
-  document.getElementById("submit-ghost-note").addEventListener("click", async () => {
-    const noteStartDate = document.getElementById("ghost-note-start-date").value;
-    const noteEndDate = document.getElementById("ghost-note-end-date").value || noteStartDate;
-
-    const noteText = document.getElementById("ghost-note-text").value;
-
-    if (!noteStartDate || !noteText) {
-  alert("Please fill in the start date and note.");
-  return;
-}
-
-const refPath = `ghostNotes/${vehicleSelect.value}`;
-const newNoteRef = push(ref(db, refPath));
-await set(newNoteRef, {
-  startDate: noteStartDate,
-  endDate: noteEndDate,
-  note: noteText,
-  createdBy: user.email
-});
-
-
-    alert("Note added.");
-    calendar.refetchEvents();
-  });
-}
-
 
       initCalendar();
 
@@ -338,17 +183,13 @@ await set(newNoteRef, {
         await handleMultiDayBooking();
       });
 
-      if (signOutBtn) {
       signOutBtn.addEventListener('click', async () => {
         await handleSignOutVehicle();
       });
-}
-if (returnVehicleBtn) {
-  returnVehicleBtn.addEventListener('click', async () => {
-    await handleReturnVehicle();
-  });
-}
 
+      returnVehicleBtn.addEventListener('click', async () => {
+        await handleReturnVehicle();
+      });
 
       if(nfcVehicle) {
         handleNfcFlow(nfcVehicle);
@@ -374,173 +215,45 @@ if (returnVehicleBtn) {
         selectedDateTextEl.textContent = info.dateStr;
         displayBookingsForDay(getEventsForDate(info.date), info.dateStr);
         bookingStartDateInput.value = info.dateStr;
-        document.getElementById('ghost-note-start-date').value = info.dateStr;
       }
     });
     calendar.render();
   }
-  
-  function addOneDay(dateStr) {
-  const date = new Date(dateStr);
-  date.setDate(date.getDate() + 1);
-  return date.toISOString();
-}
 
   async function fetchVehicleBookings(info, successCallback, failureCallback) {
-  const selectedVehicle = vehicleSelect.value;
-  if (!selectedVehicle) return successCallback([]);
-
-  const bookingsSnap = await get(ref(db, 'bookings/' + selectedVehicle));
-  const notesSnap = await get(ref(db, 'ghostNotes/' + selectedVehicle));
-  const events = [];
-
-  // Regular time-based bookings
-  if (bookingsSnap.exists()) {
-    const bookings = bookingsSnap.val();
-    for (const bookingId in bookings) {
-      const b = bookings[bookingId];
-      events.push({
+    const selectedVehicle = vehicleSelect.value;
+    if (!selectedVehicle) return successCallback([]);
+    const snap = await get(ref(db, 'bookings/' + selectedVehicle));
+    if (!snap.exists()) return successCallback([]);
+    const data = snap.val();
+    const events = Object.keys(data).map(bookingId => {
+      const b = data[bookingId];
+      return {
         id: bookingId,
         title: `${b.startTime}-${b.endTime}`,
         start: new Date(b.startTimeISO),
         end: new Date(b.endTimeISO),
         extendedProps: { creatorEmail: b.userName }
-      });
-    }
+      };
+    });
+    successCallback(events);
   }
-
-  // All-day ghost notes (admin messages)
-  if (notesSnap.exists()) {
-    const notes = notesSnap.val();
-    for (const noteId in notes) {
-      const n = notes[noteId];
-
-      const endInclusive = new Date(n.endDate || n.startDate);
-      endInclusive.setDate(endInclusive.getDate() + 1); // FullCalendar needs +1 to include last day
-
-      events.push({
-        id: noteId,
-        title: `📝 ${n.note}`,
-        start: n.startDate,
-        end: endInclusive.toISOString(),
-        allDay: true,
-        backgroundColor: '#ffd966',
-        borderColor: '#999',
-        textColor: '#000',
-        extendedProps: { creatorEmail: n.createdBy }
-      });
-    }
-  }
-
-  successCallback(events);
-}
-  
-  
-async function editGhostNote(noteId, noteDate) {
-  const vehicle = vehicleSelect.value;
-  const refPath = `ghostNotes/${vehicle}`;
-  const noteSnap = await get(ref(db, refPath));
-  if (!noteSnap.exists()) {
-    alert('Note not found.');
-    return;
-  }
-
-  const notes = noteSnap.val();
-  const noteEntry = Object.entries(notes).find(
-    ([key, val]) => key === noteId && val.startDate === noteDate
-  );
-
-  if (!noteEntry) {
-    alert('Note not found.');
-    return;
-  }
-
-  const currentNote = noteEntry[1].note;
-  const newNote = prompt("Edit ghost note:", currentNote);
-  if (newNote !== null) {
-    await update(ref(db, `${refPath}/${noteId}`), { note: newNote });
-    alert("Note updated.");
-    calendar.refetchEvents();
-
-    // Update sidebar if it’s still showing this date
-    if (selectedDateTextEl.textContent === noteDate) {
-      displayBookingsForDay(getEventsForDate(new Date(noteDate)), noteDate);
-    }
-  }
-}
-
-
 
   function getEventsForDate(clickedDate) {
-  const dayStart = new Date(clickedDate);
-  dayStart.setHours(0, 0, 0, 0);
-
-  const dayEnd = new Date(dayStart);
-  dayEnd.setDate(dayEnd.getDate() + 1);
-
-  return calendar.getEvents().filter(ev => {
-    const evStart = ev.start;
-    const evEnd = ev.end || ev.start;
-
-    return evStart < dayEnd && evEnd > dayStart;
-  });
-}
-
+    const dayStart = new Date(clickedDate).setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart).setDate(new Date(dayStart).getDate() + 1);
+    return calendar.getEvents().filter(ev => ev.start < dayEnd && ev.end > dayStart);
+  }
 
   function displayBookingsForDay(events, dateStr) {
-  if (!events.length) {
-    dateBookingsListEl.innerHTML = 'No bookings on ' + dateStr + '.';
-    return;
+    dateBookingsListEl.innerHTML = events.length ? events.map(ev => `
+      <div>
+        <strong>${ev.extendedProps.creatorEmail}</strong><br>
+        Start: ${ev.start.toLocaleString()}<br>
+        End: ${ev.end.toLocaleString()}
+      </div>
+    `).join('') : 'No bookings on ' + dateStr + '.';
   }
-
-  const html = events.map(ev => {
-    const isGhost = ev.title.startsWith('📝');
-    const canEdit = currentUser && currentUser.email === 'jake.carr@yfned.ca';
-
-    return `
-  <div style="margin-bottom: 0.5rem; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem;">
-    <strong>${ev.extendedProps.creatorEmail}</strong><br>
-    ${
-      isGhost
-        ? `Note: ${ev.title.replace('📝 ', '')}<br>
-           ${canEdit 
-             ? `<button onclick="editGhostNote('${ev.id}', '${ev.startStr}')">Edit</button>
-                <button onclick="deleteGhostNote('${ev.id}')">Delete</button>` 
-             : ''}`
-        : `${canEdit 
-             ? `<button onclick="editGhostNote('${ev.id}', '${ev.startStr}')">Edit</button>` 
-             : ''}
-           Start: ${ev.start.toLocaleString()}<br>
-           End: ${ev.end.toLocaleString()}`
-    }
-  </div>
-`;
-
-
-  }).join('');
-
-  dateBookingsListEl.innerHTML = html;
-}
-
-async function deleteGhostNote(noteId) {
-  const vehicle = vehicleSelect.value;
-  if (!confirm("Are you sure you want to delete this note?")) return;
-
-  try {
-    await remove(ref(db, `ghostNotes/${vehicle}/${noteId}`));
-    alert("Note deleted.");
-    calendar.refetchEvents();
-
-    // Refresh sidebar if it was showing this note
-    const dateStr = selectedDateTextEl.textContent;
-    if (dateStr) {
-      displayBookingsForDay(getEventsForDate(new Date(dateStr)), dateStr);
-    }
-  } catch (error) {
-    console.error("Delete failed:", error);
-    alert("Failed to delete note.");
-  }
-}
 // Check for overlapping bookings
 async function isBookingOverlapping(vehicleName, newStart, newEnd) {
   const bookingsRef = ref(db, 'bookings/' + vehicleName);
@@ -566,7 +279,6 @@ function toTimestamp(dateStr, timeStr) {
 }
 
 // Handle Multi-day Booking
-// Handle Multi-day Booking (fixed)
 async function handleMultiDayBooking() {
   const selectedVehicle = vehicleSelect.value;
   if (!selectedVehicle) {
@@ -584,12 +296,8 @@ async function handleMultiDayBooking() {
     return;
   }
 
-  // Parse dates in LOCAL TIME (not UTC)
-  const [sy, sm, sd] = startDateVal.split('-').map(Number);
-  const [ey, em, ed] = endDateVal.split('-').map(Number);
-  const startDate = new Date(sy, sm - 1, sd);
-  const endDate = new Date(ey, em - 1, ed);
-
+  const startDate = new Date(startDateVal);
+  const endDate = new Date(endDateVal);
   if (startDate > endDate) {
     alert('Start date cannot be after end date.');
     return;
@@ -600,7 +308,7 @@ async function handleMultiDayBooking() {
 
   while (currentDate <= endDate) {
     const dayOfWeek = currentDate.getDay();
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday only
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Weekdays (Monday = 1, Friday = 5)
       const dateStr = currentDate.toISOString().split('T')[0];
       const startTS = toTimestamp(dateStr, startTimeVal);
       const endTS = toTimestamp(dateStr, endTimeVal);
@@ -625,7 +333,6 @@ async function handleMultiDayBooking() {
         endTimeISO: new Date(endTS).toISOString()
       });
     }
-
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
@@ -730,8 +437,6 @@ async function handleNfcFlow(nfcVeh) {
     alert(`${nfcVeh} not found.`);
   }
 }
-   window.deleteGhostNote = deleteGhostNote;
-   window.editGhostNote = editGhostNote;
 </script>
 </body>
 </html>
