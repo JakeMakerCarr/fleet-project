@@ -436,7 +436,10 @@ async function editGhostNote(noteId, noteDate) {
   }
 
   const notes = noteSnap.val();
-  const noteEntry = Object.entries(notes).find(([key, val]) => key === noteId && val.date === noteDate);
+  const noteEntry = Object.entries(notes).find(
+    ([key, val]) => key === noteId && val.startDate === noteDate
+  );
+
   if (!noteEntry) {
     alert('Note not found.');
     return;
@@ -448,11 +451,14 @@ async function editGhostNote(noteId, noteDate) {
     await update(ref(db, `${refPath}/${noteId}`), { note: newNote });
     alert("Note updated.");
     calendar.refetchEvents();
+
+    // Update sidebar if it’s still showing this date
     if (selectedDateTextEl.textContent === noteDate) {
       displayBookingsForDay(getEventsForDate(new Date(noteDate)), noteDate);
     }
   }
 }
+
 
 
   function getEventsForDate(clickedDate) {
