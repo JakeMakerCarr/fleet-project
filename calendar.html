@@ -307,40 +307,43 @@ async function handleMultiDayBooking() {
   const bookingsToCreate = [];
 
   while (currentDate <= endDate) {
-    const dayOfWeek = currentDate.getDay();
-    
-    // Debug logging
-    console.log(`Checking date: ${currentDate.toISOString().split('T')[0]}, dayOfWeek: ${dayOfWeek}`);
-    
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Weekdays (Monday = 1, Friday = 5)
-      const dateStr = currentDate.toISOString().split('T')[0];
-      const startTS = toTimestamp(dateStr, startTimeVal);
-      const endTS = toTimestamp(dateStr, endTimeVal);
+  const dayOfWeek = currentDate.getDay();
+  console.log(`Checking date: ${currentDate.toLocaleDateString()}, dayOfWeek: ${dayOfWeek}`);
 
-      if (endTS <= startTS) {
-        alert(`End time must be after start time on ${dateStr}!`);
-        return;
-      }
+  if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday (1) to Friday (5)
+    const dateStr = currentDate.getFullYear() + '-' +
+                    String(currentDate.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(currentDate.getDate()).padStart(2, '0');
 
-      const conflict = await isBookingOverlapping(selectedVehicle, startTS, endTS);
-      if (conflict) {
-        alert(`Conflict detected on ${dateStr}. Booking aborted.`);
-        return;
-      }
+    const startTS = toTimestamp(dateStr, startTimeVal);
+    const endTS = toTimestamp(dateStr, endTimeVal);
 
-      bookingsToCreate.push({
-        userName: currentUser.email,
-        date: dateStr,
-        startTime: startTimeVal,
-        endTime: endTimeVal,
-        startTimeISO: new Date(startTS).toISOString(),
-        endTimeISO: new Date(endTS).toISOString()
-      });
-    } else {
-      // Debug logging
-      console.log(`Skipped date (weekend): ${currentDate.toISOString().split('T')[0]}, dayOfWeek: ${dayOfWeek}`);
+    if (endTS <= startTS) {
+      alert(`End time must be after start time on ${dateStr}!`);
+      return;
     }
-    currentDate.setDate(currentDate.getDate() + 1);
+
+    const conflict = await isBookingOverlapping(selectedVehicle, startTS, endTS);
+    if (conflict) {
+      alert(`Conflict detected on ${dateStr}. Booking aborted.`);
+      return;
+    }
+
+    bookingsToCreate.push({
+      userName: currentUser.email,
+      date: dateStr,
+      startTime: startTimeVal,
+      endTime: endTimeVal,
+      startTimeISO: new Date(startTS).toISOString(),
+      endTimeISO: new Date(endTS).toISOString()
+    });
+  } else {
+    console.log(`Skipped date (weekend): ${currentDate.toLocaleDateString()}, dayOfWeek: ${dayOfWeek}`);
+  }
+  
+  currentDate.setDate(currentDate.getDate() + 1);
+}
+
   }
 
   if (bookingsToCreate.length === 0) {
