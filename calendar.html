@@ -410,23 +410,69 @@
 
   successCallback(events);
 }
+  
+async function editGhostNote(noteId, noteDate) {
+  const vehicle = vehicleSelect.value;
+  const refPath = `ghostNotes/${vehicle}`;
+  const noteSnap = await get(ref(db, refPath));
+  if (!noteSnap.exists()) {
+    alert('Note not found.');
+    return;
+  }
+
+  const notes = noteSnap.val();
+  const noteEntry = Object.entries(notes).find(([key, val]) => key === noteId && val.date === noteDate);
+  if (!noteEntry) {
+    alert('Note not found.');
+    return;
+  }
+
+  const currentNote = noteEntry[1].note;
+  const newNote = prompt("Edit ghost note:", currentNote);
+  if (newNote !== null) {
+    await update(ref(db, `${refPath}/${noteId}`), { note: newNote });
+    alert("Note updated.");
+    calendar.refetchEvents();
+    if (selectedDateTextEl.textContent === noteDate) {
+      displayBookingsForDay(getEventsForDate(new Date(noteDate)), noteDate);
+    }
+  }
+}
 
 
   function getEventsForDate(clickedDate) {
     const dayStart = new Date(clickedDate).setHours(0, 0, 0, 0);
-    const dayEnd = new Date(dayStart).setDate(new Date(dayStart).getDate() + 1);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
     return calendar.getEvents().filter(ev => ev.start < dayEnd && ev.end > dayStart);
   }
 
   function displayBookingsForDay(events, dateStr) {
-    dateBookingsListEl.innerHTML = events.length ? events.map(ev => `
-      <div>
-        <strong>${ev.extendedProps.creatorEmail}</strong><br>
-        Start: ${ev.start.toLocaleString()}<br>
-        End: ${ev.end.toLocaleString()}
-      </div>
-    `).join('') : 'No bookings on ' + dateStr + '.';
+  if (!events.length) {
+    dateBookingsListEl.innerHTML = 'No bookings on ' + dateStr + '.';
+    return;
   }
+
+  const html = events.map(ev => {
+    const isGhost = ev.title.startsWith('📝');
+    const canEdit = currentUser && currentUser.email === 'jake.carr@yfned.ca';
+
+    return `
+      <div style="margin-bottom: 0.5rem; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem;">
+        <strong>${ev.extendedProps.creatorEmail}</strong><br>
+        ${isGhost
+          ? `Note: ${ev.title.replace('📝 ', '')}<br>
+             ${canEdit ? `<button onclick="editGhostNote('${ev.id}', '${ev.startStr}')">Edit</button>` : ''}`
+          : `Start: ${ev.start.toLocaleString()}<br>End: ${ev.end.toLocaleString()}`
+        }
+      </div>
+    `;
+  }).join('');
+
+  dateBookingsListEl.innerHTML = html;
+}
+
+
 // Check for overlapping bookings
 async function isBookingOverlapping(vehicleName, newStart, newEnd) {
   const bookingsRef = ref(db, 'bookings/' + vehicleName);
