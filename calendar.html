@@ -379,6 +379,12 @@ if (returnVehicleBtn) {
     });
     calendar.render();
   }
+  
+  function addOneDay(dateStr) {
+  const date = new Date(dateStr);
+  date.setDate(date.getDate() + 1);
+  return date.toISOString();
+}
 
   async function fetchVehicleBookings(info, successCallback, failureCallback) {
   const selectedVehicle = vehicleSelect.value;
@@ -404,29 +410,28 @@ if (returnVehicleBtn) {
     }
   }
 
-  // Ghost notes (admin only)
+  // Ghost notes — visible to all, editable only by admin
   if (notesSnap.exists()) {
     const notes = notesSnap.val();
     for (const noteId in notes) {
       const n = notes[noteId];
-     events.push({
-  id: noteId,
-  title: `${n.note}`,
-  start: n.startDate,
-  end: addOneDay(n.endDate || n.startDate),
-  allDay: true,
-  backgroundColor: '#ffd966',
-  borderColor: '#999',
-  textColor: '#000',
-  extendedProps: { creatorEmail: n.createdBy }
-});
-
-
+      events.push({
+        id: noteId,
+        title: `📝 ${n.note}`,
+        start: n.startDate,
+        end: addOneDay(n.endDate || n.startDate), // FullCalendar excludes end date by default
+        allDay: true,
+        backgroundColor: '#ffd966',
+        borderColor: '#999',
+        textColor: '#000',
+        extendedProps: { creatorEmail: n.createdBy }
+      });
     }
   }
 
   successCallback(events);
 }
+
   
 async function editGhostNote(noteId, noteDate) {
   const vehicle = vehicleSelect.value;
