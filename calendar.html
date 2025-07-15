@@ -369,58 +369,55 @@
   }
 
   async function handleBooking() {
-    const veh = vehicleSelect.value;
-    const dateStr = bookingDateInput.value;
-    const startTime = bookingStartInput.value;
-    const endTime = bookingEndInput.value;
+  const veh = vehicleSelect.value;
+  const dateStr = bookingDateInput.value;
+  const startTime = bookingStartInput.value;
+  const endTime = bookingEndInput.value;
 
-    if (!veh || !dateStr || !startTime || !endTime) {
-      alert("Please fill in all fields.");
-      return;
-    }
-
-    const dateObj = new Date(dateStr);
-    const dow = dateObj.getDay();
-    if (dow === 0 || dow === 6) {
-      alert("Weekends are not bookable.");
-      return;
-    }
-
-    const startTS = toTimestamp(dateStr, startTime);
-    const endTS = toTimestamp(dateStr, endTime);
-
-    if (endTS <= startTS) {
-      alert("End time must be after start time.");
-      return;
-    }
-
-    const snapshot = await get(ref(db, `bookings/${veh}`));
-    const allBookings = snapshot.exists() ? Object.values(snapshot.val()) : [];
-
-    const overlap = allBookings.some(b => {
-      const bStart = new Date(b.startTimeISO).getTime();
-      const bEnd = new Date(b.endTimeISO).getTime();
-      return startTS < bEnd && endTS > bStart;
-    });
-
-    if (overlap) {
-      alert("This vehicle is already booked for that time.");
-      return;
-    }
-
-    const bookingRef = push(ref(db, `bookings/${veh}`));
-    await set(bookingRef, {
-      userName: currentUser.email,
-      date: dateStr,
-      startTime,
-      endTime,
-      startTimeISO: new Date(startTS).toISOString(),
-      endTimeISO: new Date(endTS).toISOString()
-    });
-
-    alert("Booking successful!");
-    calendar.refetchEvents();
+  if (!veh || !dateStr || !startTime || !endTime) {
+    alert("Please fill in all fields.");
+    return;
   }
+
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const dateObj = new Date(year, month - 1, day);
+  const dayOfWeek = dateObj.getDay();
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    alert('Weekends are not bookable.');
+    return;
+  }
+
+  const startTS = toTimestamp(dateStr, startTime);
+  const endTS = toTimestamp(dateStr, endTime);
+
+  if (endTS <= startTS) {
+    alert('End time must be after start time!');
+    return;
+  }
+
+  const conflict = await isBookingOverlapping(veh, startTS, endTS);
+  if (conflict) {
+    alert('That time range is already booked for this vehicle!');
+    return;
+  }
+
+  const bookingRef = push(ref(db, 'bookings/' + veh));
+  const startTimeISO = new Date(startTS).toISOString();
+  const endTimeISO = new Date(endTS).toISOString();
+
+  await set(bookingRef, {
+    userName: currentUser.email,
+    date: dateStr,
+    startTime,
+    endTime,
+    startTimeISO,
+    endTimeISO
+  });
+
+  alert('Booking created!');
+  calendar.refetchEvents();
+}
+
 
   function updateHeading(vehicleName) {
     document.getElementById('vehicle-schedule-heading').textContent = `${vehicleName} Schedule`;
