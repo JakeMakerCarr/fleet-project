@@ -26,8 +26,27 @@
     .calendar-and-details { display: flex; gap: 1rem; }
     .calendar-section { flex: 1; }
     .details-section { flex: 0 0 300px; border-left: 1px solid #ccc; padding-left: 1rem; }
+
+    #booking-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 1rem;
+    }
+
+    #booking-form label {
+      display: flex;
+      flex-direction: column;
+      font-weight: bold;
+    }
   </style>
 </head>
+
 <body>
 
 <header>
@@ -64,15 +83,33 @@
   </div>
 
   <form id="booking-form">
-    <label>Start Date (Mon-Fri): <input type="date" id="booking-start-date" required></label>
-    <label>End Date (optional, Mon-Fri): <input type="date" id="booking-end-date"></label>
-    <label>Start Time: <input type="text" id="booking-start-time" required></label>
-    <label>End Time: <input type="text" id="booking-end-time" required></label>
-    <button id="bookVehicleBtn">Book Vehicle</button>
-  </form>
+  <div class="form-row">
+    <label>Start Date (Mon-Fri):
+      <input type="date" id="booking-start-date" required>
+    </label>
 
-  <button id="signOutBtn">Sign Out Vehicle Now</button>
-  <button id="returnVehicleBtn">Return Vehicle Now</button>
+    <label>End Date (optional, Mon-Fri):
+      <input type="date" id="booking-end-date">
+    </label>
+  </div>
+
+  <div class="form-row">
+    <label>Start Time:
+      <input type="text" id="booking-start-time" required>
+    </label>
+
+    <label>End Time:
+      <input type="text" id="booking-end-time" required>
+    </label>
+  </div>
+
+  <button id="bookVehicleBtn">Book Vehicle</button>
+</form>
+
+<!--
+<button id="signOutBtn">Sign Out Vehicle Now</button>
+<button id="returnVehicleBtn">Return Vehicle Now</button>
+-->
 
   <div class="calendar-and-details">
     <div class="calendar-section">
