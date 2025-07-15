@@ -308,7 +308,7 @@ async function handleMultiDayBooking() {
 
   while (currentDate <= endDate) {
     const dayOfWeek = currentDate.getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Skip weekends
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Weekdays (Monday = 1, Friday = 5)
       const dateStr = currentDate.toISOString().split('T')[0];
       const startTS = toTimestamp(dateStr, startTimeVal);
       const endTS = toTimestamp(dateStr, endTimeVal);
@@ -336,6 +336,11 @@ async function handleMultiDayBooking() {
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
+  if (bookingsToCreate.length === 0) {
+    alert('No valid weekdays selected.');
+    return;
+  }
+
   for (const booking of bookingsToCreate) {
     const bookingRef = push(ref(db, 'bookings/' + selectedVehicle));
     await set(bookingRef, booking);
@@ -344,6 +349,7 @@ async function handleMultiDayBooking() {
   alert('All bookings created successfully!');
   calendar.refetchEvents();
 }
+
 
 // handleSignOutVehicle
 async function handleSignOutVehicle(paramVehicle = null) {
