@@ -471,15 +471,22 @@ async function editGhostNote(noteId, noteDate) {
     return `
   <div style="margin-bottom: 0.5rem; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem;">
     <strong>${ev.extendedProps.creatorEmail}</strong><br>
-    ${isGhost
-      ? `Note: ${ev.title.replace('📝 ', '')}<br>
-         <button onclick="editGhostNote('${ev.id}', '${ev.startStr}')">Edit</button>
-         <button onclick="deleteGhostNote('${ev.id}')">Delete</button>`
-      : `${canEdit ? `<button onclick="editGhostNote('${ev.id}', '${ev.startStr}')">Edit</button>` : ''}
-         Start: ${ev.start.toLocaleString()}<br>End: ${ev.end.toLocaleString()}`
+    ${
+      isGhost
+        ? `Note: ${ev.title.replace('📝 ', '')}<br>
+           ${canEdit 
+             ? `<button onclick="editGhostNote('${ev.id}', '${ev.startStr}')">Edit</button>
+                <button onclick="deleteGhostNote('${ev.id}')">Delete</button>` 
+             : ''}`
+        : `${canEdit 
+             ? `<button onclick="editGhostNote('${ev.id}', '${ev.startStr}')">Edit</button>` 
+             : ''}
+           Start: ${ev.start.toLocaleString()}<br>
+           End: ${ev.end.toLocaleString()}`
     }
   </div>
 `;
+
 
   }).join('');
 
@@ -697,6 +704,8 @@ async function handleNfcFlow(nfcVeh) {
     alert(`${nfcVeh} not found.`);
   }
 }
+   window.deleteGhostNote = deleteGhostNote;
+   window.editGhostNote = editGhostNote;
 </script>
 </body>
 </html>
