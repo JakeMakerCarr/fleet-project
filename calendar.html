@@ -308,6 +308,10 @@ async function handleMultiDayBooking() {
 
   while (currentDate <= endDate) {
     const dayOfWeek = currentDate.getDay();
+    
+    // Debug logging
+    console.log(`Checking date: ${currentDate.toISOString().split('T')[0]}, dayOfWeek: ${dayOfWeek}`);
+    
     if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Weekdays (Monday = 1, Friday = 5)
       const dateStr = currentDate.toISOString().split('T')[0];
       const startTS = toTimestamp(dateStr, startTimeVal);
@@ -332,6 +336,9 @@ async function handleMultiDayBooking() {
         startTimeISO: new Date(startTS).toISOString(),
         endTimeISO: new Date(endTS).toISOString()
       });
+    } else {
+      // Debug logging
+      console.log(`Skipped date (weekend): ${currentDate.toISOString().split('T')[0]}, dayOfWeek: ${dayOfWeek}`);
     }
     currentDate.setDate(currentDate.getDate() + 1);
   }
@@ -349,7 +356,6 @@ async function handleMultiDayBooking() {
   alert('All bookings created successfully!');
   calendar.refetchEvents();
 }
-
 
 // handleSignOutVehicle
 async function handleSignOutVehicle(paramVehicle = null) {
