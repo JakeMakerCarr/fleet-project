@@ -18,60 +18,104 @@
   <link rel="stylesheet" href="style.css">
 
   <style>
-    body { margin: 0; padding: 0; font-family: sans-serif; }
-    header { background: #333; color: white; display: flex; justify-content: space-between; align-items: center; padding: 1rem; }
-    #user-info { margin-right: 1rem; }
-    #logout-btn { cursor: pointer; padding: 0.5rem 1rem; background: #666; color: white; border-radius: 4px; border: none; }
-    .container { max-width: 1200px; margin: auto; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    .calendar-and-details { display: flex; gap: 1rem; }
-    .calendar-section { flex: 1; }
-    .details-section { flex: 0 0 300px; border-left: 1px solid #ccc; padding-left: 1rem; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+    }
 
-  #booking-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  max-width: 600px; /* ensures form doesn't stretch too wide */
-}
+    header {
+      background: #333;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+    }
 
-.form-row {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap; /* better responsiveness */
-}
+    #user-info {
+      margin-right: 1rem;
+    }
 
-#booking-form label {
-  display: flex;
-  flex-direction: column;
-  font-weight: bold;
-  flex: 1; /* even spacing between columns */
-  min-width: 200px; /* consistent input field widths */
-}
+    #logout-btn {
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      background: #666;
+      color: white;
+      border-radius: 4px;
+      border: none;
+    }
 
-#booking-form input {
-  padding: 0.5rem;
-  font-size: 1rem;
-  box-sizing: border-box;
-  width: 100%;
-}
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
 
-.action-button {
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
-  background-color: #333;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  max-width: 200px;
-  margin-top: 0.5rem;
-}
+    .calendar-and-details {
+      display: flex;
+      gap: 1rem;
+    }
 
-.action-button:hover {
-  background-color: #555;
-}
+    .calendar-section {
+      flex: 1;
+    }
 
+    .details-section {
+      flex: 0 0 300px;
+      border-left: 1px solid #ccc;
+      padding-left: 1rem;
+    }
+
+    #booking-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      max-width: 600px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    #booking-form label {
+      display: flex;
+      flex-direction: column;
+      font-weight: bold;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    #booking-form input,
+    #booking-form select {
+      padding: 0.5rem;
+      font-size: 1rem;
+      box-sizing: border-box;
+      width: 100%;
+    }
+
+    .action-button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      max-width: 200px;
+      margin-top: 1rem;
+    }
+
+    .action-button:hover {
+      background-color: #555;
+    }
+  </style>
 </head>
 
 <body>
