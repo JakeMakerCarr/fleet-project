@@ -374,6 +374,7 @@ if (returnVehicleBtn) {
         selectedDateTextEl.textContent = info.dateStr;
         displayBookingsForDay(getEventsForDate(info.date), info.dateStr);
         bookingStartDateInput.value = info.dateStr;
+        document.getElementById('ghost-note-start-date').value = info.dateStr;
       }
     });
     calendar.render();
