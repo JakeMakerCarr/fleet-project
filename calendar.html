@@ -179,6 +179,20 @@
 
     <button id="bookVehicleBtn" class="action-button">Book Vehicle</button>
   </form>
+  
+  <div id="ghost-note-form" style="margin-top:2rem; display:none;">
+  <h4>Ghost Note (Admin Only)</h4>
+  <label>
+    Date:
+    <input type="date" id="ghost-note-date">
+  </label>
+  <label>
+    Note:
+    <input type="text" id="ghost-note-text">
+  </label>
+  <button class="action-button" id="submit-ghost-note">Add Note</button>
+</div>
+
 
   <div class="calendar-and-details">
     <div class="calendar-section">
@@ -275,6 +289,31 @@
         dropdown: true,
         scrollbar: true
       });
+      
+      if (user.email === "jake.carr@yfned.ca") {
+  document.getElementById("ghost-note-form").style.display = "block";
+  document.getElementById("submit-ghost-note").addEventListener("click", async () => {
+    const noteDate = document.getElementById("ghost-note-date").value;
+    const noteText = document.getElementById("ghost-note-text").value;
+
+    if (!noteDate || !noteText) {
+      alert("Please fill in both fields.");
+      return;
+    }
+
+    const refPath = `ghostNotes/${vehicleSelect.value}`;
+    const newNoteRef = push(ref(db, refPath));
+    await set(newNoteRef, {
+      date: noteDate,
+      note: noteText,
+      createdBy: user.email
+    });
+
+    alert("Note added.");
+    calendar.refetchEvents();
+  });
+}
+
 
       initCalendar();
 
@@ -328,23 +367,50 @@
   }
 
   async function fetchVehicleBookings(info, successCallback, failureCallback) {
-    const selectedVehicle = vehicleSelect.value;
-    if (!selectedVehicle) return successCallback([]);
-    const snap = await get(ref(db, 'bookings/' + selectedVehicle));
-    if (!snap.exists()) return successCallback([]);
-    const data = snap.val();
-    const events = Object.keys(data).map(bookingId => {
-      const b = data[bookingId];
-      return {
+  const selectedVehicle = vehicleSelect.value;
+  if (!selectedVehicle) return successCallback([]);
+
+  const bookingsSnap = await get(ref(db, 'bookings/' + selectedVehicle));
+  const notesSnap = await get(ref(db, 'ghostNotes/' + selectedVehicle));
+
+  const events = [];
+
+  // Regular bookings
+  if (bookingsSnap.exists()) {
+    const bookings = bookingsSnap.val();
+    for (const bookingId in bookings) {
+      const b = bookings[bookingId];
+      events.push({
         id: bookingId,
         title: `${b.startTime}-${b.endTime}`,
         start: new Date(b.startTimeISO),
         end: new Date(b.endTimeISO),
         extendedProps: { creatorEmail: b.userName }
-      };
-    });
-    successCallback(events);
+      });
+    }
   }
+
+  // Ghost notes (admin only)
+  if (notesSnap.exists()) {
+    const notes = notesSnap.val();
+    for (const noteId in notes) {
+      const n = notes[noteId];
+      events.push({
+        id: noteId,
+        title: `📝 ${n.note}`,
+        start: n.date,
+        allDay: true,
+        backgroundColor: '#ffd966', // soft yellow for notes
+        borderColor: '#999',
+        textColor: '#000',
+        extendedProps: { creatorEmail: n.createdBy }
+      });
+    }
+  }
+
+  successCallback(events);
+}
+
 
   function getEventsForDate(clickedDate) {
     const dayStart = new Date(clickedDate).setHours(0, 0, 0, 0);
