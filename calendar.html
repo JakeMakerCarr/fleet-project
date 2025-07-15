@@ -395,47 +395,45 @@ if (returnVehicleBtn) {
 
   const events = [];
 
-  // Regular bookings — make end exclusive but visually inclusive by adding +1 day
+  // Regular bookings
   if (bookingsSnap.exists()) {
-  const bookings = bookingsSnap.val();
-  for (const bookingId in bookings) {
-    const b = bookings[bookingId];
-
-    events.push({
-      id: bookingId,
-      title: `${b.startTime}-${b.endTime}`,
-      start: new Date(b.startTimeISO),
-      end: new Date(b.endTimeISO), // do NOT add +1 day
-      extendedProps: { creatorEmail: b.userName }
-    });
+    const bookings = bookingsSnap.val();
+    for (const bookingId in bookings) {
+      const b = bookings[bookingId];
+      events.push({
+        id: bookingId,
+        title: `${b.startTime}-${b.endTime}`,
+        start: new Date(b.startTimeISO),
+        end: new Date(b.endTimeISO), // no +1 day
+        extendedProps: { creatorEmail: b.userName }
+      });
+    }
   }
-}
 
-  // Ghost notes — already visible to all, just display inclusively
+  // Ghost notes
   if (notesSnap.exists()) {
-  const notes = notesSnap.val();
-  for (const noteId in notes) {
-    const n = notes[noteId];
+    const notes = notesSnap.val();
+    for (const noteId in notes) {
+      const n = notes[noteId];
+      const endInclusive = new Date(n.endDate || n.startDate);
+      endInclusive.setDate(endInclusive.getDate() + 1);
 
-    // FullCalendar requires +1 day to include end date in allDay events
-    const endInclusive = new Date(n.endDate || n.startDate);
-    endInclusive.setDate(endInclusive.getDate() + 1); // <- fix here
-
-    events.push({
-      id: noteId,
-      title: `📝 ${n.note}`,
-      start: n.startDate,
-      end: endInclusive.toISOString(), // <- include final day
-      allDay: true,
-      backgroundColor: '#ffd966',
-      borderColor: '#999',
-      textColor: '#000',
-      extendedProps: { creatorEmail: n.createdBy }
-    });
+      events.push({
+        id: noteId,
+        title: `📝 ${n.note}`,
+        start: n.startDate,
+        end: endInclusive.toISOString(),
+        allDay: true,
+        backgroundColor: '#ffd966',
+        borderColor: '#999',
+        textColor: '#000',
+        extendedProps: { creatorEmail: n.createdBy }
+      });
+    }
   }
+
+  successCallback(events); // ✅ This line was missing
 }
-
-
 
   
 async function editGhostNote(noteId, noteDate) {
