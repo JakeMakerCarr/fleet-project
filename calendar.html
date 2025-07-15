@@ -182,9 +182,14 @@
   
   <div id="ghost-note-form" style="margin-top:2rem; display:none;">
   <h4>Ghost Note (Admin Only)</h4>
+  <div class="form-row">
   <label>
-    Date:
-    <input type="date" id="ghost-note-date">
+    Start Date:
+    <input type="date" id="ghost-note-start-date">
+  </label>
+  <label>
+    End Date:
+    <input type="date" id="ghost-note-end-date">
   </label>
   <label>
     Note:
@@ -293,21 +298,25 @@
       if (user.email === "jake.carr@yfned.ca") {
   document.getElementById("ghost-note-form").style.display = "block";
   document.getElementById("submit-ghost-note").addEventListener("click", async () => {
-    const noteDate = document.getElementById("ghost-note-date").value;
+    const noteStartDate = document.getElementById("ghost-note-start-date").value;
+    const noteEndDate = document.getElementById("ghost-note-end-date").value || noteStartDate;
+
     const noteText = document.getElementById("ghost-note-text").value;
 
-    if (!noteDate || !noteText) {
-      alert("Please fill in both fields.");
-      return;
-    }
+    if (!noteStartDate || !noteText) {
+  alert("Please fill in the start date and note.");
+  return;
+}
 
-    const refPath = `ghostNotes/${vehicleSelect.value}`;
-    const newNoteRef = push(ref(db, refPath));
-    await set(newNoteRef, {
-      date: noteDate,
-      note: noteText,
-      createdBy: user.email
-    });
+const refPath = `ghostNotes/${vehicleSelect.value}`;
+const newNoteRef = push(ref(db, refPath));
+await set(newNoteRef, {
+  startDate: noteStartDate,
+  endDate: noteEndDate,
+  note: noteText,
+  createdBy: user.email
+});
+
 
     alert("Note added.");
     calendar.refetchEvents();
@@ -395,16 +404,18 @@
     const notes = notesSnap.val();
     for (const noteId in notes) {
       const n = notes[noteId];
-      events.push({
-        id: noteId,
-        title: `📝 ${n.note}`,
-        start: n.date,
-        allDay: true,
-        backgroundColor: '#ffd966', // soft yellow for notes
-        borderColor: '#999',
-        textColor: '#000',
-        extendedProps: { creatorEmail: n.createdBy }
-      });
+     events.push({
+      id: noteId,
+      title: `📝 ${n.note}`,
+      start: n.startDate,
+      end: n.endDate ? new Date(new Date(n.endDate).getTime() + 24 * 60 * 60 * 1000).toISOString() : n.startDate,
+      allDay: true,
+      backgroundColor: '#ffd966',
+      borderColor: '#999',
+      textColor: '#000',
+      extendedProps: { creatorEmail: n.createdBy }
+});
+
     }
   }
 
