@@ -469,21 +469,42 @@ async function editGhostNote(noteId, noteDate) {
     const canEdit = currentUser && currentUser.email === 'jake.carr@yfned.ca';
 
     return `
-      <div style="margin-bottom: 0.5rem; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem;">
-        <strong>${ev.extendedProps.creatorEmail}</strong><br>
-        ${isGhost
-          ? `Note: ${ev.title.replace('📝 ', '')}<br>
-             ${canEdit ? `<button onclick="editGhostNote('${ev.id}', '${ev.startStr}')">Edit</button>` : ''}`
-          : `Start: ${ev.start.toLocaleString()}<br>End: ${ev.end.toLocaleString()}`
-        }
-      </div>
-    `;
+  <div style="margin-bottom: 0.5rem; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem;">
+    <strong>${ev.extendedProps.creatorEmail}</strong><br>
+    ${isGhost
+      ? `Note: ${ev.title.replace('📝 ', '')}<br>
+         <button onclick="editGhostNote('${ev.id}', '${ev.startStr}')">Edit</button>
+         <button onclick="deleteGhostNote('${ev.id}')">Delete</button>`
+      : `${canEdit ? `<button onclick="editGhostNote('${ev.id}', '${ev.startStr}')">Edit</button>` : ''}
+         Start: ${ev.start.toLocaleString()}<br>End: ${ev.end.toLocaleString()}`
+    }
+  </div>
+`;
+
   }).join('');
 
   dateBookingsListEl.innerHTML = html;
 }
 
+async function deleteGhostNote(noteId) {
+  const vehicle = vehicleSelect.value;
+  if (!confirm("Are you sure you want to delete this note?")) return;
 
+  try {
+    await remove(ref(db, `ghostNotes/${vehicle}/${noteId}`));
+    alert("Note deleted.");
+    calendar.refetchEvents();
+
+    // Refresh sidebar if it was showing this note
+    const dateStr = selectedDateTextEl.textContent;
+    if (dateStr) {
+      displayBookingsForDay(getEventsForDate(new Date(dateStr)), dateStr);
+    }
+  } catch (error) {
+    console.error("Delete failed:", error);
+    alert("Failed to delete note.");
+  }
+}
 // Check for overlapping bookings
 async function isBookingOverlapping(vehicleName, newStart, newEnd) {
   const bookingsRef = ref(db, 'bookings/' + vehicleName);
