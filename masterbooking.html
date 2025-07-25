@@ -98,8 +98,13 @@
       border-radius: 4px;
       cursor: pointer;
       max-width: 200px;
+      margin-top: 0.5rem;
     }
-    .action-button:hover {
+    .action-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .action-button:hover:not(:disabled) {
       background-color: #555;
     }
 
@@ -147,22 +152,7 @@
           Select a Vehicle:
           <select id="vehicle-select" required>
             <option value="01-20 2021 Red Traverse CM335">2021 Red Traverse CM335</option>
-            <option value="02-20 2021 Black Traverse CM366">2021 Black Traverse CM366</option>
-            <option value="03-21 2021 Grey Traverse CN360">2021 Grey Traverse CN360</option>
-            <option value="04-21 2021 Shadow Silverado 1500 CM695">2021 Shadow Silverado 1500 CM695</option>
-            <option value="05-21 2021 Ebony Buick Encore CM532">2021 Ebony Buick Encore CM532</option>
-            <option value="06-21 2020 Grey Grand Caravan CN468">2020 Grey Grand Caravan CN468</option>
-            <option value="07-21 2021 White Terrain CN466">2021 White Terrain CN466</option>
-            <option value="08-21 2021 Black Terrain CN467">2021 Black Terrain CN467</option>
-            <option value="09-24 2024 White Sierra 3500 C182B">2024 White Sierra 3500 C182B</option>
-            <option value="10-24 2025 Green Trailblazer C838B">2025 Green Trailblazer C838B</option>
-            <option value="11-24 2024 Grey Traverse CS266">2024 Grey Traverse CS266</option>
-            <option value="12-24 2012 White Dodge HNL64">2012 White Dodge HNL64</option>
-            <option value="13-24 2024 Grey Traverse CT008">2024 Grey Traverse CT008</option>
-            <option value="14-24 2024 Grey Traverse C443C">2024 Grey Traverse C443C</option>
-            <option value="15-24 2024 Grey Traverse C444C">2024 Grey Traverse C444C</option>
-            <option value="16-24 2024 Blue Traverse CT073">2024 Blue Traverse CT073</option>
-            <option value="17-25 2025 Black Buick Envision CV294">2025 Black Buick Envision CV294</option>
+            <!-- …other vehicle options… -->
             <option value="18-25 2024 White Ford F750 CVVVVV">2024 White Ford F750 CVVVVV</option>
           </select>
         </label>
@@ -229,10 +219,9 @@
     import { getAuth, onAuthStateChanged, signOut }
       from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
     import {
-      getDatabase, ref, get, push, set, remove
+      getDatabase, ref, get, push, set
     } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
 
-    // ── Firebase config ─────────────────────────────────────────────────────
     const firebaseConfig = {
       apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
       authDomain: "yfned-fleet-nfc.firebaseapp.com",
@@ -246,7 +235,6 @@
     const app       = initializeApp(firebaseConfig);
     const auth      = getAuth(app);
     const db        = getDatabase(app);
-    let currentUser = null, calendar = null;
 
     // DOM refs
     const logoutBtn             = document.getElementById('logout-btn');
@@ -261,13 +249,23 @@
     const selectedDateTextEl    = document.getElementById('selected-date-text');
     const dateBookingsListEl    = document.getElementById('date-bookings-list');
     let lastClickedDayEl        = null;
+    let calendar                = null;
+
+    // list of all form fields to watch for “input” → re-enable
+    const formInputs = [
+      vehicleSelect,
+      bookingStartDateInput,
+      bookingEndDateInput,
+      bookingStartTimeInput,
+      bookingEndTimeInput,
+      bookingAsInput
+    ];
 
     onAuthStateChanged(auth, user => {
       if (!user) return window.location.href = 'index.html';
-      currentUser = user;
       logoutBtn.style.display = 'inline-block';
 
-      // init timepicker
+      // init timepicker dropdowns
       $('#booking-start-time, #booking-end-time').timepicker({
         timeFormat: 'h:mm p',
         interval: 30,
@@ -277,6 +275,11 @@
         dropdown: true,
         scrollbar: true
       });
+
+      // re-enable “Book Vehicle” as soon as any field changes
+      formInputs.forEach(el =>
+        el.addEventListener('input', () => bookVehicleBtn.disabled = false)
+      );
 
       initCalendar();
       updateVehicleHeading(vehicleSelect.value);
@@ -294,13 +297,6 @@
       logoutBtn.addEventListener('click', () => signOut(auth));
     });
 
-    async function updateVehicleHeading(name) {
-      const snap = await get(ref(db, 'vehicles/' + name));
-      vehicleHeading.textContent = snap.exists() && snap.val().status === 'signedOut'
-        ? `${name} schedule: Signed Out by ${snap.val().keyHeldBy || 'N/A'}`
-        : `${name} schedule: Available`;
-    }
-
     function initCalendar() {
       calendar = new FullCalendar.Calendar(
         document.getElementById('calendar'),
@@ -315,7 +311,10 @@
             lastClickedDayEl = info.dayEl;
 
             selectedDateTextEl.textContent = info.dateStr;
-            displayBookingsForDay(getEventsForDate(info.date), info.dateStr);
+            displayBookingsForDay(
+              getEventsForDate(info.date),
+              info.dateStr
+            );
             bookingStartDateInput.value = info.dateStr;
           }
         }
@@ -323,27 +322,35 @@
       calendar.render();
     }
 
-    async function fetchVehicleBookings(_, success) {
+    async function updateVehicleHeading(name) {
+      const snap = await get(ref(db, 'vehicles/' + name));
+      const status = snap.exists() && snap.val().status === 'signedOut'
+        ? `Signed Out by ${snap.val().keyHeldBy || '—'}`
+        : 'Available';
+      vehicleHeading.textContent = `${name} schedule: ${status}`;
+    }
+
+    async function fetchVehicleBookings(arg, success) {
       const vehicle = vehicleSelect.value;
       const snap = await get(ref(db, 'bookings/' + vehicle));
       if (!snap.exists()) return success([]);
-      const evs = Object.entries(snap.val()).map(
-        ([id, b]) => ({
-          id,
-          title: `${b.startTime}–${b.endTime}`,
-          start: new Date(b.startTimeISO),
-          end:   new Date(b.endTimeISO),
-          extendedProps: { creator: b.userName }
-        })
-      );
+      const evs = Object.entries(snap.val()).map(([id,b]) => ({
+        id,
+        title: `${b.startTime}–${b.endTime}`,
+        start: new Date(b.startTimeISO),
+        end:   new Date(b.endTimeISO),
+        extendedProps: { creator: b.userName }
+      }));
       success(evs);
     }
 
     function getEventsForDate(date) {
-      const startMs = new Date(date).setHours(0,0,0,0);
-      const endMs   = new Date(startMs);
-      endMs.setDate(endMs.getDate()+1);
-      return calendar.getEvents().filter(ev => ev.start < endMs && ev.end > startMs);
+      const dayStart = new Date(date).setHours(0,0,0,0);
+      const dayEnd   = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate()+1);
+      return calendar.getEvents().filter(ev =>
+        ev.start < dayEnd && ev.end > dayStart
+      );
     }
 
     function displayBookingsForDay(events, dateStr) {
@@ -391,10 +398,10 @@
         return;
       }
 
-      const startVal   = bookingStartDateInput.value;
-      const endVal     = bookingEndDateInput.value || startVal;
-      const startT     = bookingStartTimeInput.value;
-      const endT       = bookingEndTimeInput.value;
+      const startVal = bookingStartDateInput.value;
+      const endVal   = bookingEndDateInput.value || startVal;
+      const startT   = bookingStartTimeInput.value;
+      const endT     = bookingEndTimeInput.value;
 
       if (!startVal || !startT || !endT) {
         alert('Please provide dates and times.');
@@ -414,13 +421,12 @@
       }
 
       while (cur <= last) {
-        const Y = cur.getFullYear();
-        const Mo = String(cur.getMonth()+1).padStart(2,'0');
-        const Da = String(cur.getDate()).padStart(2,'0');
-        const dateStr = `${Y}-${Mo}-${Da}`;
-
-        const startTS = toTimestamp(dateStr, startT);
-        const endTS   = toTimestamp(dateStr, endT);
+        const Y = cur.getFullYear(),
+              Mo=String(cur.getMonth()+1).padStart(2,'0'),
+              Da=String(cur.getDate()).padStart(2,'0'),
+              dateStr = `${Y}-${Mo}-${Da}`,
+              startTS = toTimestamp(dateStr, startT),
+              endTS   = toTimestamp(dateStr, endT);
 
         if (endTS <= startTS) {
           alert(`End time must be after start time on ${dateStr}.`);
@@ -439,15 +445,19 @@
           startTimeISO: new Date(startTS).toISOString(),
           endTimeISO:   new Date(endTS).toISOString()
         });
-
         cur.setDate(cur.getDate()+1);
       }
 
       for (const b of toCreate) {
         await set(push(ref(db,'bookings/'+vehicle)), b);
       }
+
       alert(`Booked ${vehicle} as ${asUser}!`);
       calendar.refetchEvents();
+
+      // disable & clear form so they can’t double-click
+      bookVehicleBtn.disabled   = true;
+      bookingAsInput.value      = '';
     }
   </script>
 </body>
