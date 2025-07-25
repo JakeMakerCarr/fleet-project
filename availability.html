@@ -71,6 +71,11 @@
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
+    /* hide all event blocks so no blue times appear */
+    .fc .fc-daygrid-event-harness,
+    .fc .fc-daygrid-event {
+      display: none !important;
+    }
     /* only the events container scrolls now */
     .fc .fc-daygrid-day-events {
       max-height: 100px;
@@ -174,17 +179,12 @@
       if (!snap.exists()) return [];
       const events = [];
       snap.forEach(vehicleSnap => {
-        const name = vehicleSnap.key;
         vehicleSnap.forEach(bSnap => {
           const b = bSnap.val();
           events.push({
             start: b.startTimeISO,
             end:   b.endTimeISO,
-            title: name,                                  // show vehicle name
-            backgroundColor: vehicleColors[name] || '#333',
-            borderColor:     vehicleColors[name] || '#333',
-            textColor:       '#fff',
-            extendedProps:   { vehicle: name }
+            extendedProps: { vehicle: vehicleSnap.key }
           });
         });
       });
@@ -193,32 +193,34 @@
 
     function renderCalendar(events) {
       const calendar = new FullCalendar.Calendar(
-        document.getElementById("calendar"), {
-        initialView: 'dayGridMonth',
-        headerToolbar: {
-          left: 'prev today next',
-          center: 'title',
-          right: ''
-        },
-        events: events,
-        eventDisplay: 'block',
-        displayEventTime: false,     // hide the “6:30a” text
-        dateClick: info => {
-          showAvailability(info.dateStr, events);
+        document.getElementById("calendar"),
+        {
+          initialView: 'dayGridMonth',
+          headerToolbar: {
+            left: 'prev today next',
+            center: 'title',
+            right: ''
+          },
+          events: events,            // events are loaded, but hidden by CSS
+          displayEventTime: false,   // no times
+          dateClick: info => {
+            showAvailability(info.dateStr, events);
+          }
         }
-      });
+      );
       calendar.render();
     }
 
     function showAvailability(dateStr, events) {
-      const booked = new Set(events
-        .filter(ev => ev.start.startsWith(dateStr))
-        .map(ev => ev.extendedProps.vehicle)
+      const booked = new Set(
+        events
+          .filter(ev => ev.start.startsWith(dateStr))
+          .map(ev => ev.extendedProps.vehicle)
       );
-      const available = Object.keys(vehicleColors)
-        .filter(v => !booked.has(v));
+      const available = Object.keys(vehicleColors).filter(v => !booked.has(v));
 
-      let html = `<h3>Selected Date: ${dateStr}</h3>`;
+      // **updated header text**
+      let html = `<h3>Available Vehicles for This Day: ${dateStr}</h3>`;
       if (available.length === 0) {
         html += `<p><em>No vehicles available.</em></p>`;
       } else {
