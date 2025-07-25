@@ -39,7 +39,7 @@
     #container {
       display: flex;
       gap: 20px;
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
       align-items: flex-start;
     }
@@ -64,25 +64,18 @@
     }
     #rightPanel {
       flex: 1;
+      display: flex;
+      gap: 20px;
     }
     #calendar {
+      flex: 2;
       background: white;
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
-    /* hide all event blocks so no blue times appear */
-    .fc .fc-daygrid-event-harness,
-    .fc .fc-daygrid-event {
-      display: none !important;
-    }
-    /* only the events container scrolls now */
-    .fc .fc-daygrid-day-events {
-      max-height: 100px;
-      overflow-y: auto;
-    }
     #dateInfo {
-      margin-top: 10px;
+      flex: 1;
       background: #ffffff;
       padding: 15px;
       border-radius: 10px;
@@ -93,6 +86,20 @@
       border-radius: 8px;
       margin-bottom: 10px;
       color: white;
+    }
+    /* hide events */
+    .fc .fc-daygrid-event-harness,
+    .fc .fc-daygrid-event {
+      display: none !important;
+    }
+    /* only the event container scrolls */
+    .fc .fc-daygrid-day-events {
+      max-height: 100px;
+      overflow-y: auto;
+    }
+    /* highlight selected day cell */
+    .fc .fc-daygrid-day.selected-day {
+      background-color: rgba(255, 235, 59, 0.3);
     }
   </style>
 </head>
@@ -126,7 +133,7 @@
     import { getAuth, onAuthStateChanged, signOut }
                                         from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 
-    // --- Firebase init ---
+    // Firebase init
     const app = initializeApp({
       apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
       authDomain: "yfned-fleet-nfc.firebaseapp.com",
@@ -139,7 +146,7 @@
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    // vehicle → color map
+    // vehicle→color map
     const vehicleColors = {
       "01-20 2021 Red Traverse CM335": "#e74c3c",
       "02-20 2021 Black Traverse CM366": "#2c3e50",
@@ -162,6 +169,7 @@
     };
 
     let allBookings = [];
+    let lastClickedDayEl = null;
 
     function renderLegend() {
       const legend = document.getElementById("legend");
@@ -179,12 +187,13 @@
       if (!snap.exists()) return [];
       const events = [];
       snap.forEach(vehicleSnap => {
+        const name = vehicleSnap.key;
         vehicleSnap.forEach(bSnap => {
           const b = bSnap.val();
           events.push({
             start: b.startTimeISO,
             end:   b.endTimeISO,
-            extendedProps: { vehicle: vehicleSnap.key }
+            extendedProps: { vehicle: name }
           });
         });
       });
@@ -196,14 +205,16 @@
         document.getElementById("calendar"),
         {
           initialView: 'dayGridMonth',
-          headerToolbar: {
-            left: 'prev today next',
-            center: 'title',
-            right: ''
-          },
-          events: events,            // events are loaded, but hidden by CSS
-          displayEventTime: false,   // no times
+          headerToolbar: { left: 'prev today next', center: 'title', right: '' },
+          events: events,
+          displayEventTime: false,
           dateClick: info => {
+            // remove old highlight
+            if (lastClickedDayEl) lastClickedDayEl.classList.remove('selected-day');
+            // highlight new
+            info.dayEl.classList.add('selected-day');
+            lastClickedDayEl = info.dayEl;
+
             showAvailability(info.dateStr, events);
           }
         }
@@ -217,9 +228,9 @@
           .filter(ev => ev.start.startsWith(dateStr))
           .map(ev => ev.extendedProps.vehicle)
       );
-      const available = Object.keys(vehicleColors).filter(v => !booked.has(v));
+      const available = Object.keys(vehicleColors)
+        .filter(v => !booked.has(v));
 
-      // **updated header text**
       let html = `<h3>Available Vehicles for This Day: ${dateStr}</h3>`;
       if (available.length === 0) {
         html += `<p><em>No vehicles available.</em></p>`;
