@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fleet Availability Calendar</title>
+
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet" />
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #5cbde5;
+      background-image: url('skybackgroundmidnightfeather.png');
+      background-repeat: repeat;
+      background-size: 400px;
+    }
+    header {
+      background: #333;
+      color: white;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .header-btn {
+      background: #666;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 1rem;
+    }
+    #container {
+      display: flex;
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      align-items: flex-start;
+    }
+    #legend {
+      width: 260px;
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.08);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      margin-right: 8px;
+    }
+    #rightPanel {
+      flex: 1;
+    }
+    #calendar {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .fc .fc-daygrid-day-frame {
+      max-height: 100px;
+      height: 100px;
+      overflow-y: auto;
+    }
+    #dateInfo {
+      margin-top: 10px;
+      background: #ffffff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.08);
+    }
+    .available-box {
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>YFNED Availability Calendar</div>
+    <div>
+      <button class="header-btn" onclick="location.href='fleetmaster.html'">Fleetmaster View</button>
+      <button id="logout-btn" class="header-btn">Logout</button>
+    </div>
+  </header>
+
+  <div id="container">
+    <div id="legend"></div>
+    <div id="rightPanel">
+      <div id="calendar"></div>
+      <div id="dateInfo">Click a date to view availability.</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <script type="module">
+    import { initializeApp }              from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getDatabase, ref, get }      from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { getAuth, onAuthStateChanged, signOut }
+                                          from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+
+    // --- Firebase init ---
+    const app = initializeApp({
+      apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
+      authDomain: "yfned-fleet-nfc.firebaseapp.com",
+      databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
+      projectId: "yfned-fleet-nfc",
+      storageBucket: "yfned-fleet-nfc.appspot.com",
+      messagingSenderId: "482363667898",
+      appId: "1:482363667898:web:4b0364e891a221e9631983"
+    });
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
+
+    // Assign each vehicle a color
+    const vehicleColors = {
+      "01-20 2021 Red Traverse CM335": "#e74c3c",
+      "02-20 2021 Black Traverse CM366": "#2c3e50",
+      "03-21 2021 Grey Traverse CN360": "#95a5a6",
+      "04-21 2021 Shadow Silverado 1500 CM695": "#f1c40f",
+      "05-21 2021 Ebony Buick Encore CM532": "#ff6f61",
+      "06-21 2020 Grey Grand Caravan CN468": "#1e90ff",
+      "07-21 2021 White Terrain CN466": "#f39c12",
+      "08-21 2021 Black Terrain CN467": "#d35400",
+      "09-24 2024 White Sierra 3500 C182B": "#16a085",
+      "10-24 2025 Green Trailblazer C838B": "#27ae60",
+      "11-24 2024 Grey Traverse CS266": "#3498db",
+      "12-24 2012 White Dodge HNL64": "#e67e22",
+      "13-24 2024 Grey Traverse CT008": "#2980b9",
+      "14-24 2024 Grey Traverse C443C": "#9b59b6",
+      "15-24 2024 Grey Traverse C444C": "#8e44ad",
+      "16-24 2024 Blue Traverse CT073": "#1abc9c",
+      "17-25 2025 Black Buick Envision CV294": "#8e44ad",
+      "18-25 2024 White Ford F750 CVVVVV": "#fd9644"
+    };
+
+    let allBookings = [];
+
+    // build the legend
+    function renderLegend() {
+      const legend = document.getElementById("legend");
+      legend.innerHTML = "";
+      for (const [veh, color] of Object.entries(vehicleColors)) {
+        const div = document.createElement("div");
+        div.className = "legend-item";
+        div.innerHTML = `<div class="legend-color" style="background:${color}"></div>${veh}`;
+        legend.appendChild(div);
+      }
+    }
+
+    // fetch every single booking from RTDB
+    async function fetchAllBookings() {
+      const snap = await get(ref(db, 'bookings'));
+      if (!snap.exists()) return [];
+      const events = [];
+      snap.forEach(vehicleSnap => {
+        const name = vehicleSnap.key;
+        vehicleSnap.forEach(bSnap => {
+          const b = bSnap.val();
+          events.push({
+            start: b.startTimeISO,
+            end:   b.endTimeISO,
+            extendedProps: { vehicle: name }
+          });
+        });
+      });
+      return events;
+    }
+
+    // render the calendar with all bookings
+    function renderCalendar(events) {
+      const calendar = new FullCalendar.Calendar(
+        document.getElementById("calendar"), {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+          left: 'prev today next',
+          center: 'title',
+          right: ''
+        },
+        events: events,
+        eventDisplay: 'block',
+        dateClick: info => {
+          showAvailability(info.dateStr, events);
+        }
+      });
+      calendar.render();
+    }
+
+    // on date click: find which vehicles ARE booked, then invert the set
+    function showAvailability(dateStr, events) {
+      // vehicles booked on that date
+      const booked = new Set(events
+        .filter(ev => ev.start.startsWith(dateStr))
+        .map(ev => ev.extendedProps.vehicle)
+      );
+
+      // all vehicles minus booked
+      const available = Object.keys(vehicleColors)
+        .filter(v => !booked.has(v));
+
+      let html = `<h3>Selected Date: ${dateStr}</h3>`;
+      if (available.length === 0) {
+        html += `<p><em>No vehicles available.</em></p>`;
+      } else {
+        available.forEach(v => {
+          const color = vehicleColors[v] + "CC"; // add some transparency
+          html += `
+            <div class="available-box" style="background:${color}">
+              <strong>${v}</strong>
+            </div>`;
+        });
+      }
+      document.getElementById("dateInfo").innerHTML = html;
+    }
+
+    // wire up logout & auth
+    document.getElementById("logout-btn")
+      .addEventListener("click", () => signOut(auth));
+
+    onAuthStateChanged(auth, async user => {
+      if (!user) return location.href = 'index.html';
+
+      renderLegend();
+      allBookings = await fetchAllBookings();
+      renderCalendar(allBookings);
+    });
+  </script>
+</body>
+</html>
