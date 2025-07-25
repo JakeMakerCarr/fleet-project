@@ -2,9 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>All Vehicle Bookings</title>
+  <title>YFNED Master Calendar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- FullCalendar CSS -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet" />
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -15,7 +18,6 @@
       background-repeat: repeat;
       background-size: 400px;
     }
-
     header {
       background: #333;
       color: white;
@@ -25,7 +27,6 @@
       align-items: center;
       margin-bottom: 20px;
     }
-
     .header-btn {
       background: #666;
       color: white;
@@ -35,84 +36,72 @@
       cursor: pointer;
       margin-left: 1rem;
     }
-
     #container {
       display: flex;
       gap: 20px;
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
       align-items: flex-start;
     }
-
     #legend {
-      width: 260px;
+      flex: 0 0 260px;
       background: white;
       padding: 15px;
       border-radius: 10px;
-      box-shadow: 0 0 8px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 0 8px rgba(0,0,0,0.08);
+      max-height: 75vh;
+      overflow-y: auto;
     }
-
     .legend-item {
       display: flex;
       align-items: center;
       margin-bottom: 10px;
       font-size: 14px;
     }
-
     .legend-color {
       width: 16px;
       height: 16px;
       border-radius: 4px;
       margin-right: 8px;
     }
-
     #rightPanel {
+      flex: 1;
       display: flex;
-      gap: 20px;             
-      align-items: flex-start; 
+      gap: 20px;
+      align-items: flex-start;
     }
-
     #calendar {
       flex: 2;
       background: white;
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
-
-      /* new: limit height and scroll */
       max-height: 75vh;
       overflow-y: auto;
     }
-
     .fc .fc-daygrid-day-frame {
       max-height: 100px;
       height: 100px;
       overflow-y: auto;
     }
-
     #dateInfo {
       flex: 1;
       background: #fff;
       padding: 15px;
       border-radius: 10px;
       box-shadow: 0 0 8px rgba(0,0,0,0.08);
-
-      /* new: limit height and scroll */
       max-height: 75vh;
       overflow-y: auto;
     }
-
     .booking-box {
       padding: 10px;
       border-radius: 8px;
       margin-bottom: 10px;
       color: white;
     }
-
     .booking-box hr {
-      border-color: rgba(255, 255, 255, 0.4);
+      border-color: rgba(255,255,255,0.4);
     }
-
     .remove-btn {
       background: #fff;
       color: #000;
@@ -128,21 +117,17 @@
 <body>
 
   <header>
-  <div>YFNED Master Calendar</div>
-  <div>
-    <button class="header-btn"
-            onclick="location.href='fleetmaster.html'">
-      Fleetmaster View
-    </button>
-    <button class="header-btn"
-            onclick="location.href='availability.html'">
-      Availability Calendar
-    </button>
-
-    <button id="logout-btn" class="header-btn">Logout</button>
-  </div>
-</header>
-
+    <div>YFNED Master Calendar</div>
+    <div>
+      <button class="header-btn" onclick="location.href='fleetmaster.html'">
+        Fleetmaster View
+      </button>
+      <button class="header-btn" onclick="location.href='availability.html'">
+        Availability Calendar
+      </button>
+      <button id="logout-btn" class="header-btn">Logout</button>
+    </div>
+  </header>
 
   <div id="container">
     <div id="legend"></div>
@@ -158,6 +143,7 @@
     import { getDatabase, ref, get, remove } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 
+    // Firebase config
     const app = initializeApp({
       apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
       authDomain: "yfned-fleet-nfc.firebaseapp.com",
@@ -169,10 +155,11 @@
     });
 
     const auth = getAuth(app);
-    const db = getDatabase(app);
-    const calendarEl = document.getElementById("calendar");
-    const dateInfoPanel = document.getElementById("dateInfo");
-    const legendEl = document.getElementById("legend");
+    const db   = getDatabase(app);
+
+    const calendarEl     = document.getElementById("calendar");
+    const dateInfoPanel  = document.getElementById("dateInfo");
+    const legendEl       = document.getElementById("legend");
 
     const vehicleColors = {
       "01-20 2021 Red Traverse CM335": "#e74c3c",
@@ -189,6 +176,7 @@
       "12-24 2012 White Dodge HNL64": "#e67e22",
       "13-24 2024 Grey Traverse CT008": "#2980b9",
       "14-24 2024 Grey Traverse C443C": "#9b59b6",
+      "15-24 2024 Grey Traverse C444C": "#8e44ad",
       "16-24 2024 Blue Traverse CT073": "#1abc9c",
       "17-25 2025 Black Buick Envision CV294": "#8e44ad",
       "18-25 2024 White Ford F750 CVVVVV": "#fd9644"
@@ -206,67 +194,53 @@
       });
     }
 
-    function fetchAllBookings() {
-      const bookingsRef = ref(db, 'bookings');
-      return get(bookingsRef).then(snapshot => {
-        if (!snapshot.exists()) return [];
-
-        const bookings = [];
-        snapshot.forEach(vehicleSnap => {
-          const vehicleName = vehicleSnap.key;
-
-          vehicleSnap.forEach(bookingSnap => {
-            const booking = bookingSnap.val();
-            const bookingId = bookingSnap.key;
-            bookings.push({
-              id: bookingId,
-              title: `${booking.startTime.split(":")[0]} ${vehicleName}`,
-              start: booking.startTimeISO,
-              end: booking.endTimeISO,
-              backgroundColor: vehicleColors[vehicleName] || "#333",
-              borderColor: vehicleColors[vehicleName] || "#333",
-              textColor: "#fff",
-              extendedProps: {
-                user: booking.userName,
-                vehicle: vehicleName,
-                firebasePath: `bookings/${vehicleName}/${bookingId}`
-              }
-            });
+    async function fetchAllBookings() {
+      const snap = await get(ref(db, 'bookings'));
+      if (!snap.exists()) return [];
+      const events = [];
+      snap.forEach(vehicleSnap => {
+        const name = vehicleSnap.key;
+        vehicleSnap.forEach(bSnap => {
+          const b = bSnap.val();
+          events.push({
+            id: bSnap.key,
+            title: `${b.startTime.split(':')[0]} ${name}`,
+            start: b.startTimeISO,
+            end:   b.endTimeISO,
+            backgroundColor: vehicleColors[name] || '#333',
+            borderColor:     vehicleColors[name] || '#333',
+            textColor:       '#fff',
+            extendedProps: { user: b.userName, vehicle: name, firebasePath: `bookings/${name}/${bSnap.key}` }
           });
         });
-        return bookings;
       });
+      return events;
     }
 
     function renderCalendar(events) {
       const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         fixedWeekCount: false,
-        height: 'auto',
         headerToolbar: {
           left: 'prev today next',
           center: 'title',
           right: 'dayGridMonth,timeGridWeek,listMonth'
         },
-        events: events,
+        events,
         eventDisplay: 'block',
-        dateClick: function(info) {
-          const selectedDate = info.dateStr;
-          showBookingsForDate(selectedDate, events);
-        }
+        dateClick: info => showBookingsForDate(info.dateStr, events)
       });
       calendar.render();
     }
 
-    function showBookingsForDate(dateStr, allEvents) {
-      const matching = allEvents.filter(event => event.start.startsWith(dateStr));
-
+    function showBookingsForDate(dateStr, events) {
+      const matching = events.filter(ev => ev.start.startsWith(dateStr));
       let html = `<h3>Selected Date: ${dateStr}</h3>`;
-      if (matching.length === 0) {
+      if (!matching.length) {
         html += `<p>No bookings.</p>`;
       } else {
         matching.forEach(ev => {
-          const color = vehicleColors[ev.extendedProps.vehicle] || "#333";
+          const color = vehicleColors[ev.extendedProps.vehicle] || '#333';
           html += `
             <div class="booking-box" style="background:${color}">
               <strong>${ev.extendedProps.vehicle}</strong><br>
@@ -280,28 +254,26 @@
       dateInfoPanel.innerHTML = html;
     }
 
-    window.removeBooking = function(path) {
-      if (confirm("Are you sure you want to delete this booking?")) {
-        remove(ref(db, path))
-          .then(() => {
-            alert("Booking removed successfully.");
-            location.reload();
-          })
-          .catch(() => alert("Failed to remove booking."));
+    window.removeBooking = async function(path) {
+      if (!confirm('Are you sure you want to delete this booking?')) return;
+      try {
+        await remove(ref(db, path));
+        allBookings = await fetchAllBookings();
+        renderCalendar(allBookings);
+        dateInfoPanel.innerHTML = 'Click a date to view bookings.';
+        renderLegend();
+      } catch {
+        alert('Failed to remove booking.');
       }
     };
 
-    document.getElementById("logout-btn").addEventListener("click", () => {
-      signOut(auth);
-    });
+    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-    onAuthStateChanged(auth, user => {
-      if (!user) return;
+    onAuthStateChanged(auth, async user => {
+      if (!user) return location.href = 'index.html';
       renderLegend();
-      fetchAllBookings().then(events => {
-        allBookings = events;
-        renderCalendar(allBookings);
-      });
+      allBookings = await fetchAllBookings();
+      renderCalendar(allBookings);
     });
   </script>
 </body>
