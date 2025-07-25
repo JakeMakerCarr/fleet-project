@@ -19,90 +19,20 @@
   <link rel="stylesheet" href="style.css">
 
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: sans-serif;
-    }
-    header {
-      background: #333;
-      color: white;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem;
-    }
-    #user-info {
-      margin-right: 1rem;
-    }
-    #logout-btn {
-      cursor: pointer;
-      padding: 0.5rem 1rem;
-      background: #666;
-      color: white;
-      border-radius: 4px;
-      border: none;
-    }
-    .container {
-      max-width: 1200px;
-      margin: auto;
-      background: white;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-    .calendar-and-details {
-      display: flex;
-      gap: 1rem;
-    }
-    .calendar-section {
-      flex: 1;
-    }
-    .details-section {
-      flex: 0 0 300px;
-      border-left: 1px solid #ccc;
-      padding-left: 1rem;
-    }
-    #booking-form {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      margin-bottom: 1rem;
-      max-width: 600px;
-    }
-    .form-row {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-    #booking-form label {
-      display: flex;
-      flex-direction: column;
-      font-weight: bold;
-      flex: 1;
-      min-width: 200px;
-    }
-    #booking-form input,
-    #booking-form select {
-      padding: 0.5rem;
-      font-size: 1rem;
-      box-sizing: border-box;
-      width: 100%;
-    }
-    .action-button {
-      padding: 0.5rem 1rem;
-      font-size: 1rem;
-      background-color: #333;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      max-width: 200px;
-      margin-top: 1rem;
-    }
-    .action-button:hover {
-      background-color: #555;
-    }
+    body { margin: 0; padding: 0; font-family: sans-serif; }
+    header { background: #333; color: white; display: flex; justify-content: space-between; align-items: center; padding: 1rem; }
+    #user-info { margin-right: 1rem; }
+    #logout-btn { cursor: pointer; padding: 0.5rem 1rem; background: #666; color: white; border-radius: 4px; border: none; }
+    .container { max-width: 1200px; margin: auto; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .calendar-and-details { display: flex; gap: 1rem; }
+    .calendar-section { flex: 1; }
+    .details-section { flex: 0 0 300px; border-left: 1px solid #ccc; padding-left: 1rem; }
+    #booking-form { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem; max-width: 600px; }
+    .form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    #booking-form label { display: flex; flex-direction: column; font-weight: bold; flex: 1; min-width: 200px; }
+    #booking-form input, #booking-form select { padding: 0.5rem; font-size: 1rem; box-sizing: border-box; width: 100%; }
+    .action-button { padding: 0.5rem 1rem; font-size: 1rem; background-color: #333; color: white; border: none; border-radius: 4px; cursor: pointer; max-width: 200px; margin-top: 1rem; }
+    .action-button:hover { background-color: #555; }
   </style>
 </head>
 
@@ -121,9 +51,23 @@
       <label>
         Select a Vehicle:
         <select id="vehicle-select" required>
-          <!-- your options… -->
           <option value="01-20 2021 Red Traverse CM335">2021 Red Traverse CM335</option>
-          <!-- … -->
+          <option value="02-20 2021 Black Traverse CM366">2021 Black Traverse CM366</option>
+          <option value="03-21 2021 Grey Traverse CN360">2021 Grey Traverse CN360</option>
+          <option value="04-21 2021 Shadow Silverado 1500 CM695">2021 Shadow Silverado 1500 CM695</option>
+          <option value="05-21 2021 Ebony Buick Encore CM532">2021 Ebony Buick Encore CM532</option>
+          <option value="06-21 2020 Grey Grand Caravan CN468">2020 Grey Grand Caravan CN468</option>
+          <option value="07-21 2021 White Terrain CN466">2021 White Terrain CN466</option>
+          <option value="08-21 2021 Black Terrain CN467">2021 Black Terrain CN467</option>
+          <option value="09-24 2024 White Sierra 3500 C182B">2024 White Sierra 3500 C182B</option>
+          <option value="10-24 2025 Green Trailblazer C838B">2025 Green Trailblazer C838B</option>
+          <option value="11-24 2024 Grey Traverse CS266">2024 Grey Traverse CS266</option>
+          <option value="12-24 2012 White Dodge HNL64">2012 White Dodge HNL64</option>
+          <option value="13-24 2024 Grey Traverse CT008">2024 Grey Traverse CT008</option>
+          <option value="14-24 2024 Grey Traverse C443C">2024 Grey Traverse C443C</option>
+          <option value="15-24 2024 Grey Traverse C444C">2024 Grey Traverse C444C</option>
+          <option value="16-24 2024 Blue Traverse CT073">2024 Blue Traverse CT073</option>
+          <option value="17-25 2025 Black Buick Envision CV294">2025 Black Buick Envision CV294</option>
           <option value="18-25 2024 White Ford F750 CVVVVV">2024 White Ford F750 CVVVVV</option>
         </select>
       </label>
@@ -179,6 +123,7 @@
   import { getDatabase, ref, get, push, set, update }
                              from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
 
+  // your Firebase config...
   const firebaseConfig = {
     apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
     authDomain: "yfned-fleet-nfc.firebaseapp.com",
@@ -197,29 +142,26 @@
   let calendar    = null;
 
   // DOM refs
-  const userInfo               = document.getElementById('user-info');
-  const logoutBtn              = document.getElementById('logout-btn');
-  const vehicleSelect          = document.getElementById('vehicle-select');
-  const vehicleHeading         = document.getElementById('vehicle-schedule-heading');
-  const bookingStartDateInput  = document.getElementById('booking-start-date');
-  const bookingEndDateInput    = document.getElementById('booking-end-date');
-  const bookingStartTimeInput  = document.getElementById('booking-start-time');
-  const bookingEndTimeInput    = document.getElementById('booking-end-time');
-  const bookVehicleBtn         = document.getElementById('bookVehicleBtn');
-  const selectedDateTextEl     = document.getElementById('selected-date-text');
-  const dateBookingsListEl     = document.getElementById('date-bookings-list');
-  let lastClickedDayEl         = null;
+  const userInfo              = document.getElementById('user-info');
+  const logoutBtn             = document.getElementById('logout-btn');
+  const vehicleSelect         = document.getElementById('vehicle-select');
+  const vehicleHeading        = document.getElementById('vehicle-schedule-heading');
+  const bookingStartDateInput = document.getElementById('booking-start-date');
+  const bookingEndDateInput   = document.getElementById('booking-end-date');
+  const bookingStartTimeInput = document.getElementById('booking-start-time');
+  const bookingEndTimeInput   = document.getElementById('booking-end-time');
+  const bookVehicleBtn        = document.getElementById('bookVehicleBtn');
+  const selectedDateTextEl    = document.getElementById('selected-date-text');
+  const dateBookingsListEl    = document.getElementById('date-bookings-list');
+  let lastClickedDayEl        = null;
 
   onAuthStateChanged(auth, user => {
-    if (!user) {
-      window.location.href = 'index.html';
-      return;
-    }
+    if (!user) return window.location.href = 'index.html';
     currentUser = user;
     userInfo.textContent = 'Logged in as: ' + user.email;
     logoutBtn.style.display = 'inline-block';
 
-    // timepicker
+    // timepicker setup
     $('#booking-start-time, #booking-end-time').timepicker({
       timeFormat: 'h:mm p',
       interval: 30,
@@ -243,28 +185,20 @@
       await handleMultiDayBooking();
     });
 
-    logoutBtn.addEventListener('click', async () => {
-      await signOut(auth);
-    });
+    logoutBtn.addEventListener('click', () => signOut(auth));
   });
 
-  async function updateVehicleHeading(vehicleName) {
-    const snap = await get(ref(db, 'vehicles/' + vehicleName));
-    if (snap.exists()) {
-      const d = snap.val();
-      if (d.status === 'signedOut') {
-        vehicleHeading.textContent = `${vehicleName} schedule: Currently Signed Out by: ${d.CurrentlySignedOutBy}`;
-      } else {
-        vehicleHeading.textContent = `${vehicleName} schedule: Available`;
-      }
+  async function updateVehicleHeading(name) {
+    const snap = await get(ref(db, 'vehicles/' + name));
+    if (snap.exists() && snap.val().status === 'signedOut') {
+      vehicleHeading.textContent = `${name} schedule: Signed Out by ${snap.val().CurrentlySignedOutBy}`;
     } else {
-      vehicleHeading.textContent = `${vehicleName} schedule: Available`;
+      vehicleHeading.textContent = `${name} schedule: Available`;
     }
   }
 
   function initCalendar() {
-    const calendarEl = document.getElementById('calendar');
-    calendar = new FullCalendar.Calendar(calendarEl, {
+    calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
       initialView: 'dayGridMonth',
       timeZone: 'local',
       events: fetchVehicleBookings,
@@ -281,13 +215,12 @@
     calendar.render();
   }
 
-  async function fetchVehicleBookings(fetchInfo, success, failure) {
+  async function fetchVehicleBookings(_, success) {
     const vehicle = vehicleSelect.value;
     if (!vehicle) return success([]);
     const snap = await get(ref(db, 'bookings/' + vehicle));
     if (!snap.exists()) return success([]);
-    const data = snap.val();
-    const events = Object.entries(data).map(([id, b]) => ({
+    const events = Object.entries(snap.val()).map(([id,b]) => ({
       id,
       title: `${b.startTime}-${b.endTime}`,
       start: new Date(b.startTimeISO),
@@ -298,29 +231,27 @@
   }
 
   function getEventsForDate(date) {
-    const dayStart = new Date(date).setHours(0,0,0,0);
-    const dayEnd   = new Date(dayStart).setDate(new Date(dayStart).getDate()+1);
-    return calendar.getEvents().filter(ev =>
-      ev.start < dayEnd && ev.end > dayStart
-    );
+    const startMs = new Date(date).setHours(0,0,0,0);
+    const endMs   = new Date(startMs).setDate(new Date(startMs).getDate()+1);
+    return calendar.getEvents().filter(ev => ev.start < endMs && ev.end > startMs);
   }
 
   function displayBookingsForDay(events, dateStr) {
-    if (events.length === 0) {
+    if (!events.length) {
       dateBookingsListEl.textContent = 'No bookings on ' + dateStr + '.';
-      return;
+    } else {
+      dateBookingsListEl.innerHTML = events.map(ev => `
+        <div>
+          <strong>${ev.extendedProps.creatorEmail}</strong><br>
+          Start: ${ev.start.toLocaleString()}<br>
+          End: ${ev.end.toLocaleString()}
+        </div>
+      `).join('');
     }
-    dateBookingsListEl.innerHTML = events.map(ev => `
-      <div>
-        <strong>${ev.extendedProps.creatorEmail}</strong><br>
-        Start: ${ev.start.toLocaleString()}<br>
-        End:   ${ev.end.toLocaleString()}
-      </div>
-    `).join('');
   }
 
-  async function isBookingOverlapping(vehicleName, newStart, newEnd) {
-    const snap = await get(ref(db, 'bookings/' + vehicleName));
+  async function isBookingOverlapping(vehicle, newStart, newEnd) {
+    const snap = await get(ref(db, 'bookings/' + vehicle));
     if (!snap.exists()) return false;
     return Object.values(snap.val()).some(b => {
       const s = new Date(b.startTimeISO).getTime();
@@ -330,74 +261,79 @@
   }
 
   function toTimestamp(dateStr, timeStr) {
-    const [year, month, day] = dateStr.split('-').map(Number);
-    let [time, modifier] = timeStr.split(' ');
-    let [hours, minutes] = time.split(':').map(Number);
-    if (modifier === 'PM' && hours !== 12) hours += 12;
-    if (modifier === 'AM' && hours === 12) hours = 0;
-    return new Date(year, month-1, day, hours, minutes).getTime();
+    const [year,month,day] = dateStr.split('-').map(Number);
+    let [time,mod]         = timeStr.split(' ');
+    let [h,m]              = time.split(':').map(Number);
+    if (mod === 'PM' && h !== 12) h += 12;
+    if (mod === 'AM' && h === 12) h = 0;
+    return new Date(year, month-1, day, h, m).getTime();
   }
 
-  // *** FIXED: use valueAsDate to get a LOCAL midnight Date ***
+  // ─── MULTI-DAY BOOKING: MANUAL DATE PARSE (no timezone shifts) ───
   async function handleMultiDayBooking() {
     const vehicle = vehicleSelect.value;
     if (!vehicle) { alert('No vehicle selected.'); return; }
 
-    // grab true Date objects at local midnight
-    const startDate = bookingStartDateInput.valueAsDate;
-    const endDate   = bookingEndDateInput.valueAsDate || bookingStartDateInput.valueAsDate;
-
-    if (!startDate || !bookingStartTimeInput.value || !bookingEndTimeInput.value) {
-      alert('Please provide dates and times.'); return;
+    const startVal = bookingStartDateInput.value;
+    const endVal   = bookingEndDateInput.value || startVal;
+    if (!startVal || !bookingStartTimeInput.value || !bookingEndTimeInput.value) {
+      alert('Please provide dates and times.'); 
+      return;
     }
+
+    // parse YYYY-MM-DD into local-midnight Date
+    const [y1,m1,d1] = startVal.split('-').map(Number);
+    const [y2,m2,d2] = endVal.split('-').map(Number);
+    const startDate = new Date(y1, m1-1, d1);
+    const endDate   = new Date(y2, m2-1, d2);
+
     if (startDate > endDate) {
       alert('Start date cannot be after end date.');
       return;
     }
 
-    const bookingsToCreate = [];
-    let currentDate = new Date(startDate);
+    const toCreate = [];
+    let current = new Date(startDate);
 
-    while (currentDate <= endDate) {
-      const dow = currentDate.getDay(); // 1 = Mon … 5 = Fri
+    while (current <= endDate) {
+      const dow = current.getDay(); // 1=Mon…5=Fri
       if (dow >= 1 && dow <= 5) {
-        // build YYYY-MM-DD string
-        const y = currentDate.getFullYear();
-        const m = String(currentDate.getMonth()+1).padStart(2,'0');
-        const d = String(currentDate.getDate()).padStart(2,'0');
-        const dateStr = `${y}-${m}-${d}`;
+        const Y = current.getFullYear();
+        const M = String(current.getMonth()+1).padStart(2,'0');
+        const D = String(current.getDate()).padStart(2,'0');
+        const dateStr = `${Y}-${M}-${D}`;
 
         const startTS = toTimestamp(dateStr, bookingStartTimeInput.value);
         const endTS   = toTimestamp(dateStr, bookingEndTimeInput.value);
+
         if (endTS <= startTS) {
           alert(`End time must be after start time on ${dateStr}!`);
           return;
         }
         if (await isBookingOverlapping(vehicle, startTS, endTS)) {
-          alert(`Conflict detected on ${dateStr}. Booking aborted.`);
+          alert(`Conflict on ${dateStr}. Booking aborted.`);
           return;
         }
 
-        bookingsToCreate.push({
-          userName:       currentUser.email,
-          date:           dateStr,
-          startTime:      bookingStartTimeInput.value,
-          endTime:        bookingEndTimeInput.value,
-          startTimeISO:   new Date(startTS).toISOString(),
-          endTimeISO:     new Date(endTS).toISOString()
+        toCreate.push({
+          userName:     currentUser.email,
+          date:         dateStr,
+          startTime:    bookingStartTimeInput.value,
+          endTime:      bookingEndTimeInput.value,
+          startTimeISO: new Date(startTS).toISOString(),
+          endTimeISO:   new Date(endTS).toISOString()
         });
       }
-      currentDate.setDate(currentDate.getDate() + 1);
+      current.setDate(current.getDate() + 1);
     }
 
-    if (bookingsToCreate.length === 0) {
+    if (!toCreate.length) {
       alert('No valid weekdays selected.');
       return;
     }
 
-    for (const b of bookingsToCreate) {
-      const refBooking = push(ref(db, 'bookings/' + vehicle));
-      await set(refBooking, b);
+    for (const b of toCreate) {
+      await set(push(ref(db, 'bookings/' + vehicle)), b);
     }
     alert('All bookings created successfully!');
     calendar.refetchEvents();
