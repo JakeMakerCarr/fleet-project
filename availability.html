@@ -71,9 +71,9 @@
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
-    .fc .fc-daygrid-day-frame {
+    /* only the events container scrolls now */
+    .fc .fc-daygrid-day-events {
       max-height: 100px;
-      height: 100px;
       overflow-y: auto;
     }
     #dateInfo {
@@ -94,20 +94,17 @@
 <body>
 
   <header>
-  <div>YFNED Availability Calendar</div>
-  <div>
-    <button class="header-btn" onclick="location.href='fleetmaster.html'">
-      Fleetmaster View
-    </button>
-    <button class="header-btn" onclick="location.href='mastercalendar.html'">
-      Master Calendar
-    </button>
-    <button id="logout-btn" class="header-btn">
-      Logout
-    </button>
-  </div>
-</header>
-
+    <div>YFNED Availability Calendar</div>
+    <div>
+      <button class="header-btn" onclick="location.href='fleetmaster.html'">
+        Fleetmaster View
+      </button>
+      <button class="header-btn" onclick="location.href='mastercalendar.html'">
+        Master Calendar
+      </button>
+      <button id="logout-btn" class="header-btn">Logout</button>
+    </div>
+  </header>
 
   <div id="container">
     <div id="legend"></div>
@@ -119,10 +116,10 @@
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <script type="module">
-    import { initializeApp }              from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getDatabase, ref, get }      from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { initializeApp }           from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getDatabase, ref, get }   from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
     import { getAuth, onAuthStateChanged, signOut }
-                                          from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+                                        from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 
     // --- Firebase init ---
     const app = initializeApp({
@@ -137,7 +134,7 @@
     const auth = getAuth(app);
     const db   = getDatabase(app);
 
-    // Assign each vehicle a color
+    // vehicle → color map
     const vehicleColors = {
       "01-20 2021 Red Traverse CM335": "#e74c3c",
       "02-20 2021 Black Traverse CM366": "#2c3e50",
@@ -161,7 +158,6 @@
 
     let allBookings = [];
 
-    // build the legend
     function renderLegend() {
       const legend = document.getElementById("legend");
       legend.innerHTML = "";
@@ -173,7 +169,6 @@
       }
     }
 
-    // fetch every single booking from RTDB
     async function fetchAllBookings() {
       const snap = await get(ref(db, 'bookings'));
       if (!snap.exists()) return [];
@@ -185,14 +180,17 @@
           events.push({
             start: b.startTimeISO,
             end:   b.endTimeISO,
-            extendedProps: { vehicle: name }
+            title: name,                                  // show vehicle name
+            backgroundColor: vehicleColors[name] || '#333',
+            borderColor:     vehicleColors[name] || '#333',
+            textColor:       '#fff',
+            extendedProps:   { vehicle: name }
           });
         });
       });
       return events;
     }
 
-    // render the calendar with all bookings
     function renderCalendar(events) {
       const calendar = new FullCalendar.Calendar(
         document.getElementById("calendar"), {
@@ -204,6 +202,7 @@
         },
         events: events,
         eventDisplay: 'block',
+        displayEventTime: false,     // hide the “6:30a” text
         dateClick: info => {
           showAvailability(info.dateStr, events);
         }
@@ -211,15 +210,11 @@
       calendar.render();
     }
 
-    // on date click: find which vehicles ARE booked, then invert the set
     function showAvailability(dateStr, events) {
-      // vehicles booked on that date
       const booked = new Set(events
         .filter(ev => ev.start.startsWith(dateStr))
         .map(ev => ev.extendedProps.vehicle)
       );
-
-      // all vehicles minus booked
       const available = Object.keys(vehicleColors)
         .filter(v => !booked.has(v));
 
@@ -228,9 +223,8 @@
         html += `<p><em>No vehicles available.</em></p>`;
       } else {
         available.forEach(v => {
-          const color = vehicleColors[v] + "CC"; // add some transparency
           html += `
-            <div class="available-box" style="background:${color}">
+            <div class="available-box" style="background:${vehicleColors[v]}CC">
               <strong>${v}</strong>
             </div>`;
         });
@@ -238,13 +232,12 @@
       document.getElementById("dateInfo").innerHTML = html;
     }
 
-    // wire up logout & auth
+    // logout / auth
     document.getElementById("logout-btn")
       .addEventListener("click", () => signOut(auth));
 
     onAuthStateChanged(auth, async user => {
       if (!user) return location.href = 'index.html';
-
       renderLegend();
       allBookings = await fetchAllBookings();
       renderCalendar(allBookings);
