@@ -127,14 +127,18 @@
         });
       }
 
+      // 🌐 Redirect support for nfc.html or keyhand.html
       const urlParams = new URLSearchParams(window.location.search);
       const redirect = urlParams.get('redirect');
       const vehicle = urlParams.get('vehicle');
-      if (redirect === 'keyhand.html' && vehicle) {
-        window.location.href = `keyhand.html?vehicle=${encodeURIComponent(vehicle)}`;
+
+      if (redirect) {
+        const destination = `${redirect}${vehicle ? `?vehicle=${encodeURIComponent(vehicle)}` : ''}`;
+        window.location.href = destination;
         return;
       }
 
+      // 🧑‍💼 Role-based fallback
       const roleSnap = await get(child(ref(db), `users/${user.uid}/role`));
       const role = roleSnap.exists() ? roleSnap.val() : 'staff';
 
