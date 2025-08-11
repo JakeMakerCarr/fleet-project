@@ -31,9 +31,7 @@
       cursor: pointer;
       margin-left: 1rem;
     }
-.header-btn:hover {
-  background: #555;
-}
+    .header-btn:hover { background: #555; }
 
     #logout-btn, #export-btn {
       background: #666;
@@ -60,12 +58,16 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 1rem;
+      table-layout: fixed;
     }
     th, td {
       padding: 1rem;
       text-align: left;
       border-bottom: 1px solid #ddd;
+      vertical-align: top;
     }
+    th:nth-child(7), td:nth-child(7) { width: 28%; }
+
     .toggle-btn {
       padding: 0.5rem 1rem;
       border: none;
@@ -74,196 +76,259 @@
       font-weight: bold;
     }
     .atFrontDesk { background-color: #e0e257; color: black; }
-    .withStaff { background-color: #2ecc71; color: black; }
-    .signedOut { background-color: #e7bbd2; color: black; }
-    .available { background-color: #5cbde5; color: black; }
-    .alarm { background-color: #d4282f; color: white; }
-    .alarm-row { background-color: #ffdddd !important; }
+    .withStaff   { background-color: #2ecc71; color: black; }
+    .signedOut   { background-color: #e7bbd2; color: black; }
+    .available   { background-color: #5cbde5; color: black; }
+    .alarm       { background-color: #d4282f; color: white; }
+    .alarm-row   { background-color: #ffdddd !important; }
+
+    /* Notes UI */
+    .note-input {
+      width: 100%;
+      min-height: 2.25rem;
+      resize: vertical;
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font: inherit;
+      box-sizing: border-box;
+    }
+    .save-status {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      margin-top: 0.35rem;
+      display: inline-block;
+    }
   </style>
 </head>
 <body>
 
-    <header>
+  <header>
     <div>YFNED Fleetmaster Controls</div>
     <div>
-      <button class="header-btn" onclick="location.href='fleetmaster.html'">
-        Fleetmaster View
-      </button>
-      <button class="header-btn" onclick="location.href='mastercalendar.html'">
-        Master Calendar
-      </button>
-      <button class="header-btn" onclick="location.href='availability.html'">
-        Availability Calendar
-      </button>
-      <button class="header-btn" onclick="location.href='masterbooking.html'">
-        Master Booking
-      </button>
-     <button id="export-btn" class="header-btn">
-       Export Logs
-    </button>
-      <button id="logout-btn" class="header-btn">
-        Logout
-      </button>
+      <button class="header-btn" onclick="location.href='fleetmaster.html'">Fleetmaster View</button>
+      <button class="header-btn" onclick="location.href='mastercalendar.html'">Master Calendar</button>
+      <button class="header-btn" onclick="location.href='availability.html'">Availability Calendar</button>
+      <button class="header-btn" onclick="location.href='masterbooking.html'">Master Booking</button>
+      <button id="export-btn" class="header-btn">Export Logs</button>
+      <button id="logout-btn" class="header-btn">Logout</button>
     </div>
   </header>
 
+  <div class="container">
+    <h2>Vehicle Key Handoff Status</h2>
+    <table id="vehicle-table">
+      <thead>
+        <tr>
+          <th>Vehicle Name</th>
+          <th>Key Status</th>
+          <th>Key Held By</th>
+          <th>Vehicle Status</th>
+          <th>Alarm</th>
+          <th>Demo Trigger</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-<div class="container">
-  <h2>Vehicle Key Handoff Status</h2>
-  <table id="vehicle-table">
-    <thead>
-      <tr>
-        <th>Vehicle Name</th>
-        <th>Key Status</th>
-        <th>Key Held By</th>
-        <th>Vehicle Status</th>
-        <th>Alarm</th>
-        <th>Demo Trigger</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+    import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+    import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
 
-<script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
-  import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
-  import { getDatabase, ref, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
-
-  const app = initializeApp({
-    apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
-    authDomain: "yfned-fleet-nfc.firebaseapp.com",
-    databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
-    projectId: "yfned-fleet-nfc",
-    storageBucket: "yfned-fleet-nfc.appspot.com",
-    messagingSenderId: "482363667898",
-    appId: "1:482363667898:web:4b0364e891a221e9631983"
-  });
-
-  const auth = getAuth(app);
-  const db = getDatabase(app);
-
-  const logoutBtn = document.getElementById('logout-btn');
-  logoutBtn.addEventListener('click', () => signOut(auth));
-
-  const exportBtn = document.getElementById('export-btn');
-  exportBtn.addEventListener('click', exportLogsToCSV);
-
-  const tableBody = document.querySelector('#vehicle-table tbody');
-
-  onAuthStateChanged(auth, user => {
-    if (!user) return window.location.href = 'index.html';
-
-    const vehiclesRef = ref(db, 'vehicles');
-    onValue(vehiclesRef, snapshot => {
-      if (!snapshot.exists()) return;
-
-      tableBody.innerHTML = ''; // clear old rows
-
-      const vehicles = snapshot.val();
-      const now = Date.now();
-
-      Object.entries(vehicles).forEach(([name, data]) => {
-        const keyStatus = data.keyStatus || 'atFrontDesk';
-        const keyHeldBy = data.keyHeldBy || '';
-        const vehicleStatus = data.status || 'available';
-        const lastKeyChange = data.lastKeyChange || 0;
-        const alarm = data.alarm === true;
-
-        const elapsed = now - lastKeyChange;
-        const overdue = elapsed > 3600000 && keyStatus === 'withStaff' && vehicleStatus === 'available' && alarm;
-
-        const row = document.createElement('tr');
-        if (overdue) row.classList.add('alarm-row');
-
-        const keyBtn = document.createElement('button');
-        keyBtn.textContent = keyStatus === 'atFrontDesk' ? 'At The Front Desk' : 'Out With Staff Member';
-        keyBtn.className = 'toggle-btn ' + keyStatus;
-        keyBtn.onclick = async () => {
-          const toStaff = keyStatus === 'atFrontDesk';
-          await update(ref(db, 'vehicles/' + name), {
-            keyStatus: toStaff ? 'withStaff' : 'atFrontDesk',
-            keyHeldBy: toStaff ? user.email : null,
-            lastKeyChange: Date.now(),
-            alarm: toStaff
-          });
-        };
-
-        const vehicleBtn = document.createElement('button');
-        vehicleBtn.textContent = vehicleStatus === 'available' ? 'Available' : 'Signed Out by Staff';
-        vehicleBtn.className = 'toggle-btn ' + (vehicleStatus === 'available' ? 'available' : 'signedOut');
-        vehicleBtn.onclick = async () => {
-          const isOut = vehicleStatus === 'available';
-          await update(ref(db, 'vehicles/' + name), {
-            status: isOut ? 'signedOut' : 'available',
-            alarm: isOut ? false : alarm
-          });
-        };
-
-        const alarmBtn = document.createElement('button');
-        alarmBtn.textContent = alarm ? 'Disable Alarm' : 'Enable Alarm';
-        alarmBtn.className = 'toggle-btn alarm';
-        alarmBtn.onclick = async () => {
-          await update(ref(db, 'vehicles/' + name), { alarm: !alarm });
-        };
-
-        const triggerBtn = document.createElement('button');
-        triggerBtn.textContent = '🔔 Trigger';
-        triggerBtn.className = 'toggle-btn alarm';
-        triggerBtn.onclick = async () => {
-          const oneHourAgo = Date.now() - 3600001;
-          await update(ref(db, 'vehicles/' + name), {
-            alarm: true,
-            lastKeyChange: oneHourAgo,
-            keyStatus: 'withStaff',
-            status: 'available'
-          });
-        };
-
-        const createCell = content => {
-          const td = document.createElement('td');
-          if (content instanceof HTMLElement) td.appendChild(content);
-          else td.textContent = content;
-          return td;
-        };
-
-        row.appendChild(createCell(overdue ? `🚨 ${name}` : name));
-        row.appendChild(createCell(keyBtn));
-        row.appendChild(createCell(keyHeldBy));
-        row.appendChild(createCell(vehicleBtn));
-        row.appendChild(createCell(alarmBtn));
-        row.appendChild(createCell(triggerBtn));
-        tableBody.appendChild(row);
-      });
+    const app = initializeApp({
+      apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
+      authDomain: "yfned-fleet-nfc.firebaseapp.com",
+      databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
+      projectId: "yfned-fleet-nfc",
+      storageBucket: "yfned-fleet-nfc.appspot.com",
+      messagingSenderId: "482363667898",
+      appId: "1:482363667898:web:4b0364e891a221e9631983"
     });
-  });
 
-  async function exportLogsToCSV() {
-    try {
-      const snap = await get(ref(db, 'vehicleLogs'));
-      if (!snap.exists()) return alert('No logs to export.');
+    const auth = getAuth(app);
+    const db = getDatabase(app);
 
-      const logs = snap.val();
-      const rows = [["Vehicle", "User Email", "Action", "Timestamp (Yukon Time)"]];
+    const logoutBtn = document.getElementById('logout-btn');
+    logoutBtn.addEventListener('click', () => signOut(auth));
 
-      Object.entries(logs).forEach(([vehicle, entries]) => {
-        Object.values(entries).forEach(entry => {
-          const time = new Date(entry.timestamp).toLocaleString('en-CA', { timeZone: 'America/Whitehorse' });
-          rows.push([vehicle, entry.userEmail || '', entry.action, time]);
+    const exportBtn = document.getElementById('export-btn');
+    exportBtn.addEventListener('click', exportLogsToCSV);
+
+    const tableBody = document.querySelector('#vehicle-table tbody');
+
+    onAuthStateChanged(auth, user => {
+      if (!user) return window.location.href = 'index.html';
+
+      const vehiclesRef = ref(db, 'vehicles');
+      onValue(vehiclesRef, snapshot => {
+        if (!snapshot.exists()) return;
+
+        tableBody.innerHTML = ''; // clear old rows
+
+        const vehicles = snapshot.val();
+        const now = Date.now();
+
+        Object.entries(vehicles).forEach(([name, data]) => {
+          const keyStatus = data.keyStatus || 'atFrontDesk';
+          const keyHeldBy = data.keyHeldBy || '';
+          const vehicleStatus = data.status || 'available';
+          const lastKeyChange = data.lastKeyChange || 0;
+          const alarm = data.alarm === true;
+
+          const elapsed = now - lastKeyChange;
+          const overdue = elapsed > 3600000 && keyStatus === 'withStaff' && vehicleStatus === 'available' && alarm;
+
+          const row = document.createElement('tr');
+          if (overdue) row.classList.add('alarm-row');
+
+          const keyBtn = document.createElement('button');
+          keyBtn.textContent = keyStatus === 'atFrontDesk' ? 'At The Front Desk' : 'Out With Staff Member';
+          keyBtn.className = 'toggle-btn ' + keyStatus;
+          keyBtn.onclick = async () => {
+            const toStaff = keyStatus === 'atFrontDesk';
+            await update(ref(db, 'vehicles/' + name), {
+              keyStatus: toStaff ? 'withStaff' : 'atFrontDesk',
+              keyHeldBy: toStaff ? user.email : null,
+              lastKeyChange: Date.now(),
+              alarm: toStaff
+            });
+          };
+
+          const vehicleBtn = document.createElement('button');
+          vehicleBtn.textContent = vehicleStatus === 'available' ? 'Available' : 'Signed Out by Staff';
+          vehicleBtn.className = 'toggle-btn ' + (vehicleStatus === 'available' ? 'available' : 'signedOut');
+          vehicleBtn.onclick = async () => {
+            const isOut = vehicleStatus === 'available';
+            await update(ref(db, 'vehicles/' + name), {
+              status: isOut ? 'signedOut' : 'available',
+              alarm: isOut ? false : alarm
+            });
+          };
+
+          const alarmBtn = document.createElement('button');
+          alarmBtn.textContent = alarm ? 'Disable Alarm' : 'Enable Alarm';
+          alarmBtn.className = 'toggle-btn alarm';
+          alarmBtn.onclick = async () => {
+            await update(ref(db, 'vehicles/' + name), { alarm: !alarm });
+          };
+
+          const triggerBtn = document.createElement('button');
+          triggerBtn.textContent = '🔔 Trigger';
+          triggerBtn.className = 'toggle-btn alarm';
+          triggerBtn.onclick = async () => {
+            const oneHourAgo = Date.now() - 3600001;
+            await update(ref(db, 'vehicles/' + name), {
+              alarm: true,
+              lastKeyChange: oneHourAgo,
+              keyStatus: 'withStaff',
+              status: 'available'
+            });
+          };
+
+          const createCell = content => {
+            const td = document.createElement('td');
+            if (content instanceof HTMLElement) td.appendChild(content);
+            else td.textContent = content;
+            return td;
+          };
+
+          // ----- Build standard cells -----
+          row.appendChild(createCell(overdue ? `🚨 ${name}` : name));
+          row.appendChild(createCell(keyBtn));
+          row.appendChild(createCell(keyHeldBy));
+          row.appendChild(createCell(vehicleBtn));
+          row.appendChild(createCell(alarmBtn));
+          row.appendChild(createCell(triggerBtn));
+
+          // ----- Notes cell (inline textarea with auto-save) -----
+          const note = data.note || '';
+          const noteBox = document.createElement('div');
+          const noteEl = document.createElement('textarea');
+          noteEl.className = 'note-input';
+          noteEl.placeholder = 'Add note…';
+          noteEl.value = note;
+          noteEl.maxLength = 500;
+
+          const statusEl = document.createElement('span');
+          statusEl.className = 'save-status';
+          statusEl.textContent = '';
+
+          // debounce helper
+          function debounce(fn, ms) {
+            let t;
+            return (...args) => {
+              clearTimeout(t);
+              t = setTimeout(() => fn(...args), ms);
+            };
+          }
+
+          const doSave = async (val) => {
+            try {
+              statusEl.textContent = 'Saving…';
+              await update(ref(db, 'vehicles/' + name), {
+                note: val,
+                noteEditedBy: auth.currentUser?.email || null,
+                noteEditedAt: Date.now()
+              });
+              statusEl.textContent = 'Saved';
+              setTimeout(() => {
+                if (statusEl.textContent === 'Saved') statusEl.textContent = '';
+              }, 1200);
+            } catch (e) {
+              console.error('Note save failed', e);
+              statusEl.textContent = 'Save failed – retrying…';
+            }
+          };
+
+          const debouncedSave = debounce(doSave, 600);
+
+          noteEl.addEventListener('input', () => {
+            statusEl.textContent = 'Saving…';
+            debouncedSave(noteEl.value);
+          });
+
+          // Save immediately on blur just in case
+          noteEl.addEventListener('blur', () => doSave(noteEl.value));
+
+          noteBox.appendChild(noteEl);
+          noteBox.appendChild(statusEl);
+          row.appendChild(createCell(noteBox));
+
+          // ----- Append row -----
+          tableBody.appendChild(row);
         });
       });
+    });
 
-      const csv = rows.map(r => r.join(',')).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'fleet_logs.csv';
-      a.click();
-    } catch (error) {
-      console.error("Error exporting logs:", error);
+    async function exportLogsToCSV() {
+      try {
+        const snap = await get(ref(db, 'vehicleLogs'));
+        if (!snap.exists()) return alert('No logs to export.');
+
+        const logs = snap.val();
+        const rows = [["Vehicle", "User Email", "Action", "Timestamp (Yukon Time)"]];
+
+        Object.entries(logs).forEach(([vehicle, entries]) => {
+          Object.values(entries).forEach(entry => {
+            const time = new Date(entry.timestamp).toLocaleString('en-CA', { timeZone: 'America/Whitehorse' });
+            rows.push([vehicle, entry.userEmail || '', entry.action, time]);
+          });
+        });
+
+        const csv = rows.map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'fleet_logs.csv';
+        a.click();
+      } catch (error) {
+        console.error("Error exporting logs:", error);
+      }
     }
-  }
-</script>
+  </script>
 
 </body>
 </html>
