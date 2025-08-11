@@ -66,7 +66,16 @@
       border-bottom: 1px solid #ddd;
       vertical-align: top;
     }
-    th:nth-child(7), td:nth-child(7) { width: 28%; }
+
+    /* Give "Key Held By" more space */
+    th:nth-child(3), td:nth-child(3) {
+      width: 20%;
+      word-break: break-word;
+    }
+    /* Reduce "Notes" width a bit to compensate */
+    th:nth-child(7), td:nth-child(7) {
+      width: 24%;
+    }
 
     .toggle-btn {
       padding: 0.5rem 1rem;
