@@ -22,6 +22,11 @@
   <link rel="stylesheet" href="style.css">
 
   <style>
+    :root {
+      --mine-green: #16a34a;              /* emerald-ish */
+      --mine-green-tint: rgba(22,163,74,0.16);
+    }
+
     body { margin: 0; padding: 0; font-family: sans-serif; }
     header { background: #333; color: white; display: flex; justify-content: space-between; align-items: center; padding: 1rem; }
     #user-info { margin-right: 1rem; }
@@ -57,8 +62,8 @@
     /* Highlight for current user's bookings in FullCalendar */
     .fc-event.my-booking {
       position: relative;
-      background-color: rgba(24, 144, 255, 0.12); /* light tint */
-      border-left: 4px solid #1890ff;             /* accent bar */
+      background-color: var(--mine-green-tint);   /* light green tint */
+      border-left: 4px solid var(--mine-green);   /* green accent bar */
       font-weight: 600;
     }
     .fc-event.other-booking { /* inherit FullCalendar default */ }
@@ -68,7 +73,7 @@
       display: inline-block;
       padding: 2px 6px;
       border-radius: 10px;
-      background: #1890ff;
+      background: var(--mine-green);
       color: #fff;
       font-size: 11px;
       margin-left: 6px;
@@ -93,7 +98,7 @@
         Select a Vehicle:
         <!-- KEPT EXACTLY AS YOU POSTED -->
         <select id="vehicle-select" required>
-          <option value="01-20 2021 Red Traverse CM335" class="red" data-display="2021 Traverse (CM335)">2021 Traverse (Red)</option>
+          <option value="01-20 2021 Red Traverse CM335" class="black" data-display="2021 Traverse (CM335)">2021 Traverse (Red)</option>
           <option value="02-20 2021 Black Traverse CM366" class="black" data-display="2021 Traverse (CM366)">2021 Traverse (Black)</option>
           <option value="03-21 2021 Grey Traverse CN360" class="red" data-display="2021 Traverse (CN360)">2021 Traverse (Grey)</option>
           <option value="04-21 2021 Shadow Silverado 1500 CM695" data-display="2021 Silverado 1500 (CM695)">2021 Silverado 1500 (Shadow)</option>
@@ -102,14 +107,14 @@
           <option value="10-20 2020 White Terrain CMU239" class="pink" data-display="2020 White Terrain (CMU239)">2020 White Terrain (CMU239)</option>
           <option value="11-20 2020 Black Terrain CMU241" class="pink" data-display="2020 Black Terrain (CMU241)">2020 Black Terrain (CMU241)</option>
           <option value="09-24 2024 White Sierra 3500 C182B" class="black" data-display="2024 Sierra 3500 (C182B)">2024 Sierra 3500 (White)</option>
-          <option value="10-24 2025 Green Trailblazer C838B" class="green" data-display="2025 Trailblazer (C838B)">2025 Trailblazer (Green)</option>
-          <option value="11-24 2024 Grey Traverse CS266" class="grey" data-display="2024 Traverse (CS266)">2024 Traverse (Grey)</option>
+          <option value="10-24 2025 Green Trailblazer C838B" class="black" data-display="2025 Trailblazer (C838B)">2025 Trailblazer (Green)</option>
+          <option value="11-24 2024 Grey Traverse CS266" class="black" data-display="2024 Traverse (CS266)">2024 Traverse (Grey)</option>
           <option value="12-24 2012 White Dodge HNL64" class="black" data-display="2012 Dodge (HNL64)">2012 Dodge (White)</option>
-          <option value="13-24 2024 Grey Traverse CT008" class="grey" data-display="2024 Traverse (CT008)">2024 Traverse (Grey)</option>
-          <option value="14-24 2024 Grey Traverse C443C" class="grey" data-display="2024 Traverse (C443C)">2024 Traverse (Grey)</option>
-          <option value="15-24 2024 Grey Traverse C444C" class="grey" data-display="2024 Traverse (C444C)">2024 Traverse (Grey)</option>
+          <option value="13-24 2024 Grey Traverse CT008" class="black" data-display="2024 Traverse (CT008)">2024 Traverse (Grey)</option>
+          <option value="14-24 2024 Grey Traverse C443C" class="black" data-display="2024 Traverse (C443C)">2024 Traverse (Grey)</option>
+          <option value="15-24 2024 Grey Traverse C444C" class="black" data-display="2024 Traverse (C444C)">2024 Traverse (Grey)</option>
           <option value="16-24 2024 Blue Traverse CT073" class="blue" data-display="2024 Traverse (CT073)">2024 Traverse (Blue)</option>
-          <option value="18-25 2025 Ford Transit Van - C115C" class="black" data-display="2025 Ford Transit Van (C115C)">2025 Ford Transit Van</option>
+          <option value="18-25 2025 Ford Transit Van C115C" class="black" data-display="2025 Ford Transit Van (C115C)">2025 Ford Transit Van</option>
         </select>
       </label>
     </div>
@@ -139,7 +144,7 @@
     <button id="bookVehicleBtn" class="action-button">Book Vehicle</button>
 
     <div style="margin: 8px 0; font-size: 13px;">
-      <span class="badge-mine">Your booking</span> shown with a blue edge & light tint on the calendar.
+      <span class="badge-mine">Your booking</span> shown with a green edge & light tint on the calendar.
     </div>
   </form>
 
