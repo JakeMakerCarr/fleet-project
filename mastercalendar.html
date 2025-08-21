@@ -1,7 +1,3 @@
-
-html
-Copy
-Edit
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40,10 +36,9 @@ Edit
       cursor: pointer;
       margin-left: 1rem;
     }
-    .header-btn:hover {
-      background: #555;
-    }
+    .header-btn:hover { background: #555; }
 
+    /* Layout */
     #container {
       display: flex;
       gap: 20px;
@@ -51,8 +46,6 @@ Edit
       margin: 0 auto;
       align-items: flex-start;
     }
-
-    /* legend and selected-date panel share the same max height */
     #legend,
     #dateInfo {
       background: white;
@@ -62,8 +55,43 @@ Edit
       max-height: 75vh;
       overflow-y: auto;
     }
-    #legend {
-      flex: 0 0 260px;
+    #legend { flex: 0 0 260px; }
+
+    #rightPanel {
+      flex: 1 1 auto;
+      display: flex;
+      gap: 20px;
+      align-items: stretch;          /* stretch children to same height */
+      min-width: 0;                  /* allow flex children to shrink properly */
+    }
+
+    /* Fixed width for the sidebar so calendar width is predictable */
+    #dateInfo {
+      flex: 0 0 360px;               /* <-- pick a width you like */
+      min-width: 320px;
+      max-width: 420px;
+    }
+
+    #calendar {
+      flex: 1 1 0;                   /* take remaining width */
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      min-width: 640px;              /* avoid squeezing to fewer visible columns */
+      box-sizing: border-box;
+      overflow: visible;             /* allow FC to render fully */
+    }
+
+    /* Month cell height with internal scroll on hover */
+    .fc .fc-daygrid-day-frame {
+      max-height: 100px;
+      height: 100px;
+      overflow-y: hidden;
+    }
+    .fc .fc-daygrid-day-frame:hover,
+    .fc .fc-daygrid-day-frame:focus-within {
+      overflow-y: auto;
     }
 
     .legend-item {
@@ -79,42 +107,13 @@ Edit
       margin-right: 8px;
     }
 
-    #rightPanel {
-      flex: 1;
-      display: flex;
-      gap: 20px;
-      align-items: flex-start;
-    }
-
-
-    #calendar {
-      flex: 2;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-
-    }
-
-    .fc .fc-daygrid-day-frame {
-      max-height: 100px;
-      height: 100px;
-      overflow-y: hidden;
-    }
-    .fc .fc-daygrid-day-frame:hover,
-    .fc .fc-daygrid-day-frame:focus-within {
-      overflow-y: auto;
-    }
-
     .booking-box {
       padding: 10px;
       border-radius: 8px;
       margin-bottom: 10px;
       color: white;
     }
-    .booking-box hr {
-      border-color: rgba(255,255,255,0.4);
-    }
+    .booking-box hr { border-color: rgba(255,255,255,0.4); }
     .remove-btn {
       background: #fff;
       color: #000;
@@ -132,15 +131,9 @@ Edit
   <header>
     <div>YFNED Master Calendar</div>
     <div>
-      <button class="header-btn" onclick="location.href='fleetmaster.html'">
-        Fleetmaster View
-      </button>
-      <button class="header-btn" onclick="location.href='availability.html'">
-        Availability Calendar
-      </button>
-      <button class="header-btn" onclick="location.href='masterbooking.html'">
-      Master Booking
-    </button>
+      <button class="header-btn" onclick="location.href='fleetmaster.html'">Fleetmaster View</button>
+      <button class="header-btn" onclick="location.href='availability.html'">Availability Calendar</button>
+      <button class="header-btn" onclick="location.href='masterbooking.html'">Master Booking</button>
       <button id="logout-btn" class="header-btn">Logout</button>
     </div>
   </header>
@@ -199,6 +192,7 @@ Edit
     };
 
     let allBookings = [];
+    let calendar = null; // keep a reference so we can update size later
 
     function renderLegend() {
       legendEl.innerHTML = "";
@@ -234,7 +228,10 @@ Edit
     }
 
     function renderCalendar(events) {
-      const calendar = new FullCalendar.Calendar(calendarEl, {
+      // destroy previous calendar to avoid stale sizing if re-rendered
+      if (calendar) { calendar.destroy(); }
+
+      calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         fixedWeekCount: false,
         headerToolbar: {
@@ -250,7 +247,7 @@ Edit
     }
 
     function showBookingsForDate(dateStr, events) {
-      const matching = events.filter(ev => ev.start.startsWith(dateStr));
+      const matching = events.filter(ev => String(ev.start).startsWith(dateStr));
       let html = `<h3>Selected Date: ${dateStr}</h3>`;
       if (!matching.length) {
         html += `<p>No bookings.</p>`;
@@ -268,6 +265,11 @@ Edit
         });
       }
       dateInfoPanel.innerHTML = html;
+
+      // IMPORTANT: After sidebar content size changes, recompute calendar layout
+      if (calendar) {
+        calendar.updateSize();
+      }
     }
 
     window.removeBooking = async function(path) {
@@ -291,11 +293,11 @@ Edit
       allBookings = await fetchAllBookings();
       renderCalendar(allBookings);
     });
+
+    // If the window is resized, keep FC in sync
+    window.addEventListener('resize', () => {
+      if (calendar) calendar.updateSize();
+    });
   </script>
 </body>
 </html>
-
-
-
-
-
