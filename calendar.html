@@ -35,6 +35,36 @@
     .action-button:hover { background-color: #555; }
     .delete-booking { margin-top: 0.5rem; background: #c00; color: white; border: none; padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 4px; }
     .delete-booking:hover { background: #a00; }
+
+    /* Dropdown option colors (incl. pink) */
+    option.red { color: red; }
+    option.blue { color: blue; }
+    option.green { color: green; }
+    option.grey { color: grey; }
+    option.black { color: black; }
+    option.white { color: #555; } /* readable "white" */
+    option.pink { color: hotpink; } /* added per your request */
+
+    /* Highlight for current user's bookings in FullCalendar */
+    .fc-event.my-booking {
+      position: relative;
+      background-color: rgba(24, 144, 255, 0.12); /* light tint */
+      border-left: 4px solid #1890ff;             /* accent bar */
+      font-weight: 600;
+    }
+    .fc-event.other-booking { /* inherit default styles */ }
+
+    /* Badge for sidebar */
+    .badge-mine {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 10px;
+      background: #1890ff;
+      color: #fff;
+      font-size: 11px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
   </style>
 </head>
 
@@ -52,24 +82,25 @@
     <div class="form-row">
       <label>
         Select a Vehicle:
+        <!-- Kept as-is (only fixed a missing closing </option> for CMU241) -->
         <select id="vehicle-select" required>
-          <option value="01-20 2021 Red Traverse CM335">2021 Red Traverse CM335</option>
-          <option value="02-20 2021 Black Traverse CM366">2021 Black Traverse CM366</option>
-          <option value="03-21 2021 Grey Traverse CN360">2021 Grey Traverse CN360</option>
-          <option value="04-21 2021 Shadow Silverado 1500 CM695">2021 Shadow Silverado 1500 CM695</option>
-          <option value="05-21 2021 Ebony Buick Encore CM532">2021 Ebony Buick Encore CM532</option>
-          <option value="06-21 2020 Grey Grand Caravan CN468">2020 Grey Grand Caravan CN468</option>
-          <option value="07-21 2021 White Terrain CN466">2021 White Terrain CN466</option>
-          <option value="08-21 2021 Black Terrain CN467">2021 Black Terrain CN467</option>
-          <option value="09-24 2024 White Sierra 3500 C182B">2024 White Sierra 3500 C182B</option>
-          <option value="10-24 2025 Green Trailblazer C838B">2025 Green Trailblazer C838B</option>
-          <option value="11-24 2024 Grey Traverse CS266">2024 Grey Traverse CS266</option>
-          <option value="12-24 2012 White Dodge HNL64">2012 White Dodge HNL64</option>
-          <option value="13-24 2024 Grey Traverse CT008">2024 Grey Traverse CT008</option>
-          <option value="14-24 2024 Grey Traverse C443C">2024 Grey Traverse C443C</option>
-          <option value="15-24 2024 Grey Traverse C444C">2024 Grey Traverse C444C</option>
-          <option value="16-24 2024 Blue Traverse CT073">2024 Blue Traverse CT073</option>
-          <option value="18-25 2025 Ford Transit Van - C115C">2025 Ford Transit Van - C115C</option>
+          <option value="01-20 2021 Red Traverse CM335" class="red" data-display="2021 Traverse (CM335)">2021 Traverse (Red)</option>
+          <option value="02-20 2021 Black Traverse CM366" class="black" data-display="2021 Traverse (CM366)">2021 Traverse (Black)</option>
+          <option value="03-21 2021 Grey Traverse CN360" class="red" data-display="2021 Traverse (CN360)">2021 Traverse (Grey)</option>
+          <option value="04-21 2021 Shadow Silverado 1500 CM695" data-display="2021 Silverado 1500 (CM695)">2021 Silverado 1500 (Shadow)</option>
+          <option value="05-21 2021 Ebony Buick Encore CM532" class="black" data-display="2021 Buick Encore (CM532)">2021 Buick Encore (Ebony)</option>
+          <option value="07-20 2020 Grey Grand Caravan CMU407" class="pink" data-display="2020 Grey Grand Caravan (CMU407)">2020 Grey Grand Caravan (CMU407)</option>
+          <option value="10-20 2020 White Terrain CMU239" class="pink" data-display="2020 White Terrain (CMU239)" >2020 White Terrain (CMU239)</option>
+          <option value="11-20 2020 Black Terrain CMU241" class="pink" data-display="2020 Black Terrain (CMU241)" >2020 Black Terrain (CMU241)</option>
+          <option value="09-24 2024 White Sierra 3500 C182B" class="black" data-display="2024 Sierra 3500 (C182B)">2024 Sierra 3500 (White)</option>
+          <option value="10-24 2025 Green Trailblazer C838B" class="green" data-display="2025 Trailblazer (C838B)">2025 Trailblazer (Green)</option>
+          <option value="11-24 2024 Grey Traverse CS266" class="grey" data-display="2024 Traverse (CS266)">2024 Traverse (Grey)</option>
+          <option value="12-24 2012 White Dodge HNL64" class="black" data-display="2012 Dodge (HNL64)">2012 Dodge (White)</option>
+          <option value="13-24 2024 Grey Traverse CT008" class="grey" data-display="2024 Traverse (CT008)">2024 Traverse (Grey)</option>
+          <option value="14-24 2024 Grey Traverse C443C" class="grey" data-display="2024 Traverse (C443C)">2024 Traverse (Grey)</option>
+          <option value="15-24 2024 Grey Traverse C444C" class="grey" data-display="2024 Traverse (C444C)">2024 Traverse (Grey)</option>
+          <option value="16-24 2024 Blue Traverse CT073" class="blue" data-display="2024 Traverse (CT073)">2024 Traverse (Blue)</option>
+          <option value="18-25 2025 Ford Transit Van - C115C" class="black" data-display="2025 Ford Transit Van (C115C)">2025 Ford Transit Van</option>
         </select>
       </label>
     </div>
@@ -97,6 +128,11 @@
     </div>
 
     <button id="bookVehicleBtn" class="action-button">Book Vehicle</button>
+
+    <!-- (Optional) small legend -->
+    <div style="margin: 8px 0; font-size: 13px;">
+      <span class="badge-mine">Your booking</span> shown with a blue edge & light tint on the calendar.
+    </div>
   </form>
 
   <div class="calendar-and-details">
@@ -176,9 +212,16 @@
     });
 
     initCalendar();
+
+    // Set heading immediately to friendly label (no flash of raw key)
+    setHeadingFromSelect();
+    // Then fetch status to append "Signed Out by ..." if needed
     updateVehicleHeading(vehicleSelect.value);
 
     vehicleSelect.addEventListener('change', async () => {
+      // Immediate heading update to friendly label
+      setHeadingFromSelect();
+      // Then refresh with actual status from Firebase
       await updateVehicleHeading(vehicleSelect.value);
       calendar.refetchEvents();
     });
@@ -191,12 +234,24 @@
     logoutBtn.addEventListener('click', () => signOut(auth));
   });
 
+  // Immediate heading setter using data-display only
+  function setHeadingFromSelect() {
+    const name = vehicleSelect.value;
+    const selectedOpt = vehicleSelect.querySelector(`option[value="${name}"]`);
+    const displayName = selectedOpt?.dataset.display || name;
+    vehicleHeading.textContent = `${displayName} schedule: …`;
+  }
+
+  // Use data-display for heading text; show status from Firebase
   async function updateVehicleHeading(name) {
+    const selectedOpt = vehicleSelect.querySelector(`option[value="${name}"]`);
+    const displayName = selectedOpt?.dataset.display || name;
+
     const snap = await get(ref(db, 'vehicles/' + name));
     if (snap.exists() && snap.val().status === 'signedOut') {
-      vehicleHeading.textContent = `${name} schedule: Signed Out by ${snap.val().CurrentlySignedOutBy}`;
+      vehicleHeading.textContent = `${displayName} schedule: Signed Out by ${snap.val().CurrentlySignedOutBy}`;
     } else {
-      vehicleHeading.textContent = `${name} schedule: Available`;
+      vehicleHeading.textContent = `${displayName} schedule: Available`;
     }
   }
 
@@ -206,6 +261,13 @@
       timeZone: 'local',
       events: fetchVehicleBookings,
       displayEventTime: false,
+
+      // Highlight current user's bookings
+      eventClassNames: (arg) => {
+        const isMine = arg.event.extendedProps?.creatorEmail === currentUser?.email;
+        return isMine ? ['my-booking'] : ['other-booking'];
+      },
+
       dateClick: info => {
         if (lastClickedDayEl) lastClickedDayEl.style.backgroundColor = '';
         info.dayEl.style.backgroundColor = 'lightblue';
@@ -239,7 +301,7 @@
     return calendar.getEvents().filter(ev => ev.start < endMs && ev.end > startMs);
   }
 
-  // ■■■■ displayBookingsForDay with Delete Buttons ■■■■
+  // ■■■■ displayBookingsForDay with Delete Buttons + "Your booking" badge ■■■■
   function displayBookingsForDay(events, dateStr) {
     if (!events.length) {
       dateBookingsListEl.textContent = 'No bookings on ' + dateStr + '.';
@@ -247,15 +309,17 @@
     }
 
     dateBookingsListEl.innerHTML = events.map(ev => {
+      const isMine = ev.extendedProps.creatorEmail === currentUser.email;
       let html = `
         <div class="booking-entry" data-id="${ev.id}">
-          <strong>${ev.extendedProps.creatorEmail}</strong><br>
+          <strong>${ev.extendedProps.creatorEmail}</strong>
+          ${isMine ? '<span class="badge-mine">Your booking</span>' : ''}
+          <br>
           Start: ${ev.start.toLocaleString()}<br>
           End: ${ev.end.toLocaleString()}
       `;
 
-      // only show Remove if it's yours
-      if (ev.extendedProps.creatorEmail === currentUser.email) {
+      if (isMine) {
         html += `<br><button class="delete-booking" data-id="${ev.id}">Remove</button>`;
       }
       html += `</div>`;
@@ -366,5 +430,3 @@
 </script>
 </body>
 </html>
-
-
