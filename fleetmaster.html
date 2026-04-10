@@ -14,6 +14,7 @@
       margin: 0;
       padding: 0;
     }
+
     header {
       background: #333;
       color: white;
@@ -22,6 +23,7 @@
       justify-content: space-between;
       align-items: center;
     }
+
     .header-btn {
       background: #666;
       color: white;
@@ -31,7 +33,10 @@
       cursor: pointer;
       margin-left: 1rem;
     }
-    .header-btn:hover { background: #555; }
+
+    .header-btn:hover {
+      background: #555;
+    }
 
     #logout-btn, #export-btn {
       background: #666;
@@ -42,6 +47,7 @@
       cursor: pointer;
       margin-left: 1rem;
     }
+
     .container {
       max-width: 1200px;
       margin: 2rem auto;
@@ -50,16 +56,19 @@
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
+
     h2 {
       text-align: center;
       margin-top: 0;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 1rem;
       table-layout: fixed;
     }
+
     th, td {
       padding: 1rem;
       text-align: left;
@@ -67,12 +76,11 @@
       vertical-align: top;
     }
 
-    /* Give "Key Held By" more space */
     th:nth-child(3), td:nth-child(3) {
       width: 20%;
       word-break: break-word;
     }
-    /* Reduce "Notes" width a bit to compensate */
+
     th:nth-child(7), td:nth-child(7) {
       width: 24%;
     }
@@ -84,6 +92,7 @@
       cursor: pointer;
       font-weight: bold;
     }
+
     .atFrontDesk { background-color: #e7bbd2; color: black; }
     .withStaff   { background-color: #e0e257; color: black; }
     .signedOut   { background-color: #5cbde5; color: black; }
@@ -91,7 +100,6 @@
     .alarm       { background-color: #d4282f; color: white; }
     .alarm-row   { background-color: #ffdddd !important; }
 
-    /* Notes UI */
     .note-input {
       width: 100%;
       min-height: 2.25rem;
@@ -102,6 +110,7 @@
       font: inherit;
       box-sizing: border-box;
     }
+
     .save-status {
       font-size: 0.85rem;
       opacity: 0.7;
@@ -161,26 +170,68 @@
     const db = getDatabase(app);
 
     const logoutBtn = document.getElementById('logout-btn');
-    logoutBtn.addEventListener('click', () => signOut(auth));
-
     const exportBtn = document.getElementById('export-btn');
-    exportBtn.addEventListener('click', exportLogsToCSV);
-
     const tableBody = document.querySelector('#vehicle-table tbody');
 
+    logoutBtn.addEventListener('click', () => signOut(auth));
+    exportBtn.addEventListener('click', exportLogsToCSV);
+
+    // Vehicles to hide visually only
+    const HIDDEN_VEHICLES = new Set([
+      '09-24 2024 White Sierra 3500 C182B'
+    ]);
+
+    // Visual labels only - database keys remain unchanged
+    const DISPLAY_NAME_MAP = {
+      '01-20 2021 Red Traverse CM335': 'Red Traverse',
+      '02-20 2021 Black Traverse CM366': 'Black Traverse',
+      '03-21 2021 Grey Traverse CN360': 'Grey Traverse',
+      '04-21 2021 Shadow Silverado 1500 CM695': 'Shadow Silverado',
+      '06-21 2020 Grey Grand Caravan CN468': 'Grey Grand Caravan',
+      '07-21 2021 White Terrain CN466': 'White Terrain',
+      '08-21 2021 Black Terrain CN467': 'Black Terrain',
+      '09-24 2024 White Sierra 3500 C182B': 'White Sierra',
+      '10-24 2025 Green Trailblazer C838B': 'Green Trailblazer',
+      '11-24 2024 Grey Traverse CS266': 'Grey Traverse 1',
+      '13-24 2024 Grey Traverse CT008': 'Grey Traverse 2',
+      '14-24 2024 Grey Traverse C443C': 'Grey Traverse 3',
+      '15-24 2024 Grey Traverse C444C': 'Grey Traverse 4',
+      '16-24 2024 Blue Traverse CT073': 'Blue Traverse',
+      '17-25 2025 Black Buick Envision CV294': 'Black Buick Envision'
+    };
+
+    function getDisplayName(name) {
+      return DISPLAY_NAME_MAP[name] || name;
+    }
+
+    function debounce(fn, ms) {
+      let t;
+      return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), ms);
+      };
+    }
+
     onAuthStateChanged(auth, user => {
-      if (!user) return window.location.href = 'index.html';
+      if (!user) {
+        window.location.href = 'index.html';
+        return;
+      }
 
       const vehiclesRef = ref(db, 'vehicles');
+
       onValue(vehiclesRef, snapshot => {
         if (!snapshot.exists()) return;
 
-        tableBody.innerHTML = ''; // clear old rows
+        tableBody.innerHTML = '';
 
         const vehicles = snapshot.val();
         const now = Date.now();
 
         Object.entries(vehicles).forEach(([name, data]) => {
+          if (HIDDEN_VEHICLES.has(name)) return;
+
+          const displayName = getDisplayName(name);
           const keyStatus = data.keyStatus || 'atFrontDesk';
           const keyHeldBy = data.keyHeldBy || '';
           const vehicleStatus = data.status || 'available';
@@ -188,13 +239,20 @@
           const alarm = data.alarm === true;
 
           const elapsed = now - lastKeyChange;
-          const overdue = elapsed > 3600000 && keyStatus === 'withStaff' && vehicleStatus === 'available' && alarm;
+          const overdue =
+            elapsed > 3600000 &&
+            keyStatus === 'withStaff' &&
+            vehicleStatus === 'available' &&
+            alarm;
 
           const row = document.createElement('tr');
           if (overdue) row.classList.add('alarm-row');
 
           const keyBtn = document.createElement('button');
-          keyBtn.textContent = keyStatus === 'atFrontDesk' ? 'At The Front Desk' : 'Out With Staff Member';
+          keyBtn.textContent =
+            keyStatus === 'atFrontDesk'
+              ? 'At The Front Desk'
+              : 'Out With Staff Member';
           keyBtn.className = 'toggle-btn ' + keyStatus;
           keyBtn.onclick = async () => {
             const toStaff = keyStatus === 'atFrontDesk';
@@ -207,8 +265,12 @@
           };
 
           const vehicleBtn = document.createElement('button');
-          vehicleBtn.textContent = vehicleStatus === 'available' ? 'Available' : 'Signed Out by Staff';
-          vehicleBtn.className = 'toggle-btn ' + (vehicleStatus === 'available' ? 'available' : 'signedOut');
+          vehicleBtn.textContent =
+            vehicleStatus === 'available'
+              ? 'Available'
+              : 'Signed Out by Staff';
+          vehicleBtn.className =
+            'toggle-btn ' + (vehicleStatus === 'available' ? 'available' : 'signedOut');
           vehicleBtn.onclick = async () => {
             const isOut = vehicleStatus === 'available';
             await update(ref(db, 'vehicles/' + name), {
@@ -237,27 +299,29 @@
             });
           };
 
-          const createCell = content => {
+          const createCell = (content) => {
             const td = document.createElement('td');
-            if (content instanceof HTMLElement) td.appendChild(content);
-            else td.textContent = content;
+            if (content instanceof HTMLElement) {
+              td.appendChild(content);
+            } else {
+              td.textContent = content;
+            }
             return td;
           };
 
-          // ----- Build standard cells -----
-          row.appendChild(createCell(overdue ? `🚨 ${name}` : name));
+          row.appendChild(createCell(overdue ? `🚨 ${displayName}` : displayName));
           row.appendChild(createCell(keyBtn));
           row.appendChild(createCell(keyHeldBy));
           row.appendChild(createCell(vehicleBtn));
           row.appendChild(createCell(alarmBtn));
           row.appendChild(createCell(triggerBtn));
 
-          // ----- Notes cell (inline textarea with auto-save) -----
           const note = data.note || '';
           const noteBox = document.createElement('div');
+
           const noteEl = document.createElement('textarea');
           noteEl.className = 'note-input';
-          noteEl.placeholder = 'Add note…';
+          noteEl.placeholder = 'Add note...';
           noteEl.value = note;
           noteEl.maxLength = 500;
 
@@ -265,18 +329,9 @@
           statusEl.className = 'save-status';
           statusEl.textContent = '';
 
-          // debounce helper
-          function debounce(fn, ms) {
-            let t;
-            return (...args) => {
-              clearTimeout(t);
-              t = setTimeout(() => fn(...args), ms);
-            };
-          }
-
           const doSave = async (val) => {
             try {
-              statusEl.textContent = 'Saving…';
+              statusEl.textContent = 'Saving...';
               await update(ref(db, 'vehicles/' + name), {
                 note: val,
                 noteEditedBy: auth.currentUser?.email || null,
@@ -284,29 +339,29 @@
               });
               statusEl.textContent = 'Saved';
               setTimeout(() => {
-                if (statusEl.textContent === 'Saved') statusEl.textContent = '';
+                if (statusEl.textContent === 'Saved') {
+                  statusEl.textContent = '';
+                }
               }, 1200);
             } catch (e) {
               console.error('Note save failed', e);
-              statusEl.textContent = 'Save failed – retrying…';
+              statusEl.textContent = 'Save failed - retrying...';
             }
           };
 
           const debouncedSave = debounce(doSave, 600);
 
           noteEl.addEventListener('input', () => {
-            statusEl.textContent = 'Saving…';
+            statusEl.textContent = 'Saving...';
             debouncedSave(noteEl.value);
           });
 
-          // Save immediately on blur just in case
           noteEl.addEventListener('blur', () => doSave(noteEl.value));
 
           noteBox.appendChild(noteEl);
           noteBox.appendChild(statusEl);
           row.appendChild(createCell(noteBox));
 
-          // ----- Append row -----
           tableBody.appendChild(row);
         });
       });
@@ -315,26 +370,45 @@
     async function exportLogsToCSV() {
       try {
         const snap = await get(ref(db, 'vehicleLogs'));
-        if (!snap.exists()) return alert('No logs to export.');
+        if (!snap.exists()) {
+          alert('No logs to export.');
+          return;
+        }
 
         const logs = snap.val();
         const rows = [["Vehicle", "User Email", "Action", "Timestamp (Yukon Time)"]];
 
         Object.entries(logs).forEach(([vehicle, entries]) => {
+          if (HIDDEN_VEHICLES.has(vehicle)) return;
+
+          const displayName = getDisplayName(vehicle);
+
           Object.values(entries).forEach(entry => {
-            const time = new Date(entry.timestamp).toLocaleString('en-CA', { timeZone: 'America/Whitehorse' });
-            rows.push([vehicle, entry.userEmail || '', entry.action, time]);
+            const time = new Date(entry.timestamp).toLocaleString('en-CA', {
+              timeZone: 'America/Whitehorse'
+            });
+            rows.push([
+              displayName,
+              entry.userEmail || '',
+              entry.action || '',
+              time
+            ]);
           });
         });
 
-        const csv = rows.map(r => r.join(',')).join('\n');
+        const csv = rows
+          .map(row =>
+            row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')
+          )
+          .join('\n');
+
         const blob = new Blob([csv], { type: 'text/csv' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = 'fleet_logs.csv';
         a.click();
       } catch (error) {
-        console.error("Error exporting logs:", error);
+        console.error('Error exporting logs:', error);
       }
     }
   </script>
