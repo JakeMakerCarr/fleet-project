@@ -43,7 +43,7 @@
     #container {
       display: flex;
       gap: 20px;
-      max-width: 1400px;
+           max-width: 1400px;
       margin: 0 auto;
       align-items: flex-start;
     }
@@ -69,6 +69,11 @@
     #rightPanel {
       flex: 1;
       display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    #topPanel {
+      display: flex;
       gap: 20px;
     }
     #calendar {
@@ -81,6 +86,35 @@
       /* new: limit height and scroll */
       max-height: 75vh;
       overflow-y: auto;
+    }
+    #bottomGasCards {
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.08);
+    }
+    #bottomGasCards h3 {
+      margin: 0 0 12px;
+    }
+    #gasCardList {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px;
+    }
+    .gas-card-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f7f8fa;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 14px;
+    }
+    .gas-card-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      flex: 0 0 16px;
     }
     #dateInfo {
       flex: 1;
@@ -107,15 +141,7 @@
     /* only the event container scrolls */
     .fc .fc-daygrid-day-events {
       max-height: 100px;
-      overflow-y: auto;
     }
-    /* highlight selected day cell */
-    .fc .fc-daygrid-day.selected-day {
-      background-color: rgba(255, 235, 59, 0.3);
-    }
-  </style>
-</head>
-<body>
 
   <header>
   <div>YFNED Availability Calendar</div>
@@ -144,6 +170,14 @@
     <div id="rightPanel">
       <div id="calendar"></div>
       <div id="dateInfo">Click a date to view availability.</div>
+      <div id="topPanel">
+        <div id="calendar"></div>
+        <div id="dateInfo">Click a date to view availability.</div>
+      </div>
+      <div id="bottomGasCards">
+        <h3>Vehicle Gas Cards</h3>
+        <div id="gasCardList"></div>
+      </div>
     </div>
   </div>
 
@@ -169,22 +203,41 @@
 
     // vehicle→color map
     const vehicleColors = {
-      "01-20 2021 Red Traverse CM335": "#d4282f",
-      "02-20 2021 Black Traverse CM366": "#2c3e50",
-      "03-21 2021 Grey Traverse CN360 Nutrition Team Only": "#e74c3c",
-      "04-21 2021 Shadow Silverado 1500 CM695": "#f1c40f",
-      "06-21 2020 Grey Grand Caravan CN468 Early Years Only": "#e7bbd2",
-      "07-21 2021 White Terrain CN466 Early Years Only": "#e7bbd2",
-      "08-21 2021 Black Terrain CN467 Early Years Only": "#e7bbd2",
-      "09-24 2024 White Sierra 3500 C182B": "#16a085",
-      "10-24 2025 Green Trailblazer C838B": "#27ae60",
-      "11-24 2024 Grey Traverse CS266": "#3498db",
-      "13-24 2024 Grey Traverse CT008": "#2980b9",
-      "14-24 2024 Grey Traverse C443C": "#9b59b6",
-      "15-24 2024 Grey Traverse C444C": "#8e44ad",
-      "16-24 2024 Blue Traverse CT073": "#1abc9c",
-      "17-25 2025 Black Buick Envision CV294": "#8e44ad",
+      "01-20 2021 Red Traverse CM335 Gas Card:55221": "#d4282f",
+      "02-20 2021 Black Traverse CM366 Gas Card:67474": "#2c3e50",
+      "03-21 2021 Grey Traverse CN360 Nutrition Team Only Gas Card:60555": "#e74c3c",
+      "04-21 2021 Shadow Silverado 1500 CM695 Gas Card:67479": "#f1c40f",
+      "06-21 2020 Grey Grand Caravan CN468 Early Years Only Gas Card:3489": "#e7bbd2",
+      "07-21 2021 White Terrain CN466 Early Years Only Gas Card:55224": "#e7bbd2",
+      "08-21 2021 Black Terrain CN467 Early Years Only Gas Card:67477": "#e7bbd2",
+      "09-24 2024 White Sierra 3500 C182B Gas Card:?": "#16a085",
+      "10-24 2025 Green Trailblazer C838B Gas Card:67121": "#27ae60",
+      "11-24 2024 Grey Traverse CS266 Gas Card:7480": "#3498db",
+      "13-24 2024 Grey Traverse CT008 Gas Card:7122": "#2980b9",
+      "14-24 2024 Grey Traverse C443C Gas Card:67473": "#9b59b6",
+      "15-24 2024 Grey Traverse C444C Gas Card:67472": "#8e44ad",
+      "16-24 2024 Blue Traverse CT073 Gas Card:67476": "#1abc9c",
+      "17-25 2025 Black Buick Envision CV294 Gas Card:68661 Gas Card:?": "#8e44ad",
       "18-25 2025 Ford Transit Van - C115C": "#fd9644"
+    };
+    // vehicle→gas cards→color map for bottom section
+    const vehicleGasCardColors = {
+      "Red Traverse CM335 Gas Card:55221": "#d4282f",
+      "Black Traverse CM366 Gas Card:67474": "#2c3e50",
+      "Grey Traverse CN360 Nutrition Team Only Gas Card:60555": "#e74c3c",
+      "Shadow Silverado 1500 CM695 Gas Card:67479": "#f1c40f",
+      "Grey Grand Caravan CN468 Early Years Only Gas Card:3489": "#e7bbd2",
+      "White Terrain CN466 Early Years Only Gas Card:55224": "#e7bbd2",
+      "Black Terrain CN467 Early Years Only Gas Card:67477": "#e7bbd2",
+      "White Sierra 3500 C182B Gas Card:?": "#16a085",
+      "Green Trailblazer C838B Gas Card:67121": "#27ae60",
+      "Grey Traverse CS266 Gas Card:7480": "#3498db",
+      "Grey Traverse CT008 Gas Card:7122": "#2980b9",
+      "14-24 2024 Grey Traverse C443C Gas Card:67473": "#9b59b6",
+      "Grey Traverse C444C Gas Card:67472": "#8e44ad",
+      "Blue Traverse CT073 Gas Card:67476": "#1abc9c",
+      "Black Buick Envision CV294 Gas Card:68661 Gas Card:?": "#8e44ad",
+      "Ford Transit Van - C115C": "#fd9644"
     };
 
     let allBookings = [];
@@ -198,6 +251,21 @@
         div.className = "legend-item";
         div.innerHTML = `<div class="legend-color" style="background:${color}"></div>${veh}`;
         legend.appendChild(div);
+      }
+    }
+
+    function renderBottomGasCards() {
+      const gasCardList = document.getElementById("gasCardList");
+      gasCardList.innerHTML = "";
+
+      for (const [vehicle, color] of Object.entries(vehicleGasCardColors)) {
+        const row = document.createElement("div");
+        row.className = "gas-card-item";
+        row.innerHTML = `
+          <div class="gas-card-color" style="background:${color}"></div>
+          <span>${vehicle}</span>
+        `;
+        gasCardList.appendChild(row);
       }
     }
 
@@ -226,26 +294,7 @@
           initialView: 'dayGridMonth',
           headerToolbar: { left: 'prev today next', center: 'title', right: '' },
           events: events,
-          displayEventTime: false,
-          dateClick: info => {
-            // remove old highlight
-            if (lastClickedDayEl) lastClickedDayEl.classList.remove('selected-day');
-            // highlight new
-            info.dayEl.classList.add('selected-day');
-            lastClickedDayEl = info.dayEl;
 
-            showAvailability(info.dateStr, events);
-          }
-        }
-      );
-      calendar.render();
-    }
-
-    function showAvailability(dateStr, events) {
-      const booked = new Set(
-        events
-          .filter(ev => ev.start.startsWith(dateStr))
-          .map(ev => ev.extendedProps.vehicle)
       );
       const available = Object.keys(vehicleColors)
         .filter(v => !booked.has(v));
@@ -271,6 +320,7 @@
     onAuthStateChanged(auth, async user => {
       if (!user) return location.href = 'index.html';
       renderLegend();
+      renderBottomGasCards();
       allBookings = await fetchAllBookings();
       renderCalendar(allBookings);
     });
