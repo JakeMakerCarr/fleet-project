@@ -43,7 +43,7 @@
     #container {
       display: flex;
       gap: 20px;
-           max-width: 1400px;
+      max-width: 1400px;
       margin: 0 auto;
       align-items: flex-start;
     }
@@ -141,7 +141,15 @@
     /* only the event container scrolls */
     .fc .fc-daygrid-day-events {
       max-height: 100px;
+      overflow-y: auto;
     }
+    /* highlight selected day cell */
+    .fc .fc-daygrid-day.selected-day {
+      background-color: rgba(255, 235, 59, 0.3);
+    }
+  </style>
+</head>
+<body>
 
   <header>
   <div>YFNED Availability Calendar</div>
@@ -168,8 +176,6 @@
   <div id="container">
     <div id="legend"></div>
     <div id="rightPanel">
-      <div id="calendar"></div>
-      <div id="dateInfo">Click a date to view availability.</div>
       <div id="topPanel">
         <div id="calendar"></div>
         <div id="dateInfo">Click a date to view availability.</div>
@@ -294,7 +300,26 @@
           initialView: 'dayGridMonth',
           headerToolbar: { left: 'prev today next', center: 'title', right: '' },
           events: events,
+          displayEventTime: false,
+          dateClick: info => {
+            // remove old highlight
+            if (lastClickedDayEl) lastClickedDayEl.classList.remove('selected-day');
+            // highlight new
+            info.dayEl.classList.add('selected-day');
+            lastClickedDayEl = info.dayEl;
 
+            showAvailability(info.dateStr, events);
+          }
+        }
+      );
+      calendar.render();
+    }
+
+    function showAvailability(dateStr, events) {
+      const booked = new Set(
+        events
+          .filter(ev => ev.start.startsWith(dateStr))
+          .map(ev => ev.extendedProps.vehicle)
       );
       const available = Object.keys(vehicleColors)
         .filter(v => !booked.has(v));
