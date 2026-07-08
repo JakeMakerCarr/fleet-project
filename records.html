@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>YFNED Records</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #5cbde5;
+      background-image: url('skybackgroundmidnightfeather.png');
+      background-repeat: repeat;
+      background-size: 400px;
+      min-height: 100vh;
+    }
+    .feather-canvas {
+      display: none;
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    #recordsApp {
+      max-width: 1500px;
+      margin: 2rem auto;
+      padding: 0 1.25rem 2rem;
+      box-sizing: border-box;
+      position: relative;
+      z-index: 1;
+    }
+    .records-shell {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      padding: 18px;
+    }
+    .records-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .records-title-row h1 {
+      margin: 0;
+      font-size: 26px;
+    }
+    .status-text {
+      color: #475569;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .record-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .record-tab {
+      border: none;
+      border-radius: 6px;
+      background: #e5e7eb;
+      color: #111827;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .record-tab.active,
+    .record-tab[aria-selected="true"] {
+      background: #334155;
+      color: white;
+    }
+    .records-controls {
+      display: grid;
+      grid-template-columns: minmax(150px, 190px) minmax(150px, 190px) minmax(220px, 1fr) minmax(220px, 320px) auto;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+    .records-controls label {
+      display: grid;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    .records-controls input,
+    .records-controls select {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font: inherit;
+      background: white;
+    }
+    #refreshBtn {
+      border: none;
+      border-radius: 6px;
+      background: #1f8fca;
+      color: white;
+      padding: 11px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      min-width: 96px;
+    }
+    #refreshBtn:hover {
+      background: #176f9e;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .summary-card {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .summary-card strong {
+      display: block;
+      color: #0f172a;
+      font-size: 24px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .summary-card span {
+      color: #475569;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .records-table-wrap {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      overflow: auto;
+      max-height: 68vh;
+      background: white;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+    }
+    th,
+    td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background: #f1f5f9;
+      color: #111827;
+      z-index: 1;
+    }
+    tbody tr:hover {
+      background: #f8fafc;
+    }
+    .vehicle-cell {
+      font-weight: 700;
+      color: #111827;
+    }
+    .detail-text {
+      max-width: 520px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .empty-state {
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 26px;
+      text-align: center;
+      color: #475569;
+      background: #f8fafc;
+      font-weight: 700;
+    }
+    @media (min-width: 900px) {
+      body.live-feather-background {
+        background-image: none;
+      }
+      body.live-feather-background .feather-canvas {
+        display: block;
+      }
+    }
+    @media (max-width: 900px) {
+      #recordsApp {
+        padding: 0 1rem 1.5rem;
+      }
+      .records-controls {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="feather-canvas" class="feather-canvas" aria-hidden="true"></canvas>
+
+  <header>
+    <div class="header-left">
+      <div class="header-logo-box">
+        <img src="YFNED_fleet_logo_navy.svg" alt="YFNED Fleet logo" />
+      </div>
+      <div class="header-title">YFNED Records</div>
+    </div>
+    <div class="header-nav">
+      <button class="header-btn" onclick="location.href='fleetmaster.html'">Fleetmaster View</button>
+      <button class="header-btn" onclick="location.href='mastercalendar.html'">Master Calendar</button>
+      <button class="header-btn" onclick="location.href='availability.html'">Availability Calendar</button>
+      <button class="header-btn" onclick="location.href='masterbooking.html'">Master Booking</button>
+      <button class="header-btn active" aria-current="page" onclick="location.href='records.html'">Records</button>
+      <button id="logout-btn" class="header-btn">Logout</button>
+    </div>
+  </header>
+
+  <main id="recordsApp">
+    <section class="records-shell">
+      <div class="records-title-row">
+        <h1>Records</h1>
+        <div id="statusText" class="status-text">Loading records...</div>
+      </div>
+
+      <div class="record-tabs" role="tablist" aria-label="Record type">
+        <button class="record-tab active" type="button" role="tab" aria-selected="true" data-record-type="fleetmaster">Fleetmaster Logs</button>
+        <button class="record-tab" type="button" role="tab" aria-selected="false" data-record-type="mbc">MBC Logs</button>
+        <button class="record-tab" type="button" role="tab" aria-selected="false" data-record-type="maintenance">Maintenance Logs</button>
+        <button class="record-tab" type="button" role="tab" aria-selected="false" data-record-type="checklist">Checklist Logs</button>
+        <button class="record-tab" type="button" role="tab" aria-selected="false" data-record-type="shop">Shop Logs</button>
+      </div>
+
+      <div class="records-controls">
+        <label>
+          Month
+          <input id="monthFilter" type="month" />
+        </label>
+        <label>
+          Day
+          <input id="dayFilter" type="date" />
+        </label>
+        <label>
+          Search
+          <input id="searchFilter" type="search" placeholder="Search vehicle, user, action, comment..." />
+        </label>
+        <label>
+          Vehicle
+          <select id="vehicleFilter">
+            <option value="">All vehicles</option>
+          </select>
+        </label>
+        <button id="refreshBtn" type="button">Refresh</button>
+      </div>
+
+      <div id="summaryGrid" class="summary-grid"></div>
+      <div id="tableHost"></div>
+    </section>
+  </main>
+
+  <script src="livefeathers.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+
+    const app = initializeApp({
+      apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
+      authDomain: "yfned-fleet-nfc.firebaseapp.com",
+      databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
+      projectId: "yfned-fleet-nfc",
+      storageBucket: "yfned-fleet-nfc.appspot.com",
+      messagingSenderId: "482363667898",
+      appId: "1:482363667898:web:4b0364e891a221e9631983"
+    });
+
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const YUKON_TIMEZONE = 'America/Whitehorse';
+    const VEHICLE_EXPORT_LABELS = {
+      "01-20 2021 Red Traverse CM335": "Red Traverse CM335",
+      "02-20 2021 Black Traverse CM366": "Black Traverse CM366",
+      "03-21 2021 Grey Traverse CN360": "Grey Traverse CN360",
+      "03-21 2021 Grey Traverse CN360 Nutrition Team Only": "Grey Traverse CN360",
+      "04-21 2021 Shadow Silverado 1500 CM695": "Shadow Silverado CM695",
+      "05-21 2021 Ebony Buick Encore CM532": "Black Buick Envision CV294",
+      "06-21 2020 Grey Grand Caravan CN468": "Grey Grand Caravan CN468",
+      "06-21 2020 Grey Grand Caravan CN468 Early Years Only": "Grey Grand Caravan CN468",
+      "07-21 2021 White Terrain CN466": "White Terrain CN466",
+      "07-21 2021 White Terrain CN466 Early Years Only": "White Terrain CN466",
+      "08-21 2021 Black Terrain CN467": "Black Terrain CN467",
+      "08-21 2021 Black Terrain CN467 Early Years Only": "Black Terrain CN467",
+      "10-24 2025 Green MTU Trailblazer C838B": "Green Trailblazer C838B",
+      "10-24 2025 Green Trailblazer C838B": "Green Trailblazer C838B",
+      "11-24 2024 Grey Traverse CS266": "Grey Traverse CS266",
+      "13-24 2024 Grey Traverse CT008": "Grey Traverse CT008",
+      "14-24 2024 Grey Traverse C443C": "Grey Traverse C443C",
+      "15-24 2024 Grey Traverse C444C": "Grey Traverse C444C",
+      "16-24 2024 Blue Traverse CT073": "Blue Traverse CT073",
+      "17-25 2025 Black Buick Envision CV294": "Black Buick Envision CV294",
+      "18-25 2025 Ford Transit Van C115C": "Ford Transit Van C115C",
+      "18-25 2025 Ford Transit Van - C115C": "Ford Transit Van C115C",
+      "Test NFC Card": "Test NFC Card"
+    };
+    const VEHICLE_FILTER_HIDDEN_PATTERNS = [
+      'white sierra',
+      'white dodge'
+    ];
+    const VEHICLE_ALIASES = {
+      "03-21 2021 Grey Traverse CN360": "03-21 2021 Grey Traverse CN360 Nutrition Team Only",
+      "06-21 2020 Grey Grand Caravan CN468": "06-21 2020 Grey Grand Caravan CN468 Early Years Only",
+      "07-21 2021 White Terrain CN466": "07-21 2021 White Terrain CN466 Early Years Only",
+      "08-21 2021 Black Terrain CN467": "08-21 2021 Black Terrain CN467 Early Years Only",
+      "10-24 2025 Green Trailblazer C838B": "10-24 2025 Green MTU Trailblazer C838B",
+      "18-25 2025 Ford Transit Van C115C": "18-25 2025 Ford Transit Van - C115C"
+    };
+
+    const recordDefinitions = {
+      fleetmaster: {
+        label: 'Fleetmaster Logs',
+        columns: ['Date', 'Vehicle', 'User', 'Action', 'Details']
+      },
+      mbc: {
+        label: 'MBC Logs',
+        columns: ['Date', 'Vehicle', 'Booked By', 'Start', 'End']
+      },
+      maintenance: {
+        label: 'Maintenance Logs',
+        columns: ['Date', 'Vehicle', 'User', 'Comment']
+      },
+      checklist: {
+        label: 'Checklist Logs',
+        columns: ['Date', 'Vehicle', 'User', 'Repair Items']
+      },
+      shop: {
+        label: 'Shop Logs',
+        columns: ['Vehicle', 'Date In', 'Date Out', 'Reason', 'Technician', 'Comments']
+      }
+    };
+
+    let activeRecordType = 'fleetmaster';
+    let allRecords = {
+      fleetmaster: [],
+      mbc: [],
+      maintenance: [],
+      checklist: [],
+      shop: []
+    };
+
+    const logoutBtn = document.getElementById('logout-btn');
+    const statusText = document.getElementById('statusText');
+    const monthFilter = document.getElementById('monthFilter');
+    const dayFilter = document.getElementById('dayFilter');
+    const searchFilter = document.getElementById('searchFilter');
+    const vehicleFilter = document.getElementById('vehicleFilter');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const summaryGrid = document.getElementById('summaryGrid');
+    const tableHost = document.getElementById('tableHost');
+    const tabs = [...document.querySelectorAll('.record-tab')];
+
+    window.initLiveFeatherBackground();
+
+    function getCanonicalVehicleName(vehicle) {
+      return VEHICLE_ALIASES[vehicle] || vehicle;
+    }
+
+    function getVehicleLabel(vehicle) {
+      return VEHICLE_EXPORT_LABELS[vehicle] || VEHICLE_EXPORT_LABELS[getCanonicalVehicleName(vehicle)] || vehicle;
+    }
+
+    function isHiddenVehicleFilterOption(vehicle) {
+      const filterText = `${vehicle} ${getVehicleLabel(vehicle)}`.toLowerCase();
+      return VEHICLE_FILTER_HIDDEN_PATTERNS.some(pattern => filterText.includes(pattern));
+    }
+
+    function vehicleMatchesFilter(recordVehicle, filterVehicle) {
+      if (!filterVehicle) return true;
+      return recordVehicle === filterVehicle || getVehicleLabel(recordVehicle) === getVehicleLabel(filterVehicle);
+    }
+
+    function normalizeVehicleRecords(vehicles) {
+      const normalized = {};
+      Object.entries(vehicles || {}).forEach(([vehicleName, vehicleData]) => {
+        const canonicalName = getCanonicalVehicleName(vehicleName);
+        normalized[canonicalName] = {
+          ...(normalized[canonicalName] || {}),
+          ...(vehicleData || {})
+        };
+      });
+      return normalized;
+    }
+
+    function formatYukonDate(date) {
+      if (!date || Number.isNaN(date.getTime())) return '';
+      return date.toLocaleString('en-CA', {
+        timeZone: YUKON_TIMEZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    }
+
+    function getYukonMonthKey(date) {
+      if (!date || Number.isNaN(date.getTime())) return '';
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: YUKON_TIMEZONE,
+        year: 'numeric',
+        month: '2-digit'
+      }).formatToParts(date);
+      const map = Object.fromEntries(parts.map(part => [part.type, part.value]));
+      return `${map.year}-${map.month}`;
+    }
+
+    function getYukonDayKey(date) {
+      if (!date || Number.isNaN(date.getTime())) return '';
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: YUKON_TIMEZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).formatToParts(date);
+      const map = Object.fromEntries(parts.map(part => [part.type, part.value]));
+      return `${map.year}-${map.month}-${map.day}`;
+    }
+
+    function dateFromEntry(value) {
+      if (!value) return null;
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function stringifyDetails(details) {
+      const entries = Object.entries(details || {}).filter(([, value]) => value !== undefined && value !== null && value !== '');
+      if (!entries.length) return '';
+      return entries
+        .map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`)
+        .join('\n');
+    }
+
+    function searchBlob(record) {
+      return [getVehicleLabel(record.vehicle), ...Object.values(record)].join(' ').toLowerCase();
+    }
+
+    function monthMatches(record) {
+      const month = monthFilter.value;
+      if (!month) return true;
+      if (activeRecordType === 'shop') {
+        const inMonth = record.dateInMonth || '';
+        const outMonth = record.dateOutMonth || '';
+        return inMonth === month || outMonth === month || (!inMonth && !outMonth);
+      }
+      return record.monthKey === month;
+    }
+
+    function dayMatches(record) {
+      const day = dayFilter.value;
+      if (!day) return true;
+
+      if (activeRecordType === 'shop') {
+        if (record.dateIn && record.dateOut) {
+          return day >= record.dateIn && day <= record.dateOut;
+        }
+        return record.dateIn === day || record.dateOut === day;
+      }
+
+      return record.dayKey === day;
+    }
+
+    function getFilteredRecords() {
+      const search = searchFilter.value.trim().toLowerCase();
+      const vehicle = vehicleFilter.value;
+      return allRecords[activeRecordType].filter(record => {
+        if (!vehicleMatchesFilter(record.vehicle, vehicle)) return false;
+        if (!dayMatches(record)) return false;
+        if (!monthMatches(record)) return false;
+        if (search && !searchBlob(record).includes(search)) return false;
+        return true;
+      });
+    }
+
+    function renderVehicleFilter() {
+      const selected = vehicleFilter.value;
+      const vehicles = [...new Set(allRecords[activeRecordType].map(record => record.vehicle))]
+        .filter(vehicle => !isHiddenVehicleFilterOption(vehicle))
+        .sort((a, b) => getVehicleLabel(a).localeCompare(getVehicleLabel(b)));
+
+      vehicleFilter.innerHTML = '<option value="">All vehicles</option>';
+      const visibleValues = [];
+      const seenLabels = new Set();
+      vehicles.forEach(vehicle => {
+        const label = getVehicleLabel(vehicle);
+        const labelKey = label.toLowerCase();
+        if (seenLabels.has(labelKey)) return;
+        seenLabels.add(labelKey);
+        visibleValues.push(vehicle);
+
+        const option = document.createElement('option');
+        option.value = vehicle;
+        option.textContent = label;
+        vehicleFilter.appendChild(option);
+      });
+
+      if (visibleValues.includes(selected)) {
+        vehicleFilter.value = selected;
+      } else {
+        const selectedLabel = getVehicleLabel(selected);
+        const replacement = visibleValues.find(vehicle => getVehicleLabel(vehicle) === selectedLabel);
+        if (replacement) vehicleFilter.value = replacement;
+      }
+    }
+
+    function renderSummary(records) {
+      const vehicleCount = new Set(records.map(record => record.vehicle).filter(Boolean)).size;
+      const userCount = new Set(records.map(record => record.user || record.bookedBy).filter(Boolean)).size;
+      const monthLabel = monthFilter.value || 'All months';
+      const dayLabel = dayFilter.value || 'Any day';
+
+      summaryGrid.innerHTML = `
+        <div class="summary-card"><strong>${records.length}</strong><span>${recordDefinitions[activeRecordType].label}</span></div>
+        <div class="summary-card"><strong>${vehicleCount}</strong><span>Vehicles</span></div>
+        <div class="summary-card"><strong>${userCount}</strong><span>People</span></div>
+        <div class="summary-card"><strong>${monthLabel}</strong><span>Month Filter</span></div>
+        <div class="summary-card"><strong>${dayLabel}</strong><span>Day Filter</span></div>
+      `;
+    }
+
+    function renderTable(records) {
+      if (!records.length) {
+        tableHost.innerHTML = '<div class="empty-state">No records match the current filters.</div>';
+        return;
+      }
+
+      const definition = recordDefinitions[activeRecordType];
+      const rows = records.map(record => {
+        if (activeRecordType === 'fleetmaster') {
+          return [
+            escapeHtml(record.dateLabel),
+            `<span class="vehicle-cell">${escapeHtml(getVehicleLabel(record.vehicle))}</span>`,
+            escapeHtml(record.user),
+            escapeHtml(record.action),
+            `<div class="detail-text">${escapeHtml(record.details)}</div>`
+          ];
+        }
+        if (activeRecordType === 'mbc') {
+          return [
+            escapeHtml(record.dateLabel),
+            `<span class="vehicle-cell">${escapeHtml(getVehicleLabel(record.vehicle))}</span>`,
+            escapeHtml(record.bookedBy),
+            escapeHtml(record.startLabel),
+            escapeHtml(record.endLabel)
+          ];
+        }
+        if (activeRecordType === 'maintenance') {
+          return [
+            escapeHtml(record.dateLabel),
+            `<span class="vehicle-cell">${escapeHtml(getVehicleLabel(record.vehicle))}</span>`,
+            escapeHtml(record.user),
+            `<div class="detail-text">${escapeHtml(record.comment)}</div>`
+          ];
+        }
+        if (activeRecordType === 'checklist') {
+          return [
+            escapeHtml(record.dateLabel),
+            `<span class="vehicle-cell">${escapeHtml(getVehicleLabel(record.vehicle))}</span>`,
+            escapeHtml(record.user),
+            `<div class="detail-text">${escapeHtml(record.repairItems)}</div>`
+          ];
+        }
+        return [
+          `<span class="vehicle-cell">${escapeHtml(getVehicleLabel(record.vehicle))}</span>`,
+          escapeHtml(record.dateIn || ''),
+          escapeHtml(record.dateOut || ''),
+          `<div class="detail-text">${escapeHtml(record.reason)}</div>`,
+          escapeHtml(record.technician || ''),
+          `<div class="detail-text">${escapeHtml(record.comments)}</div>`
+        ];
+      });
+
+      tableHost.innerHTML = `
+        <div class="records-table-wrap">
+          <table>
+            <thead>
+              <tr>${definition.columns.map(column => `<th>${column}</th>`).join('')}</tr>
+            </thead>
+            <tbody>
+              ${rows.map(row => `<tr>${row.map(cell => `<td>${cell || ''}</td>`).join('')}</tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function renderRecords() {
+      renderVehicleFilter();
+      const records = getFilteredRecords();
+      renderSummary(records);
+      renderTable(records);
+      statusText.textContent = `${records.length} visible records`;
+    }
+
+    function setActiveRecordType(type) {
+      activeRecordType = type;
+      tabs.forEach(tab => {
+        const isActive = tab.dataset.recordType === type;
+        tab.classList.toggle('active', isActive);
+        tab.setAttribute('aria-selected', String(isActive));
+      });
+      renderRecords();
+    }
+
+    function buildFleetmasterRecords(logs) {
+      const records = [];
+      Object.entries(logs || {}).forEach(([vehicle, entries]) => {
+        Object.values(entries || {}).forEach(entry => {
+          const date = dateFromEntry(entry?.timestamp);
+          const { userEmail, action, timestamp, ...details } = entry || {};
+          records.push({
+            vehicle,
+            user: userEmail || '',
+            action: action || '',
+            details: stringifyDetails(details),
+            date,
+            dateLabel: formatYukonDate(date),
+            monthKey: getYukonMonthKey(date),
+            dayKey: getYukonDayKey(date)
+          });
+        });
+      });
+      return records.sort(sortNewestFirst);
+    }
+
+    function buildMbcRecords(bookings) {
+      const records = [];
+      Object.entries(bookings || {}).forEach(([vehicle, entries]) => {
+        Object.values(entries || {}).forEach(entry => {
+          const start = dateFromEntry(entry?.startTimeISO);
+          const end = dateFromEntry(entry?.endTimeISO);
+          records.push({
+            vehicle,
+            bookedBy: entry?.userName || '',
+            date: start,
+            dateLabel: start ? start.toLocaleDateString('en-CA', { timeZone: YUKON_TIMEZONE }) : entry?.date || '',
+            startLabel: start ? start.toLocaleTimeString('en-CA', { timeZone: YUKON_TIMEZONE, hour: 'numeric', minute: '2-digit' }) : entry?.startTime || '',
+            endLabel: end ? end.toLocaleTimeString('en-CA', { timeZone: YUKON_TIMEZONE, hour: 'numeric', minute: '2-digit' }) : entry?.endTime || '',
+            monthKey: getYukonMonthKey(start),
+            dayKey: getYukonDayKey(start)
+          });
+        });
+      });
+      return records.sort(sortNewestFirst);
+    }
+
+    function buildMaintenanceRecords(logs) {
+      const records = [];
+      Object.entries(logs || {}).forEach(([vehicle, entries]) => {
+        Object.values(entries || {}).forEach(entry => {
+          const date = dateFromEntry(entry?.timestamp);
+          records.push({
+            vehicle,
+            user: entry?.userEmail || '',
+            comment: entry?.comment || '',
+            date,
+            dateLabel: formatYukonDate(date),
+            monthKey: getYukonMonthKey(date),
+            dayKey: getYukonDayKey(date)
+          });
+        });
+      });
+      return records.sort(sortNewestFirst);
+    }
+
+    function buildChecklistRecords(logs) {
+      const records = [];
+      Object.entries(logs || {}).forEach(([vehicle, entries]) => {
+        Object.values(entries || {}).forEach(entry => {
+          const date = dateFromEntry(entry?.timestamp);
+          const repairItems = Array.isArray(entry?.repairItems)
+            ? entry.repairItems.map(item => String(item).trim()).filter(Boolean).join('\n')
+            : '';
+          records.push({
+            vehicle,
+            user: entry?.userEmail || '',
+            repairItems,
+            date,
+            dateLabel: formatYukonDate(date),
+            monthKey: getYukonMonthKey(date),
+            dayKey: getYukonDayKey(date)
+          });
+        });
+      });
+      return records.sort(sortNewestFirst);
+    }
+
+    function buildShopRecords(vehicles) {
+      const normalized = normalizeVehicleRecords(vehicles);
+      return Object.entries(normalized || {})
+        .map(([vehicle, data]) => {
+          const details = data?.maintenanceDetails || {};
+          return {
+            vehicle,
+            dateIn: details.dateInShop || '',
+            dateOut: details.dateOutOfShop || '',
+            dateInMonth: details.dateInShop ? details.dateInShop.slice(0, 7) : '',
+            dateOutMonth: details.dateOutOfShop ? details.dateOutOfShop.slice(0, 7) : '',
+            reason: details.reason || '',
+            technician: details.technicianName || '',
+            comments: details.technicianComments || '',
+            user: details.technicianName || ''
+          };
+        })
+        .filter(record => record.dateIn || record.dateOut || record.reason || record.technician || record.comments)
+        .sort((a, b) => String(b.dateIn).localeCompare(String(a.dateIn)));
+    }
+
+    function sortNewestFirst(a, b) {
+      return (b.date?.getTime?.() || 0) - (a.date?.getTime?.() || 0);
+    }
+
+    async function loadRecords() {
+      statusText.textContent = 'Loading records...';
+      refreshBtn.disabled = true;
+      try {
+        const [vehicleLogsSnap, bookingsSnap, maintenanceLogsSnap, checklistLogsSnap, vehiclesSnap] = await Promise.all([
+          get(ref(db, 'vehicleLogs')),
+          get(ref(db, 'bookings')),
+          get(ref(db, 'maintenanceLogs')),
+          get(ref(db, 'checklistLogs')),
+          get(ref(db, 'vehicles'))
+        ]);
+
+        allRecords = {
+          fleetmaster: buildFleetmasterRecords(vehicleLogsSnap.exists() ? vehicleLogsSnap.val() : {}),
+          mbc: buildMbcRecords(bookingsSnap.exists() ? bookingsSnap.val() : {}),
+          maintenance: buildMaintenanceRecords(maintenanceLogsSnap.exists() ? maintenanceLogsSnap.val() : {}),
+          checklist: buildChecklistRecords(checklistLogsSnap.exists() ? checklistLogsSnap.val() : {}),
+          shop: buildShopRecords(vehiclesSnap.exists() ? vehiclesSnap.val() : {})
+        };
+
+        renderRecords();
+      } catch (error) {
+        console.error('Failed to load records:', error);
+        statusText.textContent = 'Failed to load records';
+        tableHost.innerHTML = '<div class="empty-state">Records could not be loaded. Please refresh and try again.</div>';
+      } finally {
+        refreshBtn.disabled = false;
+      }
+    }
+
+    function setDefaultMonth() {
+      const now = new Date();
+      monthFilter.value = getYukonMonthKey(now);
+    }
+
+    function handleMonthFilterChange() {
+      if (dayFilter.value && dayFilter.value.slice(0, 7) !== monthFilter.value) {
+        dayFilter.value = '';
+      }
+      renderRecords();
+    }
+
+    function handleDayFilterChange() {
+      if (dayFilter.value) {
+        monthFilter.value = dayFilter.value.slice(0, 7);
+      }
+      renderRecords();
+    }
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => setActiveRecordType(tab.dataset.recordType));
+    });
+    monthFilter.addEventListener('change', handleMonthFilterChange);
+    dayFilter.addEventListener('change', handleDayFilterChange);
+    searchFilter.addEventListener('input', renderRecords);
+    vehicleFilter.addEventListener('change', renderRecords);
+    refreshBtn.addEventListener('click', loadRecords);
+    logoutBtn.addEventListener('click', () => signOut(auth));
+
+    onAuthStateChanged(auth, async user => {
+      if (!user) {
+        window.location.href = 'index.html';
+        return;
+      }
+      setDefaultMonth();
+      await loadRecords();
+    });
+  </script>
+</body>
+</html>

@@ -7,45 +7,38 @@
 
   <!-- FullCalendar CSS -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
 
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 0;
       background-color: #5cbde5;
       background-image: url('skybackgroundmidnightfeather.png');
       background-repeat: repeat;
       background-size: 400px;
+      min-height: 100vh;
     }
-    header {
-      background: #333;
-      color: white;
-      padding: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
+    .feather-canvas {
+      display: none;
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
     }
-    .header-btn {
-      background: #666;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-left: 1rem;
-    }
-    .header-btn:hover {
-      background: #555;
-    }
-
     #container {
       display: flex;
       gap: 20px;
       max-width: 1400px;
-      margin: 0 auto;
+      margin: 2rem auto;
+      padding: 0 1.25rem 2rem;
+      box-sizing: border-box;
       align-items: flex-start;
+      position: relative;
+      z-index: 1;
     }
     #legend {
       width: 260px;
@@ -57,14 +50,17 @@
     .legend-item {
       display: flex;
       align-items: center;
-      margin-bottom: 10px;
-      font-size: 14px;
+      gap: 12px;
+      margin-bottom: 14px;
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.2;
     }
     .legend-color {
-      width: 16px;
-      height: 16px;
-      border-radius: 4px;
-      margin-right: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      flex: 0 0 22px;
     }
     #rightPanel {
       flex: 1;
@@ -147,30 +143,35 @@
     .fc .fc-daygrid-day.selected-day {
       background-color: rgba(255, 235, 59, 0.3);
     }
+    @media (min-width: 900px) {
+      body.live-feather-background {
+        background-image: none;
+      }
+      body.live-feather-background .feather-canvas {
+        display: block;
+      }
+    }
   </style>
 </head>
 <body>
+  <canvas id="feather-canvas" class="feather-canvas" aria-hidden="true"></canvas>
 
   <header>
-  <div>YFNED Availability Calendar</div>
-  <div>
-    <button class="header-btn" onclick="location.href='fleetmaster.html'">
-      Fleetmaster View
-    </button>
-    <button class="header-btn" onclick="location.href='mastercalendar.html'">
-      Master Calendar
-    </button>
-    <button class="header-btn" onclick="location.href='availability.html'">
-      Availability Calendar
-    </button>
-    <button class="header-btn" onclick="location.href='masterbooking.html'">
-      Master Booking
-    </button>
-    <button id="logout-btn" class="header-btn">
-      Logout
-    </button>
-  </div>
-</header>
+    <div class="header-left">
+      <div class="header-logo-box">
+        <img src="YFNED_fleet_logo_navy.svg" alt="YFNED Fleet logo" />
+      </div>
+      <div class="header-title">YFNED Availability Calendar</div>
+    </div>
+    <div class="header-nav">
+      <button class="header-btn" onclick="location.href='fleetmaster.html'">Fleetmaster View</button>
+      <button class="header-btn" onclick="location.href='mastercalendar.html'">Master Calendar</button>
+      <button class="header-btn active" aria-current="page" onclick="location.href='availability.html'">Availability Calendar</button>
+      <button class="header-btn" onclick="location.href='masterbooking.html'">Master Booking</button>
+      <button class="header-btn" onclick="location.href='records.html'">Records</button>
+      <button id="logout-btn" class="header-btn">Logout</button>
+    </div>
+  </header>
 
 
   <div id="container">
@@ -188,6 +189,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <script src="livefeathers.js"></script>
   <script type="module">
     import { initializeApp }           from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import { getDatabase, ref, get }   from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
@@ -206,40 +208,64 @@
     });
     const auth = getAuth(app);
     const db   = getDatabase(app);
+    window.initLiveFeatherBackground();
 
     // vehicle→color map
     const vehicleColors = {
       "01-20 2021 Red Traverse CM335": "#d4282f",
       "02-20 2021 Black Traverse CM366": "#2c3e50",
-      "03-21 2021 Grey Traverse CN360 Nutrition Team Only": "#e74c3c",
+      "03-21 2021 Grey Traverse CN360 Nutrition Team Only": "#690000ff",
       "04-21 2021 Shadow Silverado 1500 CM695": "#f1c40f",
-      "06-21 2020 Grey Grand Caravan CN468 Early Years Only": "#e7bbd2",
-      "07-21 2021 White Terrain CN466 Early Years Only": "#e7bbd2",
-      "08-21 2021 Black Terrain CN467 Early Years Only": "#e7bbd2",
+      "06-21 2020 Grey Grand Caravan CN468 Early Years Only": "#ff009dff",
+      "07-21 2021 White Terrain CN466 Early Years Only": "#c83771ff",
+      "08-21 2021 Black Terrain CN467 Early Years Only": "#ff7299ff",
       "10-24 2025 Green MTU Trailblazer C838B": "#27ae60",
-      "11-24 2024 Grey Traverse CS266": "#3498db",
-      "13-24 2024 Grey Traverse CT008": "#2980b9",
-      "14-24 2024 Grey Traverse C443C": "#9b59b6",
-      "15-24 2024 Grey Traverse C444C": "#8e44ad",
-      "16-24 2024 Blue Traverse CT073": "#1abc9c",
+      "11-24 2024 Grey Traverse CS266": "#303030ff",
+      "13-24 2024 Grey Traverse CT008": "#5e5e5eff",
+      "14-24 2024 Grey Traverse C443C": "#919191ff",
+      "15-24 2024 Grey Traverse C444C": "#c6c6c6ff",
+      "16-24 2024 Blue Traverse CT073": "#0055d4ff",
       "17-25 2025 Black Buick Envision CV294": "#8e44ad",
       "18-25 2025 Ford Transit Van - C115C": "#fd9644"
+    };
+    const VEHICLE_EXPORT_LABELS = {
+      "01-20 2021 Red Traverse CM335": "Red Traverse CM335",
+      "02-20 2021 Black Traverse CM366": "Black Traverse CM366",
+      "03-21 2021 Grey Traverse CN360": "Grey Traverse CN360",
+      "03-21 2021 Grey Traverse CN360 Nutrition Team Only": "Grey Traverse CN360",
+      "04-21 2021 Shadow Silverado 1500 CM695": "Shadow Silverado CM695",
+      "06-21 2020 Grey Grand Caravan CN468": "Grey Grand Caravan CN468",
+      "06-21 2020 Grey Grand Caravan CN468 Early Years Only": "Grey Grand Caravan CN468",
+      "07-21 2021 White Terrain CN466": "White Terrain CN466",
+      "07-21 2021 White Terrain CN466 Early Years Only": "White Terrain CN466",
+      "08-21 2021 Black Terrain CN467": "Black Terrain CN467",
+      "08-21 2021 Black Terrain CN467 Early Years Only": "Black Terrain CN467",
+      "10-24 2025 Green MTU Trailblazer C838B": "Green Trailblazer C838B",
+      "10-24 2025 Green Trailblazer C838B": "Green Trailblazer C838B",
+      "11-24 2024 Grey Traverse CS266": "Grey Traverse CS266",
+      "13-24 2024 Grey Traverse CT008": "Grey Traverse CT008",
+      "14-24 2024 Grey Traverse C443C": "Grey Traverse C443C",
+      "15-24 2024 Grey Traverse C444C": "Grey Traverse C444C",
+      "16-24 2024 Blue Traverse CT073": "Blue Traverse CT073",
+      "17-25 2025 Black Buick Envision CV294": "Black Buick Envision CV294",
+      "18-25 2025 Ford Transit Van C115C": "Ford Transit Van C115C",
+      "18-25 2025 Ford Transit Van - C115C": "Ford Transit Van C115C"
     };
     // vehicle→gas cards→color map for bottom section
     const vehicleGasCardColors = {
       "Red Traverse CM335 Gas Card:55221": "#d4282f",
       "Black Traverse CM366 Gas Card:67474": "#2c3e50",
-      "Grey Traverse CN360 Nutrition Team Only Gas Card:60555": "#e74c3c",
+      "Grey Traverse CN360 Nutrition Team Only Gas Card:60555": "#690000ff",
       "Shadow Silverado 1500 CM695 Gas Card:67479": "#f1c40f",
-      "Grey Grand Caravan CN468 Early Years Only Gas Card:3489": "#e7bbd2",
-      "White Terrain CN466 Early Years Only Gas Card:55224": "#e7bbd2",
-      "Black Terrain CN467 Early Years Only Gas Card:67477": "#e7bbd2",
+      "Grey Grand Caravan CN468 Early Years Only Gas Card:3489": "#ff009dff",
+      "White Terrain CN466 Early Years Only Gas Card:55224": "#c83771ff",
+      "Black Terrain CN467 Early Years Only Gas Card:67477": "#ff7299ff",
       "Green MTU Trailblazer C838B Gas Card:67121": "#27ae60",
-      "Grey Traverse CS266 Gas Card:7480": "#3498db",
-      "Grey Traverse CT008 Gas Card:7122": "#2980b9",
-      "Grey Traverse C443C Gas Card:67473": "#9b59b6",
-      "Grey Traverse C444C Gas Card:67472": "#8e44ad",
-      "Blue Traverse CT073 Gas Card:67476": "#1abc9c",
+      "Grey Traverse CS266 Gas Card:7480": "#303030ff",
+      "Grey Traverse CT008 Gas Card:7122": "#5e5e5eff",
+      "Grey Traverse C443C Gas Card:67473": "#919191ff",
+      "Grey Traverse C444C Gas Card:67472": "#c6c6c6ff",
+      "Blue Traverse CT073 Gas Card:67476": "#0055d4ff",
       "Black Buick Envision CV294 Gas Card:68661 Gas Card:?": "#8e44ad",
       "Ford Transit Van - C115C": "#fd9644"
     };
@@ -247,13 +273,17 @@
     let allBookings = [];
     let lastClickedDayEl = null;
 
+    function getVehicleExportLabel(vehicle) {
+      return VEHICLE_EXPORT_LABELS[vehicle] || vehicle;
+    }
+
     function renderLegend() {
       const legend = document.getElementById("legend");
       legend.innerHTML = "";
       for (const [veh, color] of Object.entries(vehicleColors)) {
         const div = document.createElement("div");
         div.className = "legend-item";
-        div.innerHTML = `<div class="legend-color" style="background:${color}"></div>${veh}`;
+        div.innerHTML = `<div class="legend-color" style="background:${color}"></div>${getVehicleExportLabel(veh)}`;
         legend.appendChild(div);
       }
     }
@@ -328,7 +358,7 @@
       } else {
         available.forEach(v => {
           html += `
-            <div class="available-box" style="background:${vehicleColors[v]}CC">
+            <div class="available-box" style="background:${vehicleColors[v]}">
               <strong>${v}</strong>
             </div>`;
         });

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>NFC Vehicle Access</title>
+  <title>NFC Vehicle Access Test</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
   <style>
@@ -12,21 +12,9 @@
       padding: 2rem;
       background-color: #5cbde5;
     }
-    .access-panel {
-      width: min(100%, 900px);
-      margin: 2.5rem auto;
-      padding: 1.75rem 2rem 2rem;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.94);
-      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.12);
-      box-sizing: border-box;
-    }
-    .access-panel h1 {
-      margin-top: 0;
-    }
     #main-content {
       display: none;
-      margin-top: 1.5rem;
+      margin-top: 2rem;
     }
     #vehicle-name {
       font-size: 1.5rem;
@@ -43,23 +31,14 @@
       font-weight: bold;
       color: darkred;
     }
-    .close-browser-note {
-      display: none;
-      margin: 1.25rem 0 0;
-      color: #374151;
-      font-size: 0.95rem;
-      font-weight: 700;
-    }
-    .close-browser-note.visible {
-      display: block;
-    }
     #checklist-container {
       display: none;
       max-width: 820px;
       margin: 2rem auto 0;
-      background: #f8fbff;
+      background: rgba(255, 255, 255, 0.96);
       border-radius: 12px;
       padding: 1.25rem 1.5rem;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.12);
       text-align: left;
     }
     #checklist-container h2 {
@@ -168,13 +147,6 @@
       color: #555;
     }
     @media (max-width: 720px) {
-      body {
-        padding: 1rem;
-      }
-      .access-panel {
-        margin: 1rem auto;
-        padding: 1.25rem 1rem 1.5rem;
-      }
       .checklist-item {
         align-items: flex-start;
         flex-direction: column;
@@ -189,6 +161,70 @@
         width: 100%;
         min-width: 0;
       }
+    }
+    #test-controls {
+      max-width: 820px;
+      margin: 1.25rem auto 0;
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.12);
+      text-align: left;
+    }
+    #test-controls h2 {
+      margin: 0 0 0.75rem;
+    }
+    .test-controls-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: nowrap;
+      align-items: center;
+    }
+    .test-control-button {
+      min-width: 220px;
+      border: none;
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      color: #111;
+    }
+    .test-vehicle-picker {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      min-width: 0;
+      flex: 1 1 300px;
+    }
+    .test-vehicle-picker label {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #334155;
+    }
+    .test-vehicle-picker select {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 0.8rem 0.9rem;
+      font: inherit;
+      background: white;
+    }
+    .test-control-button.frontdesk {
+      background: #e7bbd2;
+    }
+    .test-control-button.withstaff {
+      background: #e0e257;
+    }
+    .test-control-button.available {
+      background: #2ecc71;
+    }
+    .test-control-button.signedout {
+      background: #5cbde5;
+    }
+    #test-controls-status {
+      margin-top: 0.75rem;
+      color: #555;
+      font-size: 0.95rem;
     }
     #return-notes-container {
       display: none;
@@ -212,82 +248,39 @@
       resize: vertical;
       font: inherit;
     }
-    .success-dialog-backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: 50;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-      background: rgba(0, 0, 0, 0.45);
-    }
-    .success-dialog-backdrop[hidden] {
-      display: none;
-    }
-    .success-dialog {
-      width: min(100%, 420px);
-      background: #fff;
-      border-radius: 10px;
-      padding: 1.5rem;
-      box-shadow: 0 16px 42px rgba(0, 0, 0, 0.28);
-      color: #111;
-    }
-    .success-dialog h2 {
-      margin: 0 0 0.75rem;
-      font-size: 1.3rem;
-      line-height: 1.35;
-    }
-    .success-dialog p {
-      margin: 0 0 1rem;
-      color: #374151;
-      font-weight: 600;
-    }
-    #signout-success-continue {
-      margin-top: 0.5rem;
-      border: none;
-      border-radius: 6px;
-      background: #1f8fca;
-      color: #fff;
-      cursor: pointer;
-    }
-    #signout-success-continue:hover {
-      background: #176f9d;
-    }
   </style>
 </head>
 <body>
 
-<div class="access-panel">
-  <h1>YFNED Vehicle Access via NFC</h1>
-  <p id="auth-status">Checking login...</p>
+<h1>YFNED Vehicle Access via NFC Test</h1>
+<p id="auth-status">Checking login...</p>
 
-  <div id="main-content">
-    <div id="vehicle-name"></div>
-    <div id="checklist-container">
-      <h2>Vehicle Checklist</h2>
-      <p>Complete every item before signing out the vehicle.</p>
-      <div id="checklist-grid" class="checklist-grid"></div>
-      <div id="checklist-status">0 / 12 completed</div>
+<div id="main-content">
+  <div id="vehicle-name"></div>
+  <div id="test-controls">
+    <h2>Test State Overrides</h2>
+    <div class="test-controls-row">
+      <button id="test-key-btn" class="test-control-button frontdesk" type="button"></button>
+      <button id="test-status-btn" class="test-control-button available" type="button"></button>
+      <div class="test-vehicle-picker">
+        <label for="test-vehicle-select">Vehicle To Test</label>
+        <select id="test-vehicle-select"></select>
+      </div>
     </div>
-    <div id="return-notes-container">
-      <label for="return-comments">Comments, Incidents, or Corrective Actions Needed?</label>
-      <textarea id="return-comments" placeholder="Describe any issues, incidents, or maintenance concerns noticed during use."></textarea>
-    </div>
-    <button id="actionBtn"></button>
-    <div id="message"></div>
-    <p id="close-browser-note" class="close-browser-note">
-      You can safely close this browser now. You still have to return the front desk keys.
-    </p>
+    <div id="test-controls-status"></div>
   </div>
-</div>
-
-<div id="signout-success-dialog" class="success-dialog-backdrop" hidden>
-  <div class="success-dialog" role="dialog" aria-modal="true" aria-labelledby="signout-success-title">
-    <h2 id="signout-success-title"></h2>
-    <p>Status: Signed Out by Staff.</p>
-    <button id="signout-success-continue" type="button">Continue</button>
+  <div id="checklist-container">
+    <h2>Vehicle Checklist</h2>
+    <p>Complete every item before signing out the vehicle.</p>
+    <div id="checklist-grid" class="checklist-grid"></div>
+    <div id="checklist-status">0 / 12 completed</div>
   </div>
+  <div id="return-notes-container">
+    <label for="return-comments">Comments, Incidents, or Corrective Actions Needed?</label>
+    <textarea id="return-comments" placeholder="Describe any issues, incidents, or maintenance concerns noticed during use."></textarea>
+  </div>
+  <button id="actionBtn"></button>
+  <div id="message"></div>
 </div>
 
 <script type="module">
@@ -309,9 +302,10 @@
   const auth = getAuth(app);
   const db = getDatabase(app);
 
+  const DEFAULT_TEST_VEHICLE = 'Test NFC Card';
   const urlParams = new URLSearchParams(window.location.search);
   const vehicleParam = urlParams.get('vehicle');
-  const vehicle = vehicleParam ? decodeURIComponent(vehicleParam) : '';
+  const vehicle = decodeURIComponent(vehicleParam || DEFAULT_TEST_VEHICLE);
   const authStatus = document.getElementById('auth-status');
   const mainContent = document.getElementById('main-content');
   const vehicleNameEl = document.getElementById('vehicle-name');
@@ -320,12 +314,12 @@
   const checklistContainer = document.getElementById('checklist-container');
   const checklistGrid = document.getElementById('checklist-grid');
   const checklistStatus = document.getElementById('checklist-status');
+  const testKeyBtn = document.getElementById('test-key-btn');
+  const testStatusBtn = document.getElementById('test-status-btn');
+  const testVehicleSelect = document.getElementById('test-vehicle-select');
+  const testControlsStatus = document.getElementById('test-controls-status');
   const returnNotesContainer = document.getElementById('return-notes-container');
   const returnCommentsInput = document.getElementById('return-comments');
-  const signoutSuccessDialog = document.getElementById('signout-success-dialog');
-  const signoutSuccessTitle = document.getElementById('signout-success-title');
-  const signoutSuccessContinue = document.getElementById('signout-success-continue');
-  const closeBrowserNote = document.getElementById('close-browser-note');
 
   let currentUser = null;
   let currentVehicle = vehicle;
@@ -591,6 +585,32 @@
     updateChecklistProgress();
   }
 
+  function renderTestControls(vehicleData) {
+    const keyStatus = vehicleData?.keyStatus || 'atFrontDesk';
+    const vehicleStatus = vehicleData?.status || 'available';
+    const keyHeldBy = vehicleData?.keyHeldBy || 'nobody';
+    const signedOutBy = vehicleData?.CurrentlySignedOutBy || 'nobody';
+
+    if (keyStatus === 'withStaff') {
+      testKeyBtn.textContent = 'Out With Staff Member';
+      testKeyBtn.className = 'test-control-button withstaff';
+    } else {
+      testKeyBtn.textContent = 'At The Front Desk';
+      testKeyBtn.className = 'test-control-button frontdesk';
+    }
+
+    if (vehicleStatus === 'signedOut') {
+      testStatusBtn.textContent = 'Signed Out by Staff';
+      testStatusBtn.className = 'test-control-button signedout';
+    } else {
+      testStatusBtn.textContent = 'Available';
+      testStatusBtn.className = 'test-control-button available';
+    }
+
+    testControlsStatus.textContent =
+      `Key holder: ${keyHeldBy}. Vehicle signed out by: ${signedOutBy}.`;
+  }
+
   function getDatabaseVehicleName(name) {
     return legacyVehicleNameMap[name] || name;
   }
@@ -599,26 +619,44 @@
     return vehiclePickerLabels[name] || name;
   }
 
-  function showSignoutSuccessDialog(vehicleName) {
-    signoutSuccessTitle.textContent = `Signed out ${getVehicleDisplayLabel(vehicleName)} Successfully!`;
-    signoutSuccessDialog.hidden = false;
-    signoutSuccessContinue.focus();
-  }
-
-  signoutSuccessContinue.addEventListener('click', () => {
-    window.location.reload();
-  });
-
-  if (!vehicle) {
-    authStatus.textContent = 'Error: Vehicle name not specified in URL.';
-    throw new Error('Missing vehicle name in query string');
-  }
-
   currentVehicle = getDatabaseVehicleName(currentVehicle);
 
   function renderVehicleLabel() {
     const displayVehicle = getVehicleDisplayLabel(currentVehicle);
-    vehicleNameEl.textContent = `Vehicle: ${displayVehicle}`;
+    vehicleNameEl.textContent = vehicleParam
+      ? `Vehicle: ${displayVehicle}`
+      : `Vehicle: ${displayVehicle} (default test vehicle)`;
+  }
+
+  async function populateVehiclePicker() {
+    const snap = await get(ref(db, 'vehicles'));
+    const vehicles = snap.exists() ? Object.keys(snap.val()) : [];
+    const optionValues = [];
+
+    vehicles.forEach(vehicleName => {
+      const databaseVehicleName = getDatabaseVehicleName(vehicleName);
+      if (!optionValues.includes(databaseVehicleName)) {
+        optionValues.push(databaseVehicleName);
+      }
+    });
+
+    if (!optionValues.includes(DEFAULT_TEST_VEHICLE)) {
+      optionValues.unshift(DEFAULT_TEST_VEHICLE);
+    }
+
+    testVehicleSelect.innerHTML = '';
+    optionValues.forEach(vehicleName => {
+      const option = document.createElement('option');
+      option.value = vehicleName;
+      option.textContent = getVehicleDisplayLabel(vehicleName);
+      testVehicleSelect.appendChild(option);
+    });
+
+    if (!optionValues.includes(currentVehicle)) {
+      currentVehicle = optionValues[0] || DEFAULT_TEST_VEHICLE;
+    }
+    testVehicleSelect.value = currentVehicle;
+    renderVehicleLabel();
   }
 
   async function logVehicleAction(vehicleName, action, details = {}) {
@@ -653,16 +691,70 @@
     });
   }
 
+  async function toggleTestKeyStatus() {
+    const vehicleRef = ref(db, 'vehicles/' + currentVehicle);
+    const snap = await get(vehicleRef);
+    if (!snap.exists()) {
+      messageEl.textContent = 'Vehicle not found in database.';
+      return;
+    }
+
+    const data = snap.val();
+    const toStaff = (data.keyStatus || 'atFrontDesk') === 'atFrontDesk';
+    const updates = {
+      keyStatus: toStaff ? 'withStaff' : 'atFrontDesk',
+      keyHeldBy: toStaff ? currentUser.email : null,
+      lastKeyChange: Date.now(),
+      alarm: toStaff
+    };
+
+    if (!toStaff) {
+      updates.status = 'available';
+      updates.CurrentlySignedOutBy = null;
+    }
+
+    await update(vehicleRef, updates);
+    await checkVehicleStatusAndRender(currentVehicle);
+  }
+
+  async function toggleTestVehicleStatus() {
+    const vehicleRef = ref(db, 'vehicles/' + currentVehicle);
+    const snap = await get(vehicleRef);
+    if (!snap.exists()) {
+      messageEl.textContent = 'Vehicle not found in database.';
+      return;
+    }
+
+    const data = snap.val();
+    const isOut = (data.status || 'available') === 'available';
+    const updates = {
+      status: isOut ? 'signedOut' : 'available',
+      CurrentlySignedOutBy: isOut ? currentUser.email : null,
+      alarm: isOut ? false : (data.alarm === true)
+    };
+
+    await update(vehicleRef, updates);
+    await checkVehicleStatusAndRender(currentVehicle);
+  }
+
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
       authStatus.innerHTML = `Please <a href="index.html">log in</a> to access vehicle.`;
     } else {
       currentUser = user;
-    authStatus.style.display = 'none';
-    mainContent.style.display = 'block';
-    closeBrowserNote.classList.remove('visible');
-    renderChecklist();
-    renderVehicleLabel();
+      authStatus.style.display = 'none';
+      mainContent.style.display = 'block';
+      renderChecklist();
+      await populateVehiclePicker();
+      testKeyBtn.addEventListener('click', toggleTestKeyStatus);
+      testStatusBtn.addEventListener('click', toggleTestVehicleStatus);
+      testVehicleSelect.addEventListener('change', async () => {
+        currentVehicle = testVehicleSelect.value;
+        renderVehicleLabel();
+        messageEl.textContent = '';
+        returnCommentsInput.value = '';
+        await checkVehicleStatusAndRender(currentVehicle);
+      });
 
       await checkVehicleStatusAndRender(currentVehicle);
     }
@@ -680,6 +772,7 @@
 
     const data = snap.val();
     const signedOutBy = data.CurrentlySignedOutBy || null;
+    renderTestControls(data);
     messageEl.textContent = '';
 
     if (data.status === 'available') {
@@ -690,7 +783,6 @@
       actionBtn.textContent = 'Sign Out Vehicle';
       actionBtn.dataset.mode = 'signout';
       actionBtn.disabled = true;
-      actionBtn.style.display = '';
       actionBtn.onclick = () => signOutVehicle(vehicleName);
     } else if (data.status === 'signedOut' && signedOutBy === currentUser.email) {
       checklistContainer.style.display = 'none';
@@ -698,7 +790,6 @@
       actionBtn.textContent = 'Return Vehicle';
       actionBtn.dataset.mode = 'return';
       actionBtn.disabled = false;
-      actionBtn.style.display = '';
       actionBtn.onclick = () => returnVehicle(vehicleName);
     } else {
       checklistContainer.style.display = 'none';
@@ -707,10 +798,9 @@
       actionBtn.dataset.mode = 'hidden';
       actionBtn.disabled = true;
       actionBtn.style.display = 'none';
-      messageEl.textContent = signedOutBy
-        ? `This vehicle is currently signed out by ${signedOutBy}.`
-        : 'This vehicle is currently marked as signed out, but no user is recorded. Please contact the front desk.';
+      messageEl.textContent = `This vehicle is currently signed out by ${signedOutBy}.`;
     }
+    actionBtn.style.display = '';
   }
 
   async function signOutVehicle(vehicleName) {
@@ -786,8 +876,7 @@
       checklistResponses: getChecklistLogPayload()
     });
 
-    messageEl.textContent = 'Status: Signed Out by Staff.';
-    showSignoutSuccessDialog(vehicleName);
+    messageEl.textContent = `Signed out ${vehicleName}.`;
     actionBtn.style.display = 'none';
   }
 
@@ -832,7 +921,6 @@
     returnNotesContainer.style.display = 'none';
     messageEl.textContent = `Returned ${vehicleName}.`;
     actionBtn.style.display = 'none';
-    closeBrowserNote.classList.add('visible');
   }
 </script>
 

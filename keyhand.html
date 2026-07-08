@@ -50,6 +50,16 @@
     const params = new URLSearchParams(window.location.search);
     const vehicle = decodeURIComponent(params.get('vehicle') || '');
 
+    async function logVehicleAction(vehicleName, userEmail, action, details = {}) {
+      const logRef = push(ref(db, `vehicleLogs/${vehicleName}`));
+      await set(logRef, {
+        userEmail,
+        action,
+        timestamp: Date.now(),
+        ...details
+      });
+    }
+
     if (!vehicle) {
       statusDiv.textContent = 'Error: No vehicle name in URL.';
       throw new Error('Missing vehicle');
@@ -87,15 +97,17 @@
           updates.keyHeldBy = userEmail;
         } else {
           updates.keyHeldBy = null;
+          updates.status = 'available';
+          updates.CurrentlySignedOutBy = null;
         }
 
         await update(vehicleRef, updates);
 
-        const logRef = push(ref(db, `vehicleLogs/${vehicle}`));
-        await set(logRef, {
-          userEmail,
-          action: `keyStatus changed to ${newStatus}`,
-          timestamp: Date.now()
+        await logVehicleAction(vehicle, userEmail, `keyStatus changed to ${newStatus}`, {
+          keyStatus: newStatus,
+          keyHeldBy: updates.keyHeldBy || null,
+          status: updates.status || data.status || 'available',
+          CurrentlySignedOutBy: updates.CurrentlySignedOutBy ?? data.CurrentlySignedOutBy ?? null
         });
 
         statusDiv.textContent = `✅ Key status for "${vehicle}" changed to: ${newStatus}`;

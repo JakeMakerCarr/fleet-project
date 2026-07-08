@@ -7,104 +7,358 @@
 
   <!-- FullCalendar CSS -->
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
 
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 0;
       background-color: #5cbde5;
       background-image: url('skybackgroundmidnightfeather.png');
       background-repeat: repeat;
       background-size: 400px;
+      min-height: 100vh;
     }
-    header {
-      background: #333;
-      color: white;
-      padding: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
+    .feather-canvas {
+      display: none;
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
     }
-    .header-btn {
-      background: #666;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-left: 1rem;
-    }
-    .header-btn:hover { background: #555; }
-
     /* Layout */
     #container {
       display: flex;
-      gap: 20px;
+      gap: 1.25rem;
+      width: 100%;
       max-width: 1400px;
-      margin: 0 auto;
+      margin: 2rem auto;
+      padding: 0 1.25rem 2rem;
+      box-sizing: border-box;
       align-items: flex-start;
+      position: relative;
+      z-index: 1;
+    }
+    #legend,
+    #logExports,
+    #dateInfo,
+    #maintenanceCorner {
+      background: white;
+      padding: 1.1rem 1.25rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
     }
     #legend,
     #dateInfo {
-      background: white;
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.08);
-      max-height: 75vh;
+      max-height: none;
       overflow-y: auto;
     }
-    #legend { flex: 0 0 260px; }
-
-    #rightPanel {
-      flex: 1 1 auto;
+    #leftPanel {
+      flex: 0 0 300px;
+      width: 300px;
       display: flex;
-      gap: 20px;
-      align-items: stretch;          /* stretch children to same height */
-      min-width: 0;                  /* allow flex children to shrink properly */
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    #legend { width: 100%; box-sizing: border-box; }
+    #logExports {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-sizing: border-box;
+    }
+    #logExports h3 {
+      margin: 0 0 2px;
+      font-size: 18px;
+    }
+    .log-export-btn {
+      width: 100%;
+      border: none;
+      border-radius: 6px;
+      background: #334155;
+      color: white;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+    }
+    .log-export-btn:hover { background: #1f2937; }
+
+    #centerColumn {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
     }
 
-    /* Fixed width for the sidebar so calendar width is predictable */
     #dateInfo {
-      flex: 0 0 360px;               /* <-- pick a width you like */
-      min-width: 320px;
-      max-width: 420px;
+      flex: 0 0 320px;
+      width: 320px;
+      box-sizing: border-box;
+      align-self: flex-start;
+      position: sticky;
+      top: 1.25rem;
+      max-height: calc(100vh - 2.5rem);
+      overflow-y: auto;
     }
 
     #calendar {
-      flex: 1 1 0;                   /* take remaining width */
+      width: 100%;
       background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      min-width: 640px;              /* avoid squeezing to fewer visible columns */
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
       box-sizing: border-box;
-      overflow: visible;             /* allow FC to render fully */
+      max-height: 75vh;
+      overflow-y: auto;
+    }
+    #maintenanceCorner {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    #maintenanceCorner h3 {
+      margin: 0 0 12px;
+    }
+    #maintenanceList {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .maintenance-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: #f7f8fa;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 14px;
+    }
+    .maintenance-item.reported {
+      background: #1a487e;
+    }
+    .maintenance-name {
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .maintenance-item.reported .maintenance-name {
+      color: white;
+    }
+    .maintenance-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .maintenance-toggle {
+      border: none;
+      border-radius: 999px;
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 6px 10px;
+      cursor: pointer;
+      min-width: 118px;
+    }
+    .maintenance-toggle.working {
+      background: #2ecc71;
+    }
+    .maintenance-toggle.out {
+      background: #d4282f;
+    }
+    .maintenance-open {
+      border: none;
+      border-radius: 999px;
+      background: #334155;
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 6px 10px;
+      cursor: pointer;
+      min-width: 108px;
+    }
+    #maintenanceDialog {
+      border: none;
+      border-radius: 12px;
+      padding: 0;
+      width: min(560px, calc(100vw - 32px));
+      box-shadow: 0 18px 45px rgba(0,0,0,0.28);
+    }
+    #maintenanceDialog::backdrop {
+      background: rgba(15, 23, 42, 0.45);
+    }
+    @media (min-width: 900px) {
+      body.live-feather-background {
+        background-image: none;
+      }
+      body.live-feather-background .feather-canvas {
+        display: block;
+      }
+    }
+    .maintenance-dialog-body {
+      padding: 20px;
+    }
+    .maintenance-dialog-body h3 {
+      margin: 0 0 14px;
+    }
+    .maintenance-form {
+      display: grid;
+      gap: 12px;
+    }
+    .maintenance-form label {
+      display: grid;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .maintenance-form input,
+    .maintenance-form textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font: inherit;
+    }
+    .maintenance-form textarea {
+      min-height: 96px;
+      resize: vertical;
+    }
+    .maintenance-dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .maintenance-dialog-actions button {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #maintenanceCancelBtn {
+      background: #e5e7eb;
+      color: #111827;
+    }
+    #maintenanceSaveBtn {
+      background: #2563eb;
+      color: white;
     }
 
-    /* Month cell height with internal scroll on hover */
+    /* Square day cells; 5×3 color grid scales with cell width */
+    .fc .fc-scrollgrid-sync-table {
+      table-layout: fixed;
+      width: 100%;
+    }
+    .fc .fc-daygrid-day {
+      aspect-ratio: 1;
+      vertical-align: top;
+    }
+    .fc .fc-daygrid-day-top {
+      flex-direction: row;
+      justify-content: flex-end;
+      flex-shrink: 0;
+    }
+    .fc .fc-daygrid-day-number {
+      font-size: 0.8rem;
+      padding: 2px 5px;
+      line-height: 1.2;
+    }
     .fc .fc-daygrid-day-frame {
-      max-height: 100px;
-      height: 100px;
-      overflow-y: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      max-height: none;
+      height: 100%;
+      overflow: hidden;
     }
     .fc .fc-daygrid-day-frame:hover,
     .fc .fc-daygrid-day-frame:focus-within {
       overflow-y: auto;
     }
 
+    .fc-daygrid-day-events {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 2px;
+      align-content: start;
+      justify-content: stretch;
+      padding: 2px 3px 3px;
+      margin-top: 0;
+      flex: 1;
+      min-height: 0;
+    }
+    .fc-daygrid-event-harness {
+      position: static !important;
+      margin: 0 !important;
+      width: 100% !important;
+      height: auto !important;
+    }
+    .fc-daygrid-event-harness-abs {
+      position: static !important;
+      inset: auto !important;
+    }
+    .fc-daygrid-event.vehicle-color-event {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      width: 100% !important;
+      height: auto !important;
+    }
+    .fc-daygrid-event.vehicle-color-event .fc-event-main,
+    .fc-daygrid-event.vehicle-color-event .fc-event-main-frame {
+      padding: 0 !important;
+    }
+    .fc-daygrid-event.vehicle-color-event .fc-event-time,
+    .fc-daygrid-event.vehicle-color-event .fc-event-title {
+      display: none !important;
+    }
+    .vehicle-color-tag {
+      width: 100%;
+      aspect-ratio: 1;
+      height: auto;
+      border-radius: 3px;
+      display: block;
+      cursor: pointer;
+    }
+
     .legend-item {
       display: flex;
       align-items: center;
+      gap: 10px;
       margin-bottom: 10px;
-      font-size: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.2;
     }
     .legend-color {
-      width: 16px;
-      height: 16px;
-      border-radius: 4px;
-      margin-right: 8px;
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      flex: 0 0 20px;
+    }
+
+    .fc .fc-toolbar {
+      margin-bottom: 0.65rem !important;
+    }
+    .fc .fc-toolbar-title {
+      font-size: 1.2rem;
+    }
+    .fc .fc-col-header-cell-cushion {
+      padding-top: 0.35rem;
+      padding-bottom: 0.35rem;
+      font-size: 0.85rem;
     }
 
     .booking-box {
@@ -124,32 +378,106 @@
       border-radius: 4px;
       margin-top: 6px;
     }
+
+    @media (max-width: 1200px) {
+      #container {
+        flex-direction: column;
+      }
+      #leftPanel {
+        flex: none;
+        width: 100%;
+      }
+      #centerColumn {
+        width: 100%;
+      }
+      #dateInfo {
+        flex: none;
+        width: 100%;
+        position: static;
+        max-height: none;
+      }
+    }
   </style>
 </head>
 <body>
+  <canvas id="feather-canvas" class="feather-canvas" aria-hidden="true"></canvas>
 
   <header>
-    <div>YFNED Master Calendar</div>
-    <div>
+    <div class="header-left">
+      <div class="header-logo-box">
+        <img src="YFNED_fleet_logo_navy.svg" alt="YFNED Fleet logo" />
+      </div>
+      <div class="header-title">YFNED Master Calendar</div>
+    </div>
+    <div class="header-nav">
       <button class="header-btn" onclick="location.href='fleetmaster.html'">Fleetmaster View</button>
+      <button class="header-btn active" aria-current="page" onclick="location.href='mastercalendar.html'">Master Calendar</button>
       <button class="header-btn" onclick="location.href='availability.html'">Availability Calendar</button>
       <button class="header-btn" onclick="location.href='masterbooking.html'">Master Booking</button>
+      <button class="header-btn" onclick="location.href='records.html'">Records</button>
       <button id="logout-btn" class="header-btn">Logout</button>
     </div>
   </header>
 
   <div id="container">
-    <div id="legend"></div>
-    <div id="rightPanel">
-      <div id="calendar"></div>
-      <div id="dateInfo">Click a date to view bookings.</div>
+    <div id="leftPanel">
+      <div id="legend"></div>
+      <div id="logExports" aria-label="Log exports">
+        <h3>Log Exports</h3>
+        <button id="export-fleetmaster-btn" class="log-export-btn">Export Fleetmaster Logs</button>
+        <button id="export-mbc-btn" class="log-export-btn">Export MBC Logs</button>
+        <button id="export-maintenance-btn" class="log-export-btn">Export Maintenance Logs</button>
+        <button id="export-checklist-btn" class="log-export-btn">Export Checklist Logs</button>
+        <button id="export-shop-btn" class="log-export-btn">Export Shop Logs</button>
+      </div>
     </div>
+    <div id="centerColumn">
+      <div id="calendar"></div>
+      <div id="maintenanceCorner">
+        <h3>Maintenance Corner</h3>
+        <div id="maintenanceList"></div>
+      </div>
+    </div>
+    <div id="dateInfo">Click a date to view bookings.</div>
   </div>
 
+  <dialog id="maintenanceDialog">
+    <div class="maintenance-dialog-body">
+      <h3 id="maintenanceDialogTitle">Maintenance Details</h3>
+      <form id="maintenanceForm" class="maintenance-form">
+        <label>
+          Reason for maintenance?
+          <input id="maintenanceReason" type="text" />
+        </label>
+        <label>
+          Date into shop?
+          <input id="maintenanceDateIn" type="date" />
+        </label>
+        <label>
+          Date out of shop?
+          <input id="maintenanceDateOut" type="date" />
+        </label>
+        <label>
+          Technician comments?
+          <textarea id="maintenanceComments"></textarea>
+        </label>
+        <label>
+          Technician who worked on it?
+          <input id="maintenanceTechnician" type="text" />
+        </label>
+      </form>
+      <div class="maintenance-dialog-actions">
+        <button id="maintenanceCancelBtn" type="button">Cancel</button>
+        <button id="maintenanceSaveBtn" type="button">Save</button>
+      </div>
+    </div>
+  </dialog>
+
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <script src="livefeathers.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getDatabase, ref, get, remove } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { getDatabase, ref, get, remove, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 
     // Firebase config
@@ -169,36 +497,200 @@
     const calendarEl     = document.getElementById("calendar");
     const dateInfoPanel  = document.getElementById("dateInfo");
     const legendEl       = document.getElementById("legend");
+    const maintenanceListEl = document.getElementById("maintenanceList");
+    const maintenanceDialog = document.getElementById("maintenanceDialog");
+    const maintenanceDialogTitle = document.getElementById("maintenanceDialogTitle");
+    const maintenanceReasonInput = document.getElementById("maintenanceReason");
+    const maintenanceDateInInput = document.getElementById("maintenanceDateIn");
+    const maintenanceDateOutInput = document.getElementById("maintenanceDateOut");
+    const maintenanceCommentsInput = document.getElementById("maintenanceComments");
+    const maintenanceTechnicianInput = document.getElementById("maintenanceTechnician");
+    const maintenanceCancelBtn = document.getElementById("maintenanceCancelBtn");
+    const maintenanceSaveBtn = document.getElementById("maintenanceSaveBtn");
+    const exportFleetmasterBtn = document.getElementById("export-fleetmaster-btn");
+    const exportMbcBtn   = document.getElementById("export-mbc-btn");
+    const exportMaintenanceBtn = document.getElementById("export-maintenance-btn");
+    const exportShopBtn = document.getElementById("export-shop-btn");
+    const exportChecklistBtn = document.getElementById("export-checklist-btn");
+    window.initLiveFeatherBackground();
 
     const vehicleColors = {
       "01-20 2021 Red Traverse CM335": "#d4282f",
       "02-20 2021 Black Traverse CM366": "#2c3e50",
-      "03-21 2021 Grey Traverse CN360 Nutrition Team Only": "#e74c3c",
+      "03-21 2021 Grey Traverse CN360 Nutrition Team Only": "#690000ff",
       "04-21 2021 Shadow Silverado 1500 CM695": "#f1c40f",
-      "06-21 2020 Grey Grand Caravan CN468 Early Years Only": "#e7bbd2",
-      "07-21 2021 White Terrain CN466 Early Years Only": "#e7bbd2",
-      "08-21 2021 Black Terrain CN467 Early Years Only": "#e7bbd2",
+      "06-21 2020 Grey Grand Caravan CN468 Early Years Only": "#ff009dff",
+      "07-21 2021 White Terrain CN466 Early Years Only": "#c83771ff",
+      "08-21 2021 Black Terrain CN467 Early Years Only": "#ff7299ff",
       "10-24 2025 Green MTU Trailblazer C838B": "#27ae60",
-      "11-24 2024 Grey Traverse CS266": "#3498db",
-      "13-24 2024 Grey Traverse CT008": "#2980b9",
-      "14-24 2024 Grey Traverse C443C": "#9b59b6",
-      "15-24 2024 Grey Traverse C444C": "#8e44ad",
-      "16-24 2024 Blue Traverse CT073": "#1abc9c",
+      "11-24 2024 Grey Traverse CS266": "#303030ff",
+      "13-24 2024 Grey Traverse CT008": "#5e5e5eff",
+      "14-24 2024 Grey Traverse C443C": "#919191ff",
+      "15-24 2024 Grey Traverse C444C": "#c6c6c6ff",
+      "16-24 2024 Blue Traverse CT073": "#0055d4ff",
       "17-25 2025 Black Buick Envision CV294": "#8e44ad",
       "18-25 2025 Ford Transit Van - C115C": "#fd9644"
     };
 
+    const VEHICLE_EXPORT_LABELS = {
+      "01-20 2021 Red Traverse CM335": "Red Traverse CM335",
+      "02-20 2021 Black Traverse CM366": "Black Traverse CM366",
+      "03-21 2021 Grey Traverse CN360": "Grey Traverse CN360",
+      "03-21 2021 Grey Traverse CN360 Nutrition Team Only": "Grey Traverse CN360",
+      "04-21 2021 Shadow Silverado 1500 CM695": "Shadow Silverado CM695",
+      "06-21 2020 Grey Grand Caravan CN468": "Grey Grand Caravan CN468",
+      "06-21 2020 Grey Grand Caravan CN468 Early Years Only": "Grey Grand Caravan CN468",
+      "07-21 2021 White Terrain CN466": "White Terrain CN466",
+      "07-21 2021 White Terrain CN466 Early Years Only": "White Terrain CN466",
+      "08-21 2021 Black Terrain CN467": "Black Terrain CN467",
+      "08-21 2021 Black Terrain CN467 Early Years Only": "Black Terrain CN467",
+      "10-24 2025 Green MTU Trailblazer C838B": "Green Trailblazer C838B",
+      "10-24 2025 Green Trailblazer C838B": "Green Trailblazer C838B",
+      "11-24 2024 Grey Traverse CS266": "Grey Traverse CS266",
+      "13-24 2024 Grey Traverse CT008": "Grey Traverse CT008",
+      "14-24 2024 Grey Traverse C443C": "Grey Traverse C443C",
+      "15-24 2024 Grey Traverse C444C": "Grey Traverse C444C",
+      "16-24 2024 Blue Traverse CT073": "Blue Traverse CT073",
+      "17-25 2025 Black Buick Envision CV294": "Black Buick Envision CV294",
+      "18-25 2025 Ford Transit Van C115C": "Ford Transit Van C115C",
+      "18-25 2025 Ford Transit Van - C115C": "Ford Transit Van C115C"
+    };
+    const VEHICLE_ALIASES = {
+      "03-21 2021 Grey Traverse CN360": "03-21 2021 Grey Traverse CN360 Nutrition Team Only",
+      "06-21 2020 Grey Grand Caravan CN468": "06-21 2020 Grey Grand Caravan CN468 Early Years Only",
+      "07-21 2021 White Terrain CN466": "07-21 2021 White Terrain CN466 Early Years Only",
+      "08-21 2021 Black Terrain CN467": "08-21 2021 Black Terrain CN467 Early Years Only",
+      "10-24 2025 Green Trailblazer C838B": "10-24 2025 Green MTU Trailblazer C838B",
+      "18-25 2025 Ford Transit Van C115C": "18-25 2025 Ford Transit Van - C115C"
+    };
+
     let allBookings = [];
     let calendar = null; // keep a reference so we can update size later
+    let activeMaintenanceVehicle = null;
+
+    const YUKON_TIMEZONE = 'America/Whitehorse';
+
+    function getCanonicalVehicleName(vehicle) {
+      return VEHICLE_ALIASES[vehicle] || vehicle;
+    }
+
+    function normalizeVehicleRecords(vehicles) {
+      const normalized = {};
+      Object.entries(vehicles || {}).forEach(([vehicleName, vehicleData]) => {
+        const canonicalName = getCanonicalVehicleName(vehicleName);
+        normalized[canonicalName] = {
+          ...(normalized[canonicalName] || {}),
+          ...(vehicleData || {})
+        };
+      });
+      return normalized;
+    }
+
+    function normalizeLogRecords(logs) {
+      const normalized = {};
+      Object.entries(logs || {}).forEach(([vehicleName, entries]) => {
+        const canonicalName = getCanonicalVehicleName(vehicleName);
+        normalized[canonicalName] = {
+          ...(normalized[canonicalName] || {}),
+          ...(entries || {})
+        };
+      });
+      return normalized;
+    }
 
     function renderLegend() {
       legendEl.innerHTML = "";
       Object.entries(vehicleColors).forEach(([vehicle, color]) => {
         const div = document.createElement("div");
         div.className = "legend-item";
-        div.innerHTML = `<div class="legend-color" style="background:${color}"></div>${vehicle}`;
+        div.innerHTML = `<div class="legend-color" style="background:${color}"></div>${getVehicleExportLabel(vehicle)}`;
         legendEl.appendChild(div);
       });
+    }
+
+    async function renderMaintenanceCorner() {
+      const snap = await get(ref(db, 'vehicles'));
+      if (!snap.exists()) {
+        maintenanceListEl.innerHTML = '<p>No vehicles found.</p>';
+        return;
+      }
+
+      const vehicles = normalizeVehicleRecords(snap.val());
+      maintenanceListEl.innerHTML = '';
+
+      Object.keys(vehicleColors).forEach(vehicleName => {
+        const vehicleData = vehicles[vehicleName] || {};
+        const status = vehicleData.maintenanceStatus === 'outForMaintenance'
+          ? 'outForMaintenance'
+          : 'workingFine';
+
+        const row = document.createElement('div');
+        row.className = 'maintenance-item';
+        if (vehicleData.maintenanceAlert === true) {
+          row.classList.add('reported');
+        }
+
+        const name = document.createElement('span');
+        name.className = 'maintenance-name';
+        name.textContent = getVehicleExportLabel(vehicleName);
+
+        const actions = document.createElement('div');
+        actions.className = 'maintenance-actions';
+
+        const button = document.createElement('button');
+        button.className = `maintenance-toggle ${status === 'workingFine' ? 'working' : 'out'}`;
+        button.textContent = status === 'workingFine'
+          ? 'Working Fine'
+          : 'Out For Maintenance';
+        button.addEventListener('click', async () => {
+          const nextStatus = status === 'workingFine' ? 'outForMaintenance' : 'workingFine';
+          await update(ref(db, `vehicles/${vehicleName}`), {
+            maintenanceStatus: nextStatus
+          });
+          await renderMaintenanceCorner();
+        });
+
+        const detailsButton = document.createElement('button');
+        detailsButton.className = 'maintenance-open';
+        detailsButton.textContent = 'Maintenance?';
+        detailsButton.addEventListener('click', () => openMaintenanceDialog(vehicleName, vehicleData));
+
+        actions.appendChild(button);
+        actions.appendChild(detailsButton);
+        row.appendChild(name);
+        row.appendChild(actions);
+        maintenanceListEl.appendChild(row);
+      });
+    }
+
+    function openMaintenanceDialog(vehicleName, vehicleData) {
+      activeMaintenanceVehicle = vehicleName;
+      const details = vehicleData?.maintenanceDetails || {};
+      maintenanceDialogTitle.textContent = `Maintenance Details: ${getVehicleExportLabel(vehicleName)}`;
+      maintenanceReasonInput.value = details.reason || '';
+      maintenanceDateInInput.value = details.dateInShop || '';
+      maintenanceDateOutInput.value = details.dateOutOfShop || '';
+      maintenanceCommentsInput.value = details.technicianComments || '';
+      maintenanceTechnicianInput.value = details.technicianName || '';
+      maintenanceDialog.showModal();
+    }
+
+    async function saveMaintenanceDialog() {
+      if (!activeMaintenanceVehicle) return;
+
+      await update(ref(db, `vehicles/${activeMaintenanceVehicle}`), {
+        maintenanceDetails: {
+          reason: maintenanceReasonInput.value.trim(),
+          dateInShop: maintenanceDateInInput.value || '',
+          dateOutOfShop: maintenanceDateOutInput.value || '',
+          technicianComments: maintenanceCommentsInput.value.trim(),
+          technicianName: maintenanceTechnicianInput.value.trim()
+        }
+      });
+
+      maintenanceDialog.close();
+      activeMaintenanceVehicle = null;
+      await renderMaintenanceCorner();
     }
 
     async function fetchAllBookings() {
@@ -207,21 +699,421 @@
       const events = [];
       snap.forEach(vehicleSnap => {
         const name = vehicleSnap.key;
+        const canonicalName = getCanonicalVehicleName(name);
         vehicleSnap.forEach(bSnap => {
           const b = bSnap.val();
           events.push({
             id: bSnap.key,
-            title: `${b.startTime.split(':')[0]} ${name}`,
+            title: getVehicleExportLabel(name),
             start: b.startTimeISO,
             end:   b.endTimeISO,
-            backgroundColor: vehicleColors[name] || '#333',
-            borderColor:     vehicleColors[name] || '#333',
+            backgroundColor: vehicleColors[canonicalName] || vehicleColors[name] || '#333',
+            borderColor:     vehicleColors[canonicalName] || vehicleColors[name] || '#333',
             textColor:       '#fff',
-            extendedProps: { user: b.userName, vehicle: name, firebasePath: `bookings/${name}/${bSnap.key}` }
+            extendedProps: {
+              user: b.userName,
+              vehicle: canonicalName,
+              vehicleLabel: getVehicleExportLabel(name),
+              firebasePath: `bookings/${name}/${bSnap.key}`
+            }
           });
         });
       });
       return events;
+    }
+
+    function getVehicleExportLabel(vehicle) {
+      return VEHICLE_EXPORT_LABELS[vehicle] || vehicle;
+    }
+
+    function buildVehicleColorTag(event) {
+      const label = event.extendedProps.vehicleLabel || getVehicleExportLabel(event.extendedProps.vehicle);
+      const user = event.extendedProps.user || '';
+      const square = document.createElement('div');
+      square.className = 'vehicle-color-tag';
+      square.style.backgroundColor = event.backgroundColor || '#333';
+      square.title = user ? `${label} – ${user}` : label;
+      square.setAttribute('aria-label', label);
+      return square;
+    }
+
+    function formatYukonDateParts(date) {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: YUKON_TIMEZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).formatToParts(date);
+      const map = Object.fromEntries(parts.map(part => [part.type, part.value]));
+      return {
+        year: Number(map.year),
+        month: Number(map.month),
+        day: Number(map.day),
+        iso: `${map.year}-${map.month}-${map.day}`
+      };
+    }
+
+    function getYukonMonthKey(date) {
+      const parts = formatYukonDateParts(date);
+      return `${parts.year}-${String(parts.month).padStart(2, '0')}`;
+    }
+
+    function getYukonDayIso(date) {
+      const parts = formatYukonDateParts(date);
+      return `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+    }
+
+    async function exportFleetmasterLogs() {
+      try {
+        const snap = await get(ref(db, 'vehicleLogs'));
+        if (!snap.exists()) {
+          alert('No logs to export.');
+          return;
+        }
+
+        const rows = [["Vehicle", "User Email", "Action", "Timestamp (Yukon Time)", "Details"]];
+
+        Object.entries(snap.val()).forEach(([vehicle, entries]) => {
+          Object.values(entries || {}).forEach(entry => {
+            const time = new Date(entry.timestamp).toLocaleString('en-CA', {
+              timeZone: YUKON_TIMEZONE
+            });
+            const { userEmail, action, timestamp, ...details } = entry || {};
+            rows.push([
+              getVehicleExportLabel(vehicle),
+              userEmail || '',
+              action || '',
+              time,
+              Object.keys(details).length ? JSON.stringify(details) : ''
+            ]);
+          });
+        });
+
+        const csv = rows
+          .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))
+          .join('\n');
+
+        const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'fleetmaster_logs.csv';
+        link.click();
+        URL.revokeObjectURL(link.href);
+      } catch (error) {
+        console.error('Error exporting fleetmaster logs:', error);
+        alert('Failed to export Fleetmaster logs.');
+      }
+    }
+
+    function getDaysInMonth(year, month) {
+      return new Date(year, month, 0).getDate();
+    }
+
+    function exportMbcLogs() {
+      if (!calendar) {
+        alert('Calendar not ready yet.');
+        return;
+      }
+
+      const visibleStart = calendar.view.currentStart;
+      const monthParts = formatYukonDateParts(visibleStart);
+      const monthKey = `${monthParts.year}-${String(monthParts.month).padStart(2, '0')}`;
+      const dayCount = getDaysInMonth(monthParts.year, monthParts.month);
+      const vehicles = [
+        ...Object.keys(vehicleColors),
+        ...new Set(
+          allBookings
+            .map(event => event.extendedProps.vehicle)
+            .filter(vehicle => !Object.prototype.hasOwnProperty.call(vehicleColors, vehicle))
+        )
+      ];
+      const rows = [['Day', ...vehicles.map(getVehicleExportLabel)]];
+
+      const grid = new Map();
+      for (let day = 1; day <= dayCount; day++) {
+        const dateIso = `${monthKey}-${String(day).padStart(2, '0')}`;
+        grid.set(dateIso, Object.fromEntries(vehicles.map(vehicle => [vehicle, []])));
+      }
+
+      allBookings.forEach(event => {
+        const eventStart = new Date(event.start);
+        const dayIso = getYukonDayIso(eventStart);
+        if (!grid.has(dayIso)) return;
+
+        const vehicle = event.extendedProps.vehicle;
+        const user = event.extendedProps.user || '';
+        const cellEntries = grid.get(dayIso)?.[vehicle];
+        if (!cellEntries) return;
+
+        const label = user.trim();
+        if (label && !cellEntries.includes(label)) {
+          cellEntries.push(label);
+        }
+      });
+
+      for (let day = 1; day <= dayCount; day++) {
+        const dateIso = `${monthKey}-${String(day).padStart(2, '0')}`;
+        const vehicleEntries = grid.get(dateIso);
+        rows.push([
+          dateIso,
+          ...vehicles.map(vehicle => (vehicleEntries?.[vehicle] || []).join(' | '))
+        ]);
+      }
+
+      const csv = rows
+        .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+      const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `mbc_logs_${monthKey}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    async function exportMaintenanceLogs() {
+      if (!calendar) {
+        alert('Calendar not ready yet.');
+        return;
+      }
+
+      const visibleStart = calendar.view.currentStart;
+      const monthParts = formatYukonDateParts(visibleStart);
+      const monthKey = `${monthParts.year}-${String(monthParts.month).padStart(2, '0')}`;
+      const dayCount = getDaysInMonth(monthParts.year, monthParts.month);
+
+      const snap = await get(ref(db, 'maintenanceLogs'));
+      const logs = normalizeLogRecords(snap.exists() ? snap.val() : {});
+
+      const logVehicles = Object.keys(logs || {});
+      const vehicles = [
+        ...Object.keys(vehicleColors),
+        ...new Set(logVehicles.filter(vehicle => !Object.prototype.hasOwnProperty.call(vehicleColors, vehicle)))
+      ];
+      const rows = [['Day', ...vehicles.map(getVehicleExportLabel)]];
+
+      const grid = new Map();
+      for (let day = 1; day <= dayCount; day++) {
+        const dateIso = `${monthKey}-${String(day).padStart(2, '0')}`;
+        grid.set(dateIso, Object.fromEntries(vehicles.map(vehicle => [vehicle, []])));
+      }
+
+      Object.entries(logs || {}).forEach(([vehicle, entries]) => {
+        Object.values(entries || {}).forEach(entry => {
+          if (!entry?.timestamp || !entry?.comment) return;
+          const dayIso = getYukonDayIso(new Date(entry.timestamp));
+          if (!grid.has(dayIso)) return;
+
+          const cellEntries = grid.get(dayIso)?.[vehicle];
+          if (!cellEntries) return;
+
+          const comment = String(entry.comment).trim();
+          const author = String(entry.userEmail || '').trim();
+          const label = author ? `${author}: ${comment}` : comment;
+          if (label && !cellEntries.includes(label)) {
+            cellEntries.push(label);
+          }
+        });
+      });
+
+      for (let day = 1; day <= dayCount; day++) {
+        const dateIso = `${monthKey}-${String(day).padStart(2, '0')}`;
+        const vehicleEntries = grid.get(dateIso);
+        rows.push([
+          dateIso,
+          ...vehicles.map(vehicle => (vehicleEntries?.[vehicle] || []).join(' | '))
+        ]);
+      }
+
+      const csv = rows
+        .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+      const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `maintenance_logs_${monthKey}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function enumerateDateRange(startIso, endIso) {
+      if (!startIso) return [];
+
+      const [startYear, startMonth, startDay] = startIso.split('-').map(Number);
+      const startDate = new Date(startYear, startMonth - 1, startDay);
+      let endDate = startDate;
+
+      if (endIso) {
+        const [endYear, endMonth, endDay] = endIso.split('-').map(Number);
+        endDate = new Date(endYear, endMonth - 1, endDay);
+      }
+
+      if (endDate < startDate) {
+        endDate = startDate;
+      }
+
+      const dates = [];
+      const current = new Date(startDate);
+      while (current <= endDate) {
+        dates.push(getYukonDayIso(current));
+        current.setDate(current.getDate() + 1);
+      }
+      return dates;
+    }
+
+    async function exportShopLogs() {
+      if (!calendar) {
+        alert('Calendar not ready yet.');
+        return;
+      }
+
+      const visibleStart = calendar.view.currentStart;
+      const monthParts = formatYukonDateParts(visibleStart);
+      const monthKey = `${monthParts.year}-${String(monthParts.month).padStart(2, '0')}`;
+      const dayCount = getDaysInMonth(monthParts.year, monthParts.month);
+
+      const snap = await get(ref(db, 'vehicles'));
+      const vehiclesData = normalizeVehicleRecords(snap.exists() ? snap.val() : {});
+      const vehicles = Object.keys(vehicleColors);
+      const rows = [['Day', ...vehicles.map(getVehicleExportLabel)]];
+
+      const grid = new Map();
+      for (let day = 1; day <= dayCount; day++) {
+        const dateIso = `${monthKey}-${String(day).padStart(2, '0')}`;
+        grid.set(dateIso, Object.fromEntries(vehicles.map(vehicle => [vehicle, []])));
+      }
+
+      vehicles.forEach(vehicle => {
+        const details = vehiclesData?.[vehicle]?.maintenanceDetails;
+        if (!details) return;
+
+        const daysInShop = enumerateDateRange(details.dateInShop || '', details.dateOutOfShop || '');
+        if (!daysInShop.length) return;
+
+        const detailParts = [];
+        if (details.reason) detailParts.push(`Reason: ${details.reason}`);
+        if (details.technicianName) detailParts.push(`Tech: ${details.technicianName}`);
+        if (details.technicianComments) detailParts.push(`Comments: ${details.technicianComments}`);
+        if (details.dateInShop) detailParts.push(`In: ${details.dateInShop}`);
+        if (details.dateOutOfShop) detailParts.push(`Out: ${details.dateOutOfShop}`);
+        const label = detailParts.join(' | ');
+        if (!label) return;
+
+        daysInShop.forEach(dayIso => {
+          if (!grid.has(dayIso)) return;
+          const cellEntries = grid.get(dayIso)?.[vehicle];
+          if (!cellEntries) return;
+          if (!cellEntries.includes(label)) {
+            cellEntries.push(label);
+          }
+        });
+      });
+
+      for (let day = 1; day <= dayCount; day++) {
+        const dateIso = `${monthKey}-${String(day).padStart(2, '0')}`;
+        const vehicleEntries = grid.get(dateIso);
+        rows.push([
+          dateIso,
+          ...vehicles.map(vehicle => (vehicleEntries?.[vehicle] || []).join(' | '))
+        ]);
+      }
+
+      const csv = rows
+        .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+      const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `shop_record_logs_${monthKey}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    async function exportChecklistLogs() {
+      if (!calendar) {
+        alert('Calendar not ready yet.');
+        return;
+      }
+
+      const visibleStart = calendar.view.currentStart;
+      const monthParts = formatYukonDateParts(visibleStart);
+      const monthKey = `${monthParts.year}-${String(monthParts.month).padStart(2, '0')}`;
+      const dayCount = getDaysInMonth(monthParts.year, monthParts.month);
+
+      const snap = await get(ref(db, 'checklistLogs'));
+      const logs = normalizeLogRecords(snap.exists() ? snap.val() : {});
+
+      const logVehicles = Object.keys(logs || {});
+      const vehicles = [
+        ...Object.keys(vehicleColors),
+        ...new Set(logVehicles.filter(vehicle => !Object.prototype.hasOwnProperty.call(vehicleColors, vehicle)))
+      ];
+      const rows = [['Day', ...vehicles.map(getVehicleExportLabel)]];
+
+      const grid = new Map();
+      for (let day = 1; day <= dayCount; day++) {
+        const dateIso = `${monthKey}-${String(day).padStart(2, '0')}`;
+        grid.set(dateIso, Object.fromEntries(vehicles.map(vehicle => [vehicle, []])));
+      }
+
+      Object.entries(logs || {}).forEach(([vehicle, entries]) => {
+        Object.values(entries || {}).forEach(entry => {
+          if (!entry?.timestamp) return;
+          const repairItems = Array.isArray(entry.repairItems)
+            ? entry.repairItems.map(item => String(item).trim()).filter(Boolean)
+            : [];
+          if (!repairItems.length) return;
+
+          const dayIso = getYukonDayIso(new Date(entry.timestamp));
+          if (!grid.has(dayIso)) return;
+
+          const cellEntries = grid.get(dayIso)?.[vehicle];
+          if (!cellEntries) return;
+
+          const author = String(entry.userEmail || '').trim();
+          const repairsLabel = repairItems.join(' | ');
+          const label = author ? `${author}: ${repairsLabel}` : repairsLabel;
+          if (label && !cellEntries.includes(label)) {
+            cellEntries.push(label);
+          }
+        });
+      });
+
+      for (let day = 1; day <= dayCount; day++) {
+        const dateIso = `${monthKey}-${String(day).padStart(2, '0')}`;
+        const vehicleEntries = grid.get(dateIso);
+        rows.push([
+          dateIso,
+          ...vehicles.map(vehicle => (vehicleEntries?.[vehicle] || []).join(' || '))
+        ]);
+      }
+
+      const csv = rows
+        .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+      const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `checklist_logs_${monthKey}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function syncSquareDayCells() {
+      if (!calendar || calendar.view.type !== 'dayGridMonth') return;
+      const sampleDay = calendarEl.querySelector('.fc-daygrid-day');
+      if (!sampleDay) return;
+      const size = Math.floor(sampleDay.getBoundingClientRect().width);
+      if (size < 24) return;
+      calendarEl.querySelectorAll('.fc-daygrid-day-frame').forEach(frame => {
+        frame.style.height = `${size}px`;
+        frame.style.minHeight = `${size}px`;
+        frame.style.maxHeight = `${size}px`;
+      });
     }
 
     function renderCalendar(events) {
@@ -231,16 +1123,35 @@
       calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         fixedWeekCount: false,
+        height: 'auto',
+        expandRows: false,
+        dayMaxEvents: false,
         headerToolbar: {
           left: 'prev today next',
           center: 'title',
           right: 'dayGridMonth,timeGridWeek,listMonth'
         },
         events,
-        eventDisplay: 'block',
-        dateClick: info => showBookingsForDate(info.dateStr, events)
+        eventDisplay: 'list-item',
+        displayEventTime: false,
+        eventClassNames: arg =>
+          arg.view.type === 'dayGridMonth' ? ['vehicle-color-event'] : [],
+        eventContent: arg => {
+          if (arg.view.type !== 'dayGridMonth') return;
+          return { domNodes: [buildVehicleColorTag(arg.event)] };
+        },
+        eventClick: info => {
+          const dayIso = info.event.startStr.slice(0, 10);
+          showBookingsForDate(dayIso, allBookings);
+        },
+        dateClick: info => showBookingsForDate(info.dateStr, allBookings),
+        datesSet: () => requestAnimationFrame(syncSquareDayCells)
       });
       calendar.render();
+      requestAnimationFrame(() => {
+        calendar.updateSize();
+        syncSquareDayCells();
+      });
     }
 
     function showBookingsForDate(dateStr, events) {
@@ -251,9 +1162,10 @@
       } else {
         matching.forEach(ev => {
           const color = vehicleColors[ev.extendedProps.vehicle] || '#333';
+          const vehicleLabel = ev.extendedProps.vehicleLabel || getVehicleExportLabel(ev.extendedProps.vehicle);
           html += `
             <div class="booking-box" style="background:${color}">
-              <strong>${ev.extendedProps.vehicle}</strong><br>
+              <strong>${vehicleLabel}</strong><br>
               ${ev.extendedProps.user}<br>
               ${new Date(ev.start).toLocaleTimeString()} – ${new Date(ev.end).toLocaleTimeString()}<br>
               <button class="remove-btn" onclick="removeBooking('${ev.extendedProps.firebasePath}')">Remove</button>
@@ -262,11 +1174,6 @@
         });
       }
       dateInfoPanel.innerHTML = html;
-
-      // IMPORTANT: After sidebar content size changes, recompute calendar layout
-      if (calendar) {
-        calendar.updateSize();
-      }
     }
 
     window.removeBooking = async function(path) {
@@ -283,17 +1190,31 @@
     };
 
     document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+    exportFleetmasterBtn.addEventListener('click', exportFleetmasterLogs);
+    exportMbcBtn.addEventListener('click', exportMbcLogs);
+    exportMaintenanceBtn.addEventListener('click', exportMaintenanceLogs);
+    exportChecklistBtn.addEventListener('click', exportChecklistLogs);
+    exportShopBtn.addEventListener('click', exportShopLogs);
+    maintenanceCancelBtn.addEventListener('click', () => {
+      maintenanceDialog.close();
+      activeMaintenanceVehicle = null;
+    });
+    maintenanceSaveBtn.addEventListener('click', saveMaintenanceDialog);
 
     onAuthStateChanged(auth, async user => {
       if (!user) return location.href = 'index.html';
       renderLegend();
+      await renderMaintenanceCorner();
       allBookings = await fetchAllBookings();
       renderCalendar(allBookings);
     });
 
     // If the window is resized, keep FC in sync
     window.addEventListener('resize', () => {
-      if (calendar) calendar.updateSize();
+      if (calendar) {
+        calendar.updateSize();
+        syncSquareDayCells();
+      }
     });
   </script>
 </body>

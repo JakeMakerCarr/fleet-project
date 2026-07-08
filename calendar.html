@@ -14,10 +14,7 @@
   <!-- jQuery Timepicker CSS & JS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.js"></script>
-
-  <!-- Select2 (for a stylable custom dropdown) -->
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script src="timepicker-fix.js"></script>
 
   <link rel="stylesheet" href="style.css">
 
@@ -27,24 +24,262 @@
       --mine-green-tint: rgba(22,163,74,0.16);
     }
 
-    body { margin: 0; padding: 0; font-family: sans-serif; }
-    header { background: #333; color: white; display: flex; justify-content: space-between; align-items: center; padding: 1rem; }
-    #user-info { margin-right: 1rem; }
-    #logout-btn { cursor: pointer; padding: 0.5rem 1rem; background: #666; color: white; border-radius: 4px; border: none; }
-    .container { max-width: 1200px; margin: auto; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    .calendar-and-details { display: flex; gap: 1rem; }
-    .calendar-section { flex: 1; }
-    .details-section { flex: 0 0 300px; border-left: 1px solid #ccc; padding-left: 1rem; }
-    #booking-form { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem; max-width: 600px; }
+    html {
+      overflow-y: scroll;
+    }
+
+    body { margin: 0; padding: 0; font-family: sans-serif; min-height: 100vh; }
+    .feather-canvas {
+      display: none;
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .page-content {
+      max-width: 1580px;
+      margin: 2rem auto;
+      padding: 0 1.25rem 2rem;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      gap: 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+    .panel {
+      background: white;
+      padding: 1.25rem 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+    .panel h2 {
+      margin-top: 0;
+      font-size: 1.25rem;
+    }
+    .booking-panel {
+      flex: 0 0 480px;
+      width: 480px;
+      position: sticky;
+      top: 1rem;
+      z-index: 5;
+      overflow: visible;
+    }
+    .calendar-panel {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .calendar-panel h1 {
+      margin-top: 0;
+      font-size: 1.35rem;
+      flex: 0 0 auto;
+    }
+    .calendar-and-details {
+      display: flex;
+      gap: 1rem;
+      flex: 1;
+      min-height: 0;
+      align-items: stretch;
+    }
+    .calendar-section {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    #calendar {
+      flex: 1;
+      min-height: 420px;
+    }
+    #calendar .fc {
+      height: 100%;
+    }
+    .calendar-panel .fc-col-header-cell-cushion {
+      font-size: 0.95rem;
+      padding-top: 0.65rem;
+      padding-bottom: 0.65rem;
+    }
+    .calendar-panel .fc-daygrid-day-number {
+      font-size: 0.95rem;
+      padding: 0.45rem;
+    }
+    .calendar-panel .fc-daygrid-event {
+      font-size: 0.82rem;
+      margin-top: 0.15rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .calendar-panel .fc-daygrid-event .fc-event-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .calendar-panel .fc-toolbar-title {
+      font-size: 1.45rem;
+    }
+    .details-section {
+      flex: 0 0 220px;
+      width: 220px;
+      border-left: 1px solid #ccc;
+      padding: 0 1.25rem 0 1rem;
+      box-sizing: border-box;
+    }
+    .details-section h3,
+    #selected-date-text {
+      margin-top: 0;
+      margin-bottom: 0.75rem;
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    .booking-entry {
+      margin-bottom: 1rem;
+      line-height: 1.45;
+    }
+    .booking-entry strong {
+      display: block;
+      margin-bottom: 0.15rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #booking-form { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 0; overflow: visible; }
     .form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .booking-panel .form-row {
+      flex-direction: row;
+      flex-wrap: nowrap;
+      gap: 0.75rem;
+      align-items: flex-end;
+      overflow: visible;
+    }
     #booking-form label { display: flex; flex-direction: column; font-weight: bold; flex: 1; min-width: 200px; }
-    #booking-form input, #booking-form select { padding: 0.5rem; font-size: 1rem; box-sizing: border-box; width: 100%; }
+    .booking-panel #booking-form label {
+      flex: 1 1 0;
+      min-width: 0;
+      width: auto;
+      font-size: 0.88rem;
+      line-height: 1.3;
+    }
+    #booking-form input { padding: 0.5rem; font-size: 1rem; box-sizing: border-box; width: 100%; }
+    .booking-panel #booking-form input {
+      font-size: 0.95rem;
+      min-width: 0;
+    }
+    .vehicle-picker { display: flex; flex-direction: column; gap: 0.5rem; }
+    .vehicle-picker-label { font-weight: bold; }
+    .vehicle-select-source {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .vehicle-button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 0.5rem;
+    }
+    .booking-panel .vehicle-button-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.45rem;
+    }
+    .booking-panel .vehicle-option-btn {
+      font-size: 0.82rem;
+      padding: 0.5rem 0.55rem;
+      min-height: 40px;
+      line-height: 1.25;
+    }
+    .vehicle-option-btn {
+      border: 2px solid #d1d5db;
+      border-left: 8px solid var(--vehicle-accent, #64748b);
+      border-radius: 6px;
+      background: #f8fafc;
+      color: #111827;
+      padding: 0.65rem 0.75rem;
+      min-height: 44px;
+      font: inherit;
+      font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+    }
+    .vehicle-option-btn:hover {
+      background: #eef6fb;
+      border-color: #9ca3af;
+      border-left-color: var(--vehicle-accent, #64748b);
+    }
+    .vehicle-option-btn.active,
+    .vehicle-option-btn[aria-checked="true"] {
+      background: #1f8fca;
+      border-color: #176f9e;
+      border-left-color: var(--vehicle-accent, #64748b);
+      color: white;
+      box-shadow: 0 0 0 3px rgba(31, 143, 202, 0.18);
+    }
     .action-button { padding: 0.5rem 1rem; font-size: 1rem; background-color: #333; color: white; border: none; border-radius: 4px; cursor: pointer; max-width: 200px; margin-top: 1rem; }
+    .booking-panel .action-button {
+      max-width: none;
+      width: 100%;
+      margin-top: 0;
+    }
+    .booking-panel .booking-hint {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #555;
+    }
     .action-button:hover { background-color: #555; }
     .delete-booking { margin-top: 0.5rem; background: #c00; color: white; border: none; padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 4px; }
     .delete-booking:hover { background: #a00; }
+    .nfc-booking { display: block; margin-top: 0.5rem; background: #1f8fca; color: white; border: none; padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 4px; font-weight: 700; }
+    .nfc-booking:hover { background: #176f9d; }
+    .nfc-booking:disabled { background: #94a3b8; cursor: wait; }
+    .key-confirm-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.45);
+    }
+    .key-confirm-backdrop[hidden] { display: none; }
+    .key-confirm-modal {
+      width: min(100%, 380px);
+      background: white;
+      border-radius: 8px;
+      padding: 1.25rem;
+      box-shadow: 0 16px 42px rgba(0, 0, 0, 0.28);
+      color: #111;
+    }
+    .key-confirm-modal h2 {
+      margin: 0 0 1rem;
+      font-size: 1.1rem;
+      line-height: 1.35;
+    }
+    .key-confirm-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.6rem;
+    }
+    .key-confirm-actions button {
+      border: none;
+      border-radius: 4px;
+      padding: 0.5rem 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    #key-confirm-no { background: #e5e7eb; color: #111827; }
+    #key-confirm-yes { background: #1f8fca; color: white; }
+    #key-confirm-no:hover { background: #d1d5db; }
+    #key-confirm-yes:hover { background: #176f9d; }
 
-    /* Class names you assign to <option> are read by Select2 templates */
+    /* Class names on the backing options drive the button accent colors. */
     option.red { color: red; }
     option.blue { color: blue; }
     option.green { color: green; }
@@ -52,12 +287,6 @@
     option.black { color: black; }
     option.white { color: #555; }
     option.pink { color: hotpink; }
-
-    /* Select2: ensure our dropdown matches the app typography */
-    .select2-container .select2-selection--single { height: 40px; }
-    .select2-container .select2-selection__rendered { line-height: 40px; }
-    .select2-container .select2-selection__arrow { height: 40px; }
-    .select2-results__option { padding: 6px 10px; }
 
     /* Highlight for current user's bookings in FullCalendar */
     .fc-event.my-booking {
@@ -79,25 +308,71 @@
       margin-left: 6px;
       vertical-align: middle;
     }
+    .booking-entry .badge-mine {
+      display: block;
+      width: fit-content;
+      margin: 0 0 0.2rem 0;
+    }
+    @media (min-width: 900px) {
+      body.live-feather-background {
+        background-image: none;
+      }
+      body.live-feather-background .feather-canvas {
+        display: block;
+      }
+    }
+    @media (max-width: 1100px) {
+      .page-content {
+        flex-direction: column;
+      }
+      .booking-panel {
+        flex: none;
+        width: 100%;
+        position: static;
+      }
+      .booking-panel .form-row {
+        flex-wrap: wrap;
+      }
+      .booking-panel #booking-form label {
+        flex: 1 1 calc(50% - 0.375rem);
+      }
+      .calendar-and-details {
+        flex-direction: column;
+      }
+      .details-section {
+        flex: 0 0 auto;
+        width: auto;
+        padding-left: 1rem;
+        padding-right: 1.25rem;
+      }
+    }
   </style>
 </head>
 
 <body>
+<canvas id="feather-canvas" class="feather-canvas" aria-hidden="true"></canvas>
 <header>
-  <div>Fleet Calendar</div>
-  <div id="user-info">Checking auth...</div>
-  <button id="logout-btn" style="display:none;">Logout</button>
+  <div class="header-left">
+    <div class="header-logo-box">
+      <img src="YFNED_fleet_logo_navy.svg" alt="YFNED Fleet logo" />
+    </div>
+    <div class="header-title">Fleet Calendar</div>
+  </div>
+  <div class="header-nav">
+    <span id="user-info">Checking auth...</span>
+    <button id="logout-btn" class="header-btn" hidden>Logout</button>
+  </div>
 </header>
 
-<div class="container">
-  <h2>YFNED Fleet Calendar</h2>
+<div class="page-content">
+  <div class="panel booking-panel">
+    <h2>YFNED Fleet Calendar</h2>
 
-  <form id="booking-form">
-    <div class="form-row">
-      <label>
-        Select a Vehicle:
-        <!-- KEPT EXACTLY AS YOU POSTED -->
-        <select id="vehicle-select" required>
+    <form id="booking-form">
+    <div class="vehicle-picker">
+      <div id="vehicle-picker-label" class="vehicle-picker-label">Select a Vehicle:</div>
+      <!-- Keep this select as the backing form value so existing booking logic stays unchanged. -->
+      <select id="vehicle-select" class="vehicle-select-source" required aria-hidden="true" tabindex="-1">
           <option value="01-20 2021 Red Traverse CM335" class="black" data-display="2021 Red Traverse (CM335)">2021 Traverse (Red)</option>
           <option value="02-20 2021 Black Traverse CM366" class="black" data-display="2021 Black Traverse (CM366)">2021 Traverse (Black)</option>
           <option value="03-21 2021 Grey Traverse CN360" class="red" data-display="2021 Nutrition Traverse (CN360)">2021 Traverse (Grey)</option>
@@ -112,8 +387,8 @@
           <option value="15-24 2024 Grey Traverse C444C" class="black" data-display="2024 Grey Traverse (C444C)">2024 Traverse (Grey)</option>
           <option value="16-24 2024 Blue Traverse CT073" class="black" data-display="2024 Blue Traverse (CT073)">2024 Traverse (Blue)</option>
           <option value="18-25 2025 Ford Transit Van C115C" class="black" data-display="2025 Ford Transit Van (C115C)">2025 Ford Transit Van</option>
-        </select>
-      </label>
+      </select>
+      <div id="vehicle-button-grid" class="vehicle-button-grid" role="radiogroup" aria-labelledby="vehicle-picker-label"></div>
     </div>
 
     <div class="form-row">
@@ -140,27 +415,41 @@
 
     <button id="bookVehicleBtn" class="action-button">Book Vehicle</button>
 
-    <div style="margin: 8px 0; font-size: 13px;">
+    <div class="booking-hint">
       <span class="badge-mine">Your booking</span> shown with a green edge & light tint on the calendar.
     </div>
-  </form>
+    </form>
+  </div>
 
-  <div class="calendar-and-details">
+  <div class="panel calendar-panel">
+    <div class="calendar-and-details">
     <div class="calendar-section">
       <h1 id="vehicle-schedule-heading"></h1>
       <div id="calendar"></div>
     </div>
     <div class="details-section">
       <div id="selected-date-info">
-        <h3>Selected Date: <span id="selected-date-text"></span></h3>
+        <h3 id="selected-date-text"></h3>
         <div id="date-bookings-list">No bookings.</div>
       </div>
+    </div>
+    </div>
+  </div>
+</div>
+
+<div id="key-confirm-dialog" class="key-confirm-backdrop" hidden>
+  <div class="key-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="key-confirm-title">
+    <h2 id="key-confirm-title">Do you have the keys from the Front Desk?</h2>
+    <div class="key-confirm-actions">
+      <button id="key-confirm-no" type="button">No</button>
+      <button id="key-confirm-yes" type="button">Yes</button>
     </div>
   </div>
 </div>
 
 <!-- FullCalendar JS -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.9.0/main.min.js"></script>
+<script src="livefeathers.js"></script>
 
 <!-- Firebase Scripts -->
 <script type="module">
@@ -183,6 +472,7 @@
   const app       = initializeApp(firebaseConfig);
   const auth      = getAuth(app);
   const db        = getDatabase(app);
+  window.initLiveFeatherBackground();
   let currentUser = null;
   let calendar    = null;
 
@@ -190,6 +480,7 @@
   const userInfo              = document.getElementById('user-info');
   const logoutBtn             = document.getElementById('logout-btn');
   const vehicleSelect         = document.getElementById('vehicle-select');
+  const vehicleButtonGrid     = document.getElementById('vehicle-button-grid');
   const vehicleHeading        = document.getElementById('vehicle-schedule-heading');
   const bookingStartDateInput = document.getElementById('booking-start-date');
   const bookingEndDateInput   = document.getElementById('booking-end-date');
@@ -198,9 +489,63 @@
   const bookVehicleBtn        = document.getElementById('bookVehicleBtn');
   const selectedDateTextEl    = document.getElementById('selected-date-text');
   const dateBookingsListEl    = document.getElementById('date-bookings-list');
+  const keyConfirmDialog      = document.getElementById('key-confirm-dialog');
+  const keyConfirmYesBtn      = document.getElementById('key-confirm-yes');
+  const keyConfirmNoBtn       = document.getElementById('key-confirm-no');
   let lastClickedDayEl        = null;
+  let selectedDateIso         = '';
 
-  // ---- helpers for the Select2 templates ----
+  function getOrdinalSuffix(day) {
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  }
+
+  function formatSelectedDateDisplay(dateInput) {
+    const date = typeof dateInput === 'string'
+      ? new Date(`${dateInput}T12:00:00`)
+      : dateInput;
+    const month = date.toLocaleString('en-US', { month: 'long' });
+    const day = date.getDate();
+    return `${month} ${day}${getOrdinalSuffix(day)}`;
+  }
+
+  function formatTimeDisplay(date) {
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const period = hours >= 12 ? 'pm' : 'am';
+    const hour12 = hours % 12 || 12;
+    const minuteText = minutes.toString().padStart(2, '0');
+    return `${hour12}:${minuteText}${period}`;
+  }
+
+  function capitalizeNamePart(part) {
+    if (!part) return '';
+    return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+  }
+
+  function getFirstNameFromEmail(email) {
+    if (!email || !email.includes('@')) return email || 'Unknown';
+    const localPart = email.split('@')[0];
+    const firstName = localPart.split('.')[0];
+    if (!firstName) return localPart;
+    return capitalizeNamePart(firstName);
+  }
+
+  function getFullNameFromEmail(email) {
+    if (!email || !email.includes('@')) return email || 'Unknown';
+    const localPart = email.split('@')[0];
+    const parts = localPart.split('.').filter(Boolean);
+    if (parts.length >= 2) {
+      return `${capitalizeNamePart(parts[0])} ${capitalizeNamePart(parts[1])}`;
+    }
+    return capitalizeNamePart(parts[0]) || localPart;
+  }
+
   function optionColorFromClass(optEl) {
     if (!optEl) return null;
     if (optEl.classList.contains('pink')) return 'hotpink';
@@ -213,39 +558,65 @@
     return null;
   }
 
-  // Fallback: rewrite visible text to data-display on plain <select> (in case Select2 fails)
+  function vehicleAccentColor(option) {
+    const vehicle = `${option.value} ${option.dataset.display || option.textContent}`.toLowerCase();
+
+    if (vehicle.includes('red traverse')) return '#d4282f';
+    if (vehicle.includes('black traverse')) return '#2c3e50';
+    if (vehicle.includes('cn360') || vehicle.includes('nutrition traverse')) return '#690000ff';
+    if (vehicle.includes('shadow silverado') || vehicle.includes('silverado')) return '#f1c40f';
+    if (vehicle.includes('grand caravan') || vehicle.includes('cn468')) return '#ff009dff';
+    if (vehicle.includes('white terrain') || vehicle.includes('cn466')) return '#c83771ff';
+    if (vehicle.includes('black terrain') || vehicle.includes('cn467')) return '#ff7299ff';
+    if (vehicle.includes('green mtu trailblazer') || vehicle.includes('trailblazer')) return '#27ae60';
+    if (vehicle.includes('cs266')) return '#303030ff';
+    if (vehicle.includes('ct008')) return '#5e5e5eff';
+    if (vehicle.includes('c443c')) return '#919191ff';
+    if (vehicle.includes('c444c')) return '#c6c6c6ff';
+    if (vehicle.includes('blue traverse') || vehicle.includes('ct073')) return '#0055d4ff';
+    if (vehicle.includes('ford transit')) return '#fd9644';
+    if (vehicle.includes('grey traverse')) return '#6b7280';
+
+    return optionColorFromClass(option) || '#64748b';
+  }
+
   function rewriteOptionLabelsFromDataset() {
     document.querySelectorAll('#vehicle-select option').forEach(opt => {
       if (opt.dataset.display) opt.textContent = opt.dataset.display;
     });
   }
 
-  // Build Select2 with colored items + data-display labels
-  function initVehicleSelect2() {
-    // Ensure labels reflect data-display before Select2 reads them
-    rewriteOptionLabelsFromDataset();
-
-    $('#vehicle-select').select2({
-      width: '100%',
-      templateResult: function (state) {
-        if (!state.id) return state.text;
-        const el = state.element;
-        const color = optionColorFromClass(el);
-        const text  = el?.dataset?.display || state.text;
-        const $node = $('<span></span>').text(text);
-        if (color) $node.css('color', color);
-        return $node;
-      },
-      templateSelection: function (state) {
-        if (!state.id) return state.text;
-        const el = state.element;
-        const color = optionColorFromClass(el);
-        const text  = el?.dataset?.display || state.text;
-        const $node = $('<span></span>').text(text);
-        if (color) $node.css('color', color);
-        return $node;
-      }
+  function syncVehicleButtons() {
+    vehicleButtonGrid.querySelectorAll('.vehicle-option-btn').forEach(btn => {
+      const isSelected = btn.dataset.value === vehicleSelect.value;
+      btn.classList.toggle('active', isSelected);
+      btn.setAttribute('aria-checked', String(isSelected));
     });
+  }
+
+  function setVehicleSelection(value) {
+    $('#vehicle-select').val(value).trigger('change');
+  }
+
+  function initVehicleButtons() {
+    rewriteOptionLabelsFromDataset();
+    vehicleButtonGrid.innerHTML = '';
+
+    [...vehicleSelect.options].forEach(option => {
+      if (option.hidden) return;
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'vehicle-option-btn';
+      button.dataset.value = option.value;
+      button.textContent = option.dataset.display || option.textContent;
+      button.setAttribute('role', 'radio');
+      button.style.setProperty('--vehicle-accent', vehicleAccentColor(option));
+      button.addEventListener('click', () => setVehicleSelection(option.value));
+      vehicleButtonGrid.appendChild(button);
+    });
+
+    syncVehicleButtons();
   }
 
   onAuthStateChanged(auth, user => {
@@ -255,7 +626,7 @@
     }
     currentUser = user;
     userInfo.textContent = 'Logged in as: ' + user.email;
-    logoutBtn.style.display = 'inline-block';
+    logoutBtn.hidden = false;
 
     // timepicker
     $('#booking-start-time, #booking-end-time').timepicker({
@@ -268,8 +639,42 @@
       scrollbar: true
     });
 
-    // turn the native select into a stylable dropdown
-    initVehicleSelect2();
+    let timepickerOpenCount = 0;
+    let cachedScrollbarWidth = null;
+
+    function getScrollbarWidth() {
+      if (cachedScrollbarWidth !== null) return cachedScrollbarWidth;
+      const outer = document.createElement('div');
+      outer.style.cssText = 'visibility:hidden;overflow:scroll;width:100px;position:absolute;top:-9999px';
+      document.body.appendChild(outer);
+      const inner = document.createElement('div');
+      inner.style.width = '100%';
+      outer.appendChild(inner);
+      cachedScrollbarWidth = outer.offsetWidth - inner.offsetWidth;
+      outer.remove();
+      return cachedScrollbarWidth;
+    }
+
+    function lockPageForTimepicker() {
+      timepickerOpenCount++;
+      if (timepickerOpenCount === 1) {
+        const scrollbarWidth = getScrollbarWidth();
+        document.documentElement.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
+        document.documentElement.classList.add('timepicker-open');
+        document.body.classList.add('timepicker-open');
+      }
+    }
+    function unlockPageForTimepicker() {
+      timepickerOpenCount = Math.max(0, timepickerOpenCount - 1);
+      if (timepickerOpenCount === 0) {
+        document.documentElement.classList.remove('timepicker-open');
+        document.body.classList.remove('timepicker-open');
+        document.documentElement.style.removeProperty('--scrollbar-width');
+      }
+    }
+    setupFleetTimepicker('#booking-start-time, #booking-end-time', lockPageForTimepicker, unlockPageForTimepicker);
+
+    initVehicleButtons();
 
     initCalendar();
 
@@ -280,8 +685,9 @@
 
     // When the selection changes
     $('#vehicle-select').on('change', async () => {
-      setHeadingFromSelect();                       // instant UI label
-      await updateVehicleHeading($('#vehicle-select').val()); // status from Firebase
+      syncVehicleButtons();
+      setHeadingFromSelect();
+      await updateVehicleHeading($('#vehicle-select').val());
       calendar.refetchEvents();
     });
 
@@ -307,8 +713,11 @@
     const displayName = selectedOpt?.dataset.display || name;
 
     const snap = await get(ref(db, 'vehicles/' + name));
-    if (snap.exists() && snap.val().status === 'signedOut') {
-      vehicleHeading.textContent = `${displayName} schedule: Signed Out by ${snap.val().CurrentlySignedOutBy}`;
+    if (snap.exists() && snap.val().maintenanceStatus === 'outForMaintenance') {
+      vehicleHeading.textContent = `${displayName} schedule: Out For Maintenance`;
+    } else if (snap.exists() && snap.val().status === 'signedOut') {
+      const signedOutBy = snap.val().CurrentlySignedOutBy || 'Unknown user';
+      vehicleHeading.textContent = `${displayName} schedule: Signed Out by ${signedOutBy}`;
     } else {
       vehicleHeading.textContent = `${displayName} schedule: Available`;
     }
@@ -318,6 +727,8 @@
     calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
       initialView: 'dayGridMonth',
       timeZone: 'local',
+      height: '100%',
+      expandRows: true,
       events: fetchVehicleBookings,
       displayEventTime: false,
 
@@ -331,13 +742,21 @@
         if (lastClickedDayEl) lastClickedDayEl.style.backgroundColor = '';
         info.dayEl.style.backgroundColor = 'lightblue';
         lastClickedDayEl = info.dayEl;
-        selectedDateTextEl.textContent = info.dateStr;
+        selectedDateIso = info.dateStr;
+        selectedDateTextEl.textContent = formatSelectedDateDisplay(info.dateStr);
         displayBookingsForDay(getEventsForDate(info.date), info.dateStr);
         bookingStartDateInput.value = info.dateStr;
       }
     });
     calendar.render();
+    requestAnimationFrame(() => calendar.updateSize());
   }
+
+  function syncCalendarSize() {
+    if (calendar) calendar.updateSize();
+  }
+
+  window.addEventListener('resize', syncCalendarSize);
 
   async function fetchVehicleBookings(_, success) {
     const vehicle = $('#vehicle-select').val();
@@ -346,7 +765,7 @@
     if (!snap.exists()) return success([]);
     const events = Object.entries(snap.val()).map(([id, b]) => ({
       id,
-      title: `${b.startTime}-${b.endTime}`,
+      title: getFirstNameFromEmail(b.userName),
       start: new Date(b.startTimeISO),
       end:   new Date(b.endTimeISO),
       extendedProps: { creatorEmail: b.userName }
@@ -360,26 +779,135 @@
     return calendar.getEvents().filter(ev => ev.start < endMs && ev.end > startMs);
   }
 
+  function toLocalDateKey(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  function isTodayDateKey(dateStr) {
+    return dateStr === toLocalDateKey(new Date());
+  }
+
+  function askFrontDeskKeys() {
+    return new Promise(resolve => {
+      const finish = value => {
+        keyConfirmDialog.hidden = true;
+        keyConfirmYesBtn.removeEventListener('click', onYes);
+        keyConfirmNoBtn.removeEventListener('click', onNo);
+        keyConfirmDialog.removeEventListener('click', onBackdropClick);
+        document.removeEventListener('keydown', onKeydown);
+        resolve(value);
+      };
+      const onYes = () => finish(true);
+      const onNo = () => finish(false);
+      const onBackdropClick = event => {
+        if (event.target === keyConfirmDialog) finish(false);
+      };
+      const onKeydown = event => {
+        if (event.key === 'Escape') finish(false);
+      };
+
+      keyConfirmYesBtn.addEventListener('click', onYes);
+      keyConfirmNoBtn.addEventListener('click', onNo);
+      keyConfirmDialog.addEventListener('click', onBackdropClick);
+      document.addEventListener('keydown', onKeydown);
+      keyConfirmDialog.hidden = false;
+      keyConfirmYesBtn.focus();
+    });
+  }
+
+  async function logVehicleAction(vehicleName, action, details = {}) {
+    const entryRef = push(ref(db, `vehicleLogs/${vehicleName}`));
+    await set(entryRef, {
+      userEmail: currentUser?.email || null,
+      action,
+      timestamp: Date.now(),
+      ...details
+    });
+  }
+
+  async function markKeyOutWithStaff(vehicle) {
+    const vehicleRef = ref(db, 'vehicles/' + vehicle);
+    const snap = await get(vehicleRef);
+    if (!snap.exists()) {
+      throw new Error('Vehicle not found in database.');
+    }
+
+    const data = snap.val();
+    const updates = {
+      keyStatus: 'withStaff',
+      keyHeldBy: currentUser.email,
+      lastKeyChange: Date.now(),
+      alarm: true
+    };
+    const hasStaleSignedOutState = data.status === 'signedOut' && !data.CurrentlySignedOutBy;
+
+    if (hasStaleSignedOutState) {
+      updates.status = 'available';
+      updates.CurrentlySignedOutBy = null;
+    }
+
+    await update(vehicleRef, updates);
+    await logVehicleAction(vehicle, 'keyStatus changed to withStaff', {
+      keyStatus: updates.keyStatus,
+      keyHeldBy: updates.keyHeldBy,
+      status: updates.status || data.status || 'available',
+      CurrentlySignedOutBy: updates.CurrentlySignedOutBy ?? data.CurrentlySignedOutBy ?? null,
+      repairedStaleSignedOutState: hasStaleSignedOutState
+    });
+  }
+
+  async function goToVehicleNfc(event) {
+    const vehicle = $('#vehicle-select').val();
+    if (!vehicle || !currentUser) return;
+
+    const hasKeys = await askFrontDeskKeys();
+    if (!hasKeys) return;
+
+    const button = event?.currentTarget;
+    const originalText = button?.textContent;
+    try {
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Opening...';
+      }
+      await markKeyOutWithStaff(vehicle);
+      window.location.href = `nfc.html?vehicle=${encodeURIComponent(vehicle)}`;
+    } catch (error) {
+      alert(error.message || 'Could not update the key status. Please try again.');
+      if (button) {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+  }
+
   // ■■■■ displayBookingsForDay with Delete Buttons + "Your booking" badge ■■■■
   function displayBookingsForDay(events, dateStr) {
     if (!events.length) {
-      dateBookingsListEl.textContent = 'No bookings on ' + dateStr + '.';
+      dateBookingsListEl.textContent = 'No bookings.';
       return;
     }
 
     dateBookingsListEl.innerHTML = events.map(ev => {
       const isMine = ev.extendedProps.creatorEmail === currentUser.email;
+      const canUseNfc = isMine && isTodayDateKey(dateStr);
+      const displayName = getFullNameFromEmail(ev.extendedProps.creatorEmail);
       let html = `
         <div class="booking-entry" data-id="${ev.id}">
-          <strong>${ev.extendedProps.creatorEmail}</strong>
-          ${isMine ? '<span class="badge-mine">Your booking</span>' : ''}
-          <br>
-          Start: ${ev.start.toLocaleString()}<br>
-          End: ${ev.end.toLocaleString()}
+          <strong title="${ev.extendedProps.creatorEmail}">${displayName}</strong>
+          ${isMine ? '<span class="badge-mine">Your booking</span><br>' : ''}
+          Start: ${formatTimeDisplay(ev.start)}<br>
+          End: ${formatTimeDisplay(ev.end)}
       `;
 
       if (isMine) {
         html += `<br><button class="delete-booking" data-id="${ev.id}">Remove</button>`;
+      }
+      if (canUseNfc) {
+        html += `<button class="nfc-booking" data-id="${ev.id}">Sign In/Sign Out</button>`;
       }
       html += `</div>`;
       return html;
@@ -392,9 +920,13 @@
         if (!confirm('Are you sure you want to remove this booking?')) return;
         await remove(ref(db, 'bookings/' + $('#vehicle-select').val() + '/' + id));
         calendar.refetchEvents();
-        const ds = selectedDateTextEl.textContent;
-        displayBookingsForDay(getEventsForDate(new Date(ds)), ds);
+        const ds = selectedDateIso || dateStr;
+        displayBookingsForDay(getEventsForDate(new Date(`${ds}T12:00:00`)), ds);
       });
+    });
+
+    dateBookingsListEl.querySelectorAll('.nfc-booking').forEach(btn => {
+      btn.addEventListener('click', goToVehicleNfc);
     });
   }
 
@@ -406,6 +938,11 @@
       const e = new Date(b.endTimeISO).getTime();
       return newStart < e && newEnd > s;
     });
+  }
+
+  async function isVehicleOutForMaintenance(vehicle) {
+    const snap = await get(ref(db, 'vehicles/' + vehicle));
+    return snap.exists() && snap.val().maintenanceStatus === 'outForMaintenance';
   }
 
   function toTimestamp(dateStr, timeStr) {
@@ -421,6 +958,11 @@
   async function handleMultiDayBooking() {
     const vehicle = $('#vehicle-select').val();
     if (!vehicle) { alert('No vehicle selected.'); return; }
+
+    if (await isVehicleOutForMaintenance(vehicle)) {
+      alert('This vehicle is currently out for maintenance and cannot be booked.');
+      return;
+    }
 
     const startVal = bookingStartDateInput.value;
     const endVal   = bookingEndDateInput.value || startVal;
