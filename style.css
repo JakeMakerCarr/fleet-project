@@ -8,6 +8,11 @@ body {
   font-family: sans-serif;
 }
 
+body.feathers-disabled {
+  background-color: #1f8fca !important;
+  background-image: none !important;
+}
+
 /* Shared site header (admin + fleet pages) */
 header {
   background: #333;
@@ -85,6 +90,18 @@ header {
 
 .header-btn:hover {
   background: #555;
+}
+
+.feathers-toggle-btn {
+  min-width: 94px;
+}
+
+.feathers-toggle-btn[aria-pressed="true"] {
+  background: #1f8fca;
+}
+
+.feathers-toggle-btn[aria-pressed="true"]:hover {
+  background: #176f9d;
 }
 
 .header-btn.active,

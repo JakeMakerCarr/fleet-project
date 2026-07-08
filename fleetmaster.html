@@ -170,6 +170,7 @@
     </table>
   </div>
 
+  <script src="livefeathers.js"></script>
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
     import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
@@ -190,10 +191,9 @@
 
     const logoutBtn = document.getElementById('logout-btn');
     const tableBody = document.querySelector('#vehicle-table tbody');
-    const featherCanvas = document.getElementById('feather-canvas');
 
     logoutBtn.addEventListener('click', () => signOut(auth));
-    setupLiveFeatherBackground();
+    window.initLiveFeatherBackground();
 
     // Visual labels only - database keys remain unchanged
     const DISPLAY_NAME_MAP = {
@@ -249,152 +249,6 @@
 
     function getDisplayName(name) {
       return DISPLAY_NAME_MAP[name] || name;
-    }
-
-    function setupLiveFeatherBackground() {
-      const ctx = featherCanvas?.getContext('2d');
-      if (!ctx || !featherCanvas) return;
-
-      const desktopQuery = window.matchMedia('(min-width: 900px)');
-      const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-      const featherSources = [
-        'assets/blackfeather.png'
-      ];
-      const featherImages = featherSources.map(src => {
-        const image = new Image();
-        image.src = src;
-        return image;
-      });
-
-      const feathers = [];
-      let width = 0;
-      let height = 0;
-      let dpr = 1;
-      let animationFrameId = null;
-      let spawnTimerId = null;
-
-      function randomBetween(min, max) {
-        return min + Math.random() * (max - min);
-      }
-
-      function resizeCanvas() {
-        dpr = window.devicePixelRatio || 1;
-        width = window.innerWidth;
-        height = window.innerHeight;
-        featherCanvas.width = Math.round(width * dpr);
-        featherCanvas.height = Math.round(height * dpr);
-        featherCanvas.style.width = `${width}px`;
-        featherCanvas.style.height = `${height}px`;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      }
-
-      function createFeather(initial = false) {
-        const image = featherImages[Math.floor(Math.random() * featherImages.length)];
-        return {
-          image,
-          x: randomBetween(-80, width + 80),
-          y: initial ? randomBetween(-height, height) : randomBetween(-180, -30),
-          scale: 1,
-          speedY: randomBetween(0.45, 1.2),
-          driftBase: randomBetween(-0.18, 0.18),
-          driftAmplitude: randomBetween(0.3, 1.1),
-          driftFrequency: randomBetween(0.008, 0.022),
-          phase: randomBetween(0, Math.PI * 2),
-          rotation: randomBetween(0, Math.PI * 2),
-          rotationSpeed: randomBetween(-0.007, 0.007),
-          opacity: randomBetween(0.68, 0.95)
-        };
-      }
-
-      function drawFeather(feather) {
-        const image = feather.image;
-        if (!image.complete || !image.naturalWidth) return;
-        const drawWidth = image.naturalWidth * feather.scale;
-        const drawHeight = image.naturalHeight * feather.scale;
-
-        ctx.save();
-        ctx.globalAlpha = feather.opacity;
-        ctx.translate(feather.x, feather.y);
-        ctx.rotate(feather.rotation);
-        ctx.drawImage(image, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
-        ctx.restore();
-      }
-
-      function tick() {
-        ctx.clearRect(0, 0, width, height);
-
-        for (let i = feathers.length - 1; i >= 0; i -= 1) {
-          const feather = feathers[i];
-          feather.phase += feather.driftFrequency;
-          feather.y += feather.speedY;
-          feather.x += feather.driftBase + Math.sin(feather.phase) * feather.driftAmplitude;
-          feather.rotation += feather.rotationSpeed + Math.sin(feather.phase * 0.8) * 0.002;
-
-          const maxDimension = Math.max(
-            (feather.image?.naturalWidth || 44) * feather.scale,
-            (feather.image?.naturalHeight || 44) * feather.scale
-          );
-          if (feather.y - maxDimension > height + 48 || feather.x < -140 || feather.x > width + 140) {
-            feathers.splice(i, 1);
-            continue;
-          }
-
-          drawFeather(feather);
-        }
-
-        animationFrameId = window.requestAnimationFrame(tick);
-      }
-
-      function startAnimation() {
-        if (animationFrameId || spawnTimerId || !desktopQuery.matches || reducedMotionQuery.matches) return;
-
-        document.body.classList.add('live-feather-background');
-        resizeCanvas();
-        feathers.length = 0;
-
-        for (let i = 0; i < 110; i += 1) {
-          feathers.push(createFeather(true));
-        }
-
-        spawnTimerId = window.setInterval(() => {
-          if (feathers.length < 200) {
-            feathers.push(createFeather(false));
-          }
-        }, 900);
-
-        tick();
-      }
-
-      function stopAnimation() {
-        document.body.classList.remove('live-feather-background');
-        if (animationFrameId) {
-          window.cancelAnimationFrame(animationFrameId);
-          animationFrameId = null;
-        }
-        if (spawnTimerId) {
-          window.clearInterval(spawnTimerId);
-          spawnTimerId = null;
-        }
-        feathers.length = 0;
-        ctx.clearRect(0, 0, width, height);
-      }
-
-      function syncAnimationMode() {
-        if (desktopQuery.matches && !reducedMotionQuery.matches) {
-          startAnimation();
-        } else {
-          stopAnimation();
-        }
-      }
-
-      window.addEventListener('resize', () => {
-        if (desktopQuery.matches && !reducedMotionQuery.matches) {
-          resizeCanvas();
-        }
-      });
-      desktopQuery.addEventListener('change', syncAnimationMode);
-      reducedMotionQuery.addEventListener('change', syncAnimationMode);
-      syncAnimationMode();
     }
 
     function debounce(fn, ms) {

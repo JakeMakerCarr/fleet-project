@@ -1,4 +1,32 @@
 (function () {
+  const STORAGE_KEY = 'yfned-feathers-enabled';
+  const DISABLED_BODY_CLASS = 'feathers-disabled';
+
+  function getFeathersEnabled() {
+    try {
+      return window.localStorage.getItem(STORAGE_KEY) !== 'false';
+    } catch (error) {
+      return true;
+    }
+  }
+
+  function setFeathersEnabled(enabled) {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, String(enabled));
+    } catch (error) {
+      // Ignore storage failures; the current page still updates.
+    }
+  }
+
+  function applyDisabledClass(enabled) {
+    document.body.classList.toggle(DISABLED_BODY_CLASS, !enabled);
+  }
+
+  function syncToggleButton(button, enabled) {
+    button.setAttribute('aria-pressed', String(enabled));
+    button.classList.toggle('feathers-enabled', enabled);
+  }
+
   function initLiveFeatherBackground(options) {
     const settings = {
       canvasId: 'feather-canvas',
@@ -13,9 +41,22 @@
       ...options
     };
 
+    let feathersEnabled = getFeathersEnabled();
+    applyDisabledClass(feathersEnabled);
+
     const featherCanvas = document.getElementById(settings.canvasId);
     const ctx = featherCanvas && featherCanvas.getContext('2d');
-    if (!ctx || !featherCanvas) return;
+    if (!ctx || !featherCanvas) {
+      initFeatherToggleButton({
+        isEnabled: () => feathersEnabled,
+        setEnabled: enabled => {
+          feathersEnabled = enabled;
+          setFeathersEnabled(enabled);
+          applyDisabledClass(enabled);
+        }
+      });
+      return;
+    }
 
     const desktopQuery = window.matchMedia(settings.desktopQuery);
     const reducedMotionQuery = window.matchMedia(settings.reducedMotionQuery);
@@ -107,9 +148,10 @@
     }
 
     function startAnimation() {
-      if (animationFrameId || spawnTimerId || !desktopQuery.matches || reducedMotionQuery.matches) return;
+      if (!feathersEnabled || animationFrameId || spawnTimerId || !desktopQuery.matches || reducedMotionQuery.matches) return;
 
       document.body.classList.add(settings.bodyClass);
+      document.body.classList.remove(DISABLED_BODY_CLASS);
       document.body.style.backgroundColor = settings.backgroundColor;
       resizeCanvas();
       feathers.length = 0;
@@ -142,7 +184,8 @@
     }
 
     function syncAnimationMode() {
-      if (desktopQuery.matches && !reducedMotionQuery.matches) {
+      applyDisabledClass(feathersEnabled);
+      if (feathersEnabled && desktopQuery.matches && !reducedMotionQuery.matches) {
         startAnimation();
       } else {
         stopAnimation();
@@ -156,7 +199,36 @@
     });
     desktopQuery.addEventListener('change', syncAnimationMode);
     reducedMotionQuery.addEventListener('change', syncAnimationMode);
+    initFeatherToggleButton({
+      isEnabled: () => feathersEnabled,
+      setEnabled: enabled => {
+        feathersEnabled = enabled;
+        setFeathersEnabled(enabled);
+        syncAnimationMode();
+      }
+    });
     syncAnimationMode();
+  }
+
+  function initFeatherToggleButton(controller) {
+    const logoutButton = document.getElementById('logout-btn');
+    if (!logoutButton || document.getElementById('feathers-toggle-btn')) return;
+
+    const button = document.createElement('button');
+    button.id = 'feathers-toggle-btn';
+    button.type = 'button';
+    button.className = 'header-btn feathers-toggle-btn';
+    button.textContent = 'Feathers';
+    button.title = 'Toggle falling feathers';
+    syncToggleButton(button, controller.isEnabled());
+
+    button.addEventListener('click', () => {
+      const enabled = !controller.isEnabled();
+      controller.setEnabled(enabled);
+      syncToggleButton(button, enabled);
+    });
+
+    logoutButton.parentNode.insertBefore(button, logoutButton);
   }
 
   window.initLiveFeatherBackground = initLiveFeatherBackground;
