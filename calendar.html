@@ -278,6 +278,15 @@
     #key-confirm-yes { background: #1f8fca; color: white; }
     #key-confirm-no:hover { background: #d1d5db; }
     #key-confirm-yes:hover { background: #176f9d; }
+    .tutorial-confirm-actions {
+      flex-wrap: wrap;
+    }
+    #tutorial-close { background: #e5e7eb; color: #111827; }
+    #tutorial-in-depth,
+    #tutorial-quick-overview { background: #1f8fca; color: white; }
+    #tutorial-close:hover { background: #d1d5db; }
+    #tutorial-in-depth:hover,
+    #tutorial-quick-overview:hover { background: #176f9d; }
 
     /* Class names on the backing options drive the button accent colors. */
     option.red { color: red; }
@@ -360,6 +369,7 @@
   </div>
   <div class="header-nav">
     <span id="user-info">Checking auth...</span>
+    <button id="tutorials-btn" class="header-btn" hidden>Tutorials</button>
     <button id="logout-btn" class="header-btn" hidden>Logout</button>
   </div>
 </header>
@@ -447,6 +457,17 @@
   </div>
 </div>
 
+<div id="tutorial-dialog" class="key-confirm-backdrop" hidden>
+  <div class="key-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
+    <h2 id="tutorial-title">Do you need an in depth Tutorial or just an overview?</h2>
+    <div class="key-confirm-actions tutorial-confirm-actions">
+      <button id="tutorial-in-depth" type="button">In Depth</button>
+      <button id="tutorial-quick-overview" type="button">Quick Overview</button>
+      <button id="tutorial-close" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- FullCalendar JS -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.9.0/main.min.js"></script>
 <script src="livefeathers.js"></script>
@@ -478,6 +499,7 @@
 
   // DOM refs
   const userInfo              = document.getElementById('user-info');
+  const tutorialsBtn          = document.getElementById('tutorials-btn');
   const logoutBtn             = document.getElementById('logout-btn');
   const vehicleSelect         = document.getElementById('vehicle-select');
   const vehicleButtonGrid     = document.getElementById('vehicle-button-grid');
@@ -492,8 +514,34 @@
   const keyConfirmDialog      = document.getElementById('key-confirm-dialog');
   const keyConfirmYesBtn      = document.getElementById('key-confirm-yes');
   const keyConfirmNoBtn       = document.getElementById('key-confirm-no');
+  const tutorialDialog        = document.getElementById('tutorial-dialog');
+  const tutorialInDepthBtn    = document.getElementById('tutorial-in-depth');
+  const tutorialOverviewBtn   = document.getElementById('tutorial-quick-overview');
+  const tutorialCloseBtn      = document.getElementById('tutorial-close');
   let lastClickedDayEl        = null;
   let selectedDateIso         = '';
+
+  logoutBtn.parentNode.insertBefore(tutorialsBtn, logoutBtn);
+
+  function closeTutorialDialog() {
+    tutorialDialog.hidden = true;
+  }
+
+  function openTutorialPdf(path) {
+    window.open(path, '_blank', 'noopener');
+    closeTutorialDialog();
+  }
+
+  tutorialsBtn.addEventListener('click', () => {
+    tutorialDialog.hidden = false;
+  });
+  tutorialInDepthBtn.addEventListener('click', () => {
+    openTutorialPdf('assets/YFNEDfleetTutorial_DONE.pdf');
+  });
+  tutorialOverviewBtn.addEventListener('click', () => {
+    openTutorialPdf('assets/YFNEDfleetTutorial_system.pdf');
+  });
+  tutorialCloseBtn.addEventListener('click', closeTutorialDialog);
 
   function getOrdinalSuffix(day) {
     if (day >= 11 && day <= 13) return 'th';
@@ -626,6 +674,7 @@
     }
     currentUser = user;
     userInfo.textContent = 'Logged in as: ' + user.email;
+    tutorialsBtn.hidden = false;
     logoutBtn.hidden = false;
 
     // timepicker
