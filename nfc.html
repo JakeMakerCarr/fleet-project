@@ -655,7 +655,11 @@
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      authStatus.innerHTML = `Please <a href="index.html">log in</a> to access vehicle.`;
+      const loginParams = new URLSearchParams({ redirect: 'nfc.html' });
+      if (currentVehicle) {
+        loginParams.set('vehicle', currentVehicle);
+      }
+      authStatus.innerHTML = `Please <a href="index.html?${loginParams.toString()}">log in</a> to access vehicle.`;
     } else {
       currentUser = user;
     authStatus.style.display = 'none';
