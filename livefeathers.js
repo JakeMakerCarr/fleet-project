@@ -34,10 +34,11 @@
       desktopQuery: '(min-width: 900px)',
       reducedMotionQuery: '(prefers-reduced-motion: reduce)',
       featherSources: ['assets/blackfeather.png'],
-      initialCount: 110,
-      maxCount: 200,
-      spawnIntervalMs: 500,
+      initialCount: 80,
+      maxCount: 140,
+      spawnIntervalMs: 850,
       backgroundColor: '#1f8fca',
+      speedMultiplier: 0.35,
       ...options
     };
 
@@ -90,18 +91,19 @@
 
     function createFeather(initial) {
       const image = featherImages[Math.floor(Math.random() * featherImages.length)];
+      const speed = settings.speedMultiplier;
         return {
           image,
           x: randomBetween(-80, width + 80),
           y: initial ? randomBetween(-height, height) : randomBetween(-180, -30),
           scale: 1,
-          speedY: randomBetween(0.36, 0.95),
-          driftBase: randomBetween(-0.18, 0.18),
-          driftAmplitude: randomBetween(0.3, 1.1),
-        driftFrequency: randomBetween(0.008, 0.022),
+          speedY: randomBetween(0.36, 0.95) * speed,
+          driftBase: randomBetween(-0.18, 0.18) * speed,
+          driftAmplitude: randomBetween(0.3, 1.1) * speed,
+        driftFrequency: randomBetween(0.008, 0.022) * speed,
         phase: randomBetween(0, Math.PI * 2),
         rotation: randomBetween(0, Math.PI * 2),
-        rotationSpeed: randomBetween(-0.007, 0.007),
+        rotationSpeed: randomBetween(-0.007, 0.007) * speed,
         opacity: randomBetween(0.68, 0.95)
       };
     }
@@ -129,7 +131,7 @@
         feather.phase += feather.driftFrequency;
         feather.y += feather.speedY;
         feather.x += feather.driftBase + Math.sin(feather.phase) * feather.driftAmplitude;
-        feather.rotation += feather.rotationSpeed + Math.sin(feather.phase * 0.8) * 0.002;
+        feather.rotation += feather.rotationSpeed + Math.sin(feather.phase * 0.8) * 0.002 * settings.speedMultiplier;
 
         const maxDimension = Math.max(
           (feather.image && feather.image.naturalWidth ? feather.image.naturalWidth : 44) * feather.scale,
