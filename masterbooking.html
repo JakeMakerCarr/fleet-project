@@ -457,26 +457,14 @@
   <script src="livefeathers.js"></script>
 
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
-    import { getAuth, onAuthStateChanged, signOut }
+    import { auth, db } from './firebase.js';
+    import { getVehicleColor } from './fleet-data.js';
+    import { escapeHtml } from './html-utils.js';
+    import { onAuthStateChanged, signOut }
       from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
     import {
-      getDatabase, ref, get, push, set, remove
+      ref, get, push, set, remove
     } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
-      authDomain: "yfned-fleet-nfc.firebaseapp.com",
-      databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
-      projectId: "yfned-fleet-nfc",
-      storageBucket: "yfned-fleet-nfc.appspot.com",
-      messagingSenderId: "482363667898",
-      appId: "1:482363667898:web:4b0364e891a221e9631983"
-    };
-
-    const app       = initializeApp(firebaseConfig);
-    const auth      = getAuth(app);
-    const db        = getDatabase(app);
     window.initLiveFeatherBackground();
 
     // DOM refs
@@ -619,26 +607,7 @@
     }
 
     function vehicleAccentColor(option) {
-      const vehicle = `${option.value} ${option.textContent}`.toLowerCase();
-
-      if (vehicle.includes('red traverse')) return '#d4282f';
-      if (vehicle.includes('black traverse')) return '#2c3e50';
-      if (vehicle.includes('shadow silverado') || vehicle.includes('silverado')) return '#f1c40f';
-      if (vehicle.includes('cn360') || vehicle.includes('nutrition traverse')) return '#690000ff';
-      if (vehicle.includes('grand caravan') || vehicle.includes('cn468')) return '#ff009dff';
-      if (vehicle.includes('white terrain') || vehicle.includes('cn466')) return '#c83771ff';
-      if (vehicle.includes('black terrain') || vehicle.includes('cn467')) return '#ff7299ff';
-      if (vehicle.includes('green mtu trailblazer') || vehicle.includes('trailblazer')) return '#27ae60';
-      if (vehicle.includes('cs266')) return '#303030ff';
-      if (vehicle.includes('ct008')) return '#5e5e5eff';
-      if (vehicle.includes('c443c')) return '#919191ff';
-      if (vehicle.includes('c444c')) return '#c6c6c6ff';
-      if (vehicle.includes('blue traverse') || vehicle.includes('ct073')) return '#0055d4ff';
-      if (vehicle.includes('black buick')) return '#8e44ad';
-      if (vehicle.includes('ford transit')) return '#fd9644';
-      if (vehicle.includes('grey traverse')) return '#6b7280';
-
-      return '#64748b';
+      return getVehicleColor(option.value);
     }
 
     function initVehicleButtons() {
@@ -808,12 +777,13 @@
       }
       dateBookingsListEl.innerHTML = events.map(ev => {
         const displayName = getBookingSidebarName(ev.extendedProps.creator);
+        const safeId = escapeHtml(ev.id);
         return `
-          <div class="booking-entry" data-id="${ev.id}">
-            <strong title="${ev.extendedProps.creator}">${displayName}</strong>
+          <div class="booking-entry" data-id="${safeId}">
+            <strong title="${escapeHtml(ev.extendedProps.creator)}">${escapeHtml(displayName)}</strong>
             Start: ${formatTimeDisplay(ev.start)}<br>
             End: ${formatTimeDisplay(ev.end)}<br>
-            <button class="delete-booking" data-id="${ev.id}">Remove</button>
+            <button class="delete-booking" data-id="${safeId}">Remove</button>
           </div>
         `;
       }).join('');

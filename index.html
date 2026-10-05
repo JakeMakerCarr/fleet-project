@@ -87,34 +87,17 @@
 
 <script src="livefeathers.js"></script>
 <script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+  import { auth, db } from './firebase.js';
   import {
-    getAuth,
     signInWithEmailAndPassword,
     sendPasswordResetEmail
   } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
   import {
-    getDatabase,
     ref,
     get,
     set,
     child
   } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
-    authDomain: "yfned-fleet-nfc.firebaseapp.com",
-    databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
-    projectId: "yfned-fleet-nfc",
-    storageBucket: "yfned-fleet-nfc.appspot.com",
-    messagingSenderId: "482363667898",
-    appId: "1:482363667898:web:4b0364e891a221e9631983",
-    measurementId: "G-LK66DQVKW4"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getDatabase(app);
   window.initLiveFeatherBackground();
 
   const loginBtn = document.getElementById('login-btn');

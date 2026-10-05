@@ -18,32 +18,49 @@
       font-weight: bold;
       color: #333;
     }
+    #actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 0.85rem 1.2rem;
+      background: #17365d;
+      color: white;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.secondary { background: #6b7280; }
   </style>
 </head>
 <body>
   <h1>YFNED Key Handoff</h1>
   <div id="status">Checking login...</div>
+  <div id="actions" hidden>
+    <button id="primary-action" type="button"></button>
+    <button id="return-unused-key" class="secondary" type="button" hidden>Return Unused Key</button>
+  </div>
 
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
-    import { getDatabase, ref, get, update, push, set } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
-    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
-      authDomain: "yfned-fleet-nfc.firebaseapp.com",
-      databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
-      projectId: "yfned-fleet-nfc",
-      storageBucket: "yfned-fleet-nfc.appspot.com",
-      messagingSenderId: "482363667898",
-      appId: "1:482363667898:web:4b0364e891a221e9631983"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
+    import { auth, db } from './firebase.js';
+    import {
+      WORKFLOW_STAGE,
+      claimKey,
+      getVehicleState,
+      returnKey
+    } from './fleet-workflow.js';
+    import { ref, push, set } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
+    import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 
     const statusDiv = document.getElementById('status');
+    const actions = document.getElementById('actions');
+    const primaryAction = document.getElementById('primary-action');
+    const returnUnusedKey = document.getElementById('return-unused-key');
     const params = new URLSearchParams(window.location.search);
     const vehicle = decodeURIComponent(params.get('vehicle') || '');
 
@@ -67,49 +84,90 @@
         window.location.href = `index.html?redirect=keyhand.html&vehicle=${encodeURIComponent(vehicle)}`;
         return;
       }
-      await flipKeyStatus(user.email);
+      await handleKeyHandoff(user.email);
     });
 
-    async function flipKeyStatus(userEmail) {
-      try {
-        const vehicleRef = ref(db, 'vehicles/' + vehicle);
-        const snap = await get(vehicleRef);
+    function showAction(label, handler) {
+      actions.hidden = false;
+      primaryAction.hidden = false;
+      primaryAction.textContent = label;
+      primaryAction.onclick = handler;
+    }
 
-        if (!snap.exists()) {
-          statusDiv.textContent = 'Vehicle not found in database.';
+    function openVehicleAccess() {
+      window.location.href = `nfc.html?vehicle=${encodeURIComponent(vehicle)}`;
+    }
+
+    async function returnUnused(userEmail) {
+      primaryAction.disabled = true;
+      returnUnusedKey.disabled = true;
+      try {
+        const result = await returnKey(db, vehicle, userEmail, { allowUnused: true });
+        await logVehicleAction(vehicle, userEmail, 'keyReturnedUnused', {
+          keyStatus: result.state.keyStatus,
+          keyHeldBy: result.state.keyHeldBy || null,
+          workflowStage: result.state.workflowStage
+        });
+        statusDiv.textContent = '✅ Key returned to the front desk.';
+        actions.hidden = true;
+      } catch (error) {
+        statusDiv.textContent = '❌ ' + (error.message || error);
+        primaryAction.disabled = false;
+        returnUnusedKey.disabled = false;
+      }
+    }
+
+    async function handleKeyHandoff(userEmail) {
+      try {
+        const data = await getVehicleState(db, vehicle);
+        const keyStatus = data.keyStatus || 'atFrontDesk';
+
+        if (keyStatus === 'atFrontDesk') {
+          const result = await claimKey(db, vehicle, userEmail, 'pinkNfc');
+          await logVehicleAction(vehicle, userEmail, 'keyPickedUp', {
+            keyStatus: result.state.keyStatus,
+            keyHeldBy: result.state.keyHeldBy || null,
+            workflowStage: result.state.workflowStage,
+            source: 'pinkNfc'
+          });
+          statusDiv.textContent = `✅ The key for "${vehicle}" is assigned to you. Take the key to the vehicle and scan the green card.`;
+          showAction('Open Checklist (Manual Fallback)', openVehicleAccess);
           return;
         }
 
-        const data = snap.val();
-        const currentStatus = data.keyStatus || 'atFrontDesk';
-        const newStatus = currentStatus === 'atFrontDesk' ? 'withStaff' : 'atFrontDesk';
-
-        const updates = {
-          keyStatus: newStatus,
-          lastKeyChange: Date.now()
-        };
-
-        if (newStatus === 'withStaff') {
-          updates.alarm = true;
-          updates.keyHeldBy = userEmail;
-        } else {
-          updates.keyHeldBy = null;
-          updates.status = 'available';
-          updates.CurrentlySignedOutBy = null;
+        if (String(data.keyHeldBy || '').toLowerCase() !== userEmail.toLowerCase()) {
+          statusDiv.textContent = data.keyHeldBy
+            ? `❌ This key is already assigned to ${data.keyHeldBy}.`
+            : '❌ This key is already marked as out with another staff member.';
+          return;
         }
 
-        await update(vehicleRef, updates);
+        if ((data.status || 'available') === 'signedOut') {
+          statusDiv.textContent = 'The vehicle must be returned before the key can be handed back to the front desk.';
+          showAction('Open Vehicle Return', openVehicleAccess);
+          return;
+        }
 
-        await logVehicleAction(vehicle, userEmail, `keyStatus changed to ${newStatus}`, {
-          keyStatus: newStatus,
-          keyHeldBy: updates.keyHeldBy || null,
-          status: updates.status || data.status || 'available',
-          CurrentlySignedOutBy: updates.CurrentlySignedOutBy ?? data.CurrentlySignedOutBy ?? null
-        });
+        if (data.workflowStage === WORKFLOW_STAGE.VEHICLE_RETURNED) {
+          const result = await returnKey(db, vehicle, userEmail);
+          await logVehicleAction(vehicle, userEmail, 'keyReturned', {
+            keyStatus: result.state.keyStatus,
+            keyHeldBy: result.state.keyHeldBy || null,
+            workflowStage: result.state.workflowStage,
+            source: 'pinkNfc'
+          });
+          statusDiv.textContent = '✅ Vehicle trip complete. The key is now recorded at the front desk.';
+          return;
+        }
 
-        statusDiv.textContent = `✅ Key status for "${vehicle}" changed to: ${newStatus}`;
+        statusDiv.textContent = data.workflowStage === WORKFLOW_STAGE.KEY_PICKED_UP
+          ? 'The key is already assigned to you. Scan the green card at the vehicle to open the checklist.'
+          : 'The key is assigned to you. Choose the correct next step below.';
+        showAction('Open Vehicle Checklist', openVehicleAccess);
+        returnUnusedKey.hidden = false;
+        returnUnusedKey.onclick = () => returnUnused(userEmail);
       } catch (error) {
-        statusDiv.textContent = '❌ Error: ' + (error.message || error);
+        statusDiv.textContent = '❌ ' + (error.message || error);
       }
     }
   </script>

@@ -473,23 +473,15 @@
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <script src="livefeathers.js"></script>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getDatabase, ref, get, remove, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-
-    // Firebase config
-    const app = initializeApp({
-      apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
-      authDomain: "yfned-fleet-nfc.firebaseapp.com",
-      databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
-      projectId: "yfned-fleet-nfc",
-      storageBucket: "yfned-fleet-nfc.appspot.com",
-      messagingSenderId: "482363667898",
-      appId: "1:482363667898:web:4b0364e891a221e9631983"
-    });
-
-    const auth = getAuth(app);
-    const db   = getDatabase(app);
+    import { auth, db } from './firebase.js';
+    import {
+      VEHICLE_COLORS as vehicleColors,
+      getCanonicalVehicleName,
+      getVehicleExportLabel
+    } from './fleet-data.js';
+    import { escapeHtml } from './html-utils.js';
+    import { ref, get, remove, update } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
+    import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 
     const calendarEl     = document.getElementById("calendar");
     const dateInfoPanel  = document.getElementById("dateInfo");
@@ -511,65 +503,11 @@
     const exportChecklistBtn = document.getElementById("export-checklist-btn");
     window.initLiveFeatherBackground();
 
-    const vehicleColors = {
-      "01-20 2021 Red Traverse CM335": "#d4282f",
-      "02-20 2021 Black Traverse CM366": "#2c3e50",
-      "03-21 2021 Grey Traverse CN360 Nutrition Team Only": "#690000ff",
-      "04-21 2021 Shadow Silverado 1500 CM695": "#f1c40f",
-      "06-21 2020 Grey Grand Caravan CN468 Early Years Only": "#ff009dff",
-      "07-21 2021 White Terrain CN466 Early Years Only": "#c83771ff",
-      "08-21 2021 Black Terrain CN467 Early Years Only": "#ff7299ff",
-      "10-24 2025 Green MTU Trailblazer C838B": "#27ae60",
-      "11-24 2024 Grey Traverse CS266": "#303030ff",
-      "13-24 2024 Grey Traverse CT008": "#5e5e5eff",
-      "14-24 2024 Grey Traverse C443C": "#919191ff",
-      "15-24 2024 Grey Traverse C444C": "#c6c6c6ff",
-      "16-24 2024 Blue Traverse CT073": "#0055d4ff",
-      "17-25 2025 Black Buick Envision CV294": "#8e44ad",
-      "18-25 2025 Ford Transit Van - C115C": "#fd9644"
-    };
-
-    const VEHICLE_EXPORT_LABELS = {
-      "01-20 2021 Red Traverse CM335": "Red Traverse CM335",
-      "02-20 2021 Black Traverse CM366": "Black Traverse CM366",
-      "03-21 2021 Grey Traverse CN360": "Grey Traverse CN360",
-      "03-21 2021 Grey Traverse CN360 Nutrition Team Only": "Grey Traverse CN360",
-      "04-21 2021 Shadow Silverado 1500 CM695": "Shadow Silverado CM695",
-      "06-21 2020 Grey Grand Caravan CN468": "Grey Grand Caravan CN468",
-      "06-21 2020 Grey Grand Caravan CN468 Early Years Only": "Grey Grand Caravan CN468",
-      "07-21 2021 White Terrain CN466": "White Terrain CN466",
-      "07-21 2021 White Terrain CN466 Early Years Only": "White Terrain CN466",
-      "08-21 2021 Black Terrain CN467": "Black Terrain CN467",
-      "08-21 2021 Black Terrain CN467 Early Years Only": "Black Terrain CN467",
-      "10-24 2025 Green MTU Trailblazer C838B": "Green Trailblazer C838B",
-      "10-24 2025 Green Trailblazer C838B": "Green Trailblazer C838B",
-      "11-24 2024 Grey Traverse CS266": "Grey Traverse CS266",
-      "13-24 2024 Grey Traverse CT008": "Grey Traverse CT008",
-      "14-24 2024 Grey Traverse C443C": "Grey Traverse C443C",
-      "15-24 2024 Grey Traverse C444C": "Grey Traverse C444C",
-      "16-24 2024 Blue Traverse CT073": "Blue Traverse CT073",
-      "17-25 2025 Black Buick Envision CV294": "Black Buick Envision CV294",
-      "18-25 2025 Ford Transit Van C115C": "Ford Transit Van C115C",
-      "18-25 2025 Ford Transit Van - C115C": "Ford Transit Van C115C"
-    };
-    const VEHICLE_ALIASES = {
-      "03-21 2021 Grey Traverse CN360": "03-21 2021 Grey Traverse CN360 Nutrition Team Only",
-      "06-21 2020 Grey Grand Caravan CN468": "06-21 2020 Grey Grand Caravan CN468 Early Years Only",
-      "07-21 2021 White Terrain CN466": "07-21 2021 White Terrain CN466 Early Years Only",
-      "08-21 2021 Black Terrain CN467": "08-21 2021 Black Terrain CN467 Early Years Only",
-      "10-24 2025 Green Trailblazer C838B": "10-24 2025 Green MTU Trailblazer C838B",
-      "18-25 2025 Ford Transit Van C115C": "18-25 2025 Ford Transit Van - C115C"
-    };
-
     let allBookings = [];
     let calendar = null; // keep a reference so we can update size later
     let activeMaintenanceVehicle = null;
 
     const YUKON_TIMEZONE = 'America/Whitehorse';
-
-    function getCanonicalVehicleName(vehicle) {
-      return VEHICLE_ALIASES[vehicle] || vehicle;
-    }
 
     function normalizeVehicleRecords(vehicles) {
       const normalized = {};
@@ -717,10 +655,6 @@
         });
       });
       return events;
-    }
-
-    function getVehicleExportLabel(vehicle) {
-      return VEHICLE_EXPORT_LABELS[vehicle] || vehicle;
     }
 
     function buildVehicleColorTag(event) {
@@ -1153,24 +1087,30 @@
 
     function showBookingsForDate(dateStr, events) {
       const matching = events.filter(ev => String(ev.start).startsWith(dateStr));
-      let html = `<h3>Selected Date: ${dateStr}</h3>`;
+      let html = `<h3>Selected Date: ${escapeHtml(dateStr)}</h3>`;
       if (!matching.length) {
         html += `<p>No bookings.</p>`;
       } else {
         matching.forEach(ev => {
           const color = vehicleColors[ev.extendedProps.vehicle] || '#333';
           const vehicleLabel = ev.extendedProps.vehicleLabel || getVehicleExportLabel(ev.extendedProps.vehicle);
+          const encodedPath = encodeURIComponent(ev.extendedProps.firebasePath);
           html += `
             <div class="booking-box" style="background:${color}">
-              <strong>${vehicleLabel}</strong><br>
-              ${ev.extendedProps.user}<br>
+              <strong>${escapeHtml(vehicleLabel)}</strong><br>
+              ${escapeHtml(ev.extendedProps.user)}<br>
               ${new Date(ev.start).toLocaleTimeString()} – ${new Date(ev.end).toLocaleTimeString()}<br>
-              <button class="remove-btn" onclick="removeBooking('${ev.extendedProps.firebasePath}')">Remove</button>
+              <button class="remove-btn" data-path="${encodedPath}">Remove</button>
               <hr>
             </div>`;
         });
       }
       dateInfoPanel.innerHTML = html;
+      dateInfoPanel.querySelectorAll('.remove-btn').forEach(button => {
+        button.addEventListener('click', () => {
+          window.removeBooking(decodeURIComponent(button.dataset.path));
+        });
+      });
     }
 
     window.removeBooking = async function(path) {

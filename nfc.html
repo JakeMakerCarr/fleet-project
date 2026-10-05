@@ -277,7 +277,7 @@
     <button id="actionBtn"></button>
     <div id="message"></div>
     <p id="close-browser-note" class="close-browser-note">
-      You can safely close this browser now. You still have to return the front desk keys.
+      Take the key back to the front desk. Scan the pink card there, or keep this page open and use the manual return button.
     </p>
   </div>
 </div>
@@ -291,23 +291,16 @@
 </div>
 
 <script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
-  import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
-  import { getDatabase, ref, get, update, push, set } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAjnCWLnUf8msIUjL0TBdZ1eCAiXMLOwvU",
-    authDomain: "yfned-fleet-nfc.firebaseapp.com",
-    databaseURL: "https://yfned-fleet-nfc-default-rtdb.firebaseio.com",
-    projectId: "yfned-fleet-nfc",
-    storageBucket: "yfned-fleet-nfc.appspot.com",
-    messagingSenderId: "482363667898",
-    appId: "1:482363667898:web:4b0364e891a221e9631983",
-    measurementId: "G-LK66DQVKW4"
-  };
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getDatabase(app);
+  import { auth, db } from './firebase.js';
+  import {
+    WORKFLOW_STAGE,
+    returnKey as commitKeyReturn,
+    returnVehicle as commitVehicleReturn,
+    signOutVehicle as commitVehicleSignOut
+  } from './fleet-workflow.js';
+  import { FLEET_ALERT_TYPE } from './fleet-alerts.js';
+  import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+  import { ref, get, push, set, update } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
 
   const urlParams = new URLSearchParams(window.location.search);
   const vehicleParam = urlParams.get('vehicle');
@@ -633,10 +626,24 @@
 
   async function logMaintenanceComment(vehicleName, comment) {
     const entryRef = push(ref(db, `maintenanceLogs/${vehicleName}`));
-    await set(entryRef, {
+    const alertRef = push(ref(db, 'fleetAlerts'));
+    const timestamp = Date.now();
+    const entry = {
       userEmail: currentUser?.email || null,
       comment,
-      timestamp: Date.now()
+      timestamp
+    };
+
+    await update(ref(db), {
+      [`maintenanceLogs/${vehicleName}/${entryRef.key}`]: entry,
+      [`fleetAlerts/${alertRef.key}`]: {
+        type: FLEET_ALERT_TYPE.MAINTENANCE,
+        logId: entryRef.key,
+        vehicle: vehicleName,
+        userEmail: entry.userEmail,
+        timestamp,
+        summary: comment
+      }
     });
   }
 
@@ -646,10 +653,24 @@
     }
 
     const entryRef = push(ref(db, `checklistLogs/${vehicleName}`));
-    await set(entryRef, {
+    const alertRef = push(ref(db, 'fleetAlerts'));
+    const timestamp = Date.now();
+    const entry = {
       userEmail: currentUser?.email || null,
       repairItems,
-      timestamp: Date.now()
+      timestamp
+    };
+
+    await update(ref(db), {
+      [`checklistLogs/${vehicleName}/${entryRef.key}`]: entry,
+      [`fleetAlerts/${alertRef.key}`]: {
+        type: FLEET_ALERT_TYPE.CHECKLIST,
+        logId: entryRef.key,
+        vehicle: vehicleName,
+        userEmail: entry.userEmail,
+        timestamp,
+        summary: repairItems.join(', ')
+      }
     });
   }
 
@@ -684,9 +705,40 @@
 
     const data = snap.val();
     const signedOutBy = data.CurrentlySignedOutBy || null;
+    const loggedInUser = String(currentUser.email || '').toLowerCase();
+    const keyHeldBy = String(data.keyHeldBy || '').toLowerCase();
+    const userHoldsKey = data.keyStatus === 'withStaff' && keyHeldBy === loggedInUser;
     messageEl.textContent = '';
+    closeBrowserNote.classList.remove('visible');
 
     if (data.status === 'available') {
+      if (data.maintenanceStatus === 'outForMaintenance') {
+        checklistContainer.style.display = 'none';
+        returnNotesContainer.style.display = 'none';
+        actionBtn.style.display = 'none';
+        messageEl.textContent = 'This vehicle is currently out for maintenance.';
+        return;
+      }
+      if (!userHoldsKey) {
+        checklistContainer.style.display = 'none';
+        returnNotesContainer.style.display = 'none';
+        actionBtn.style.display = 'none';
+        messageEl.textContent = data.keyStatus === 'withStaff'
+          ? 'This key is assigned to another staff member.'
+          : 'Pick up the key at the front desk using the pink card or the manual booking-page button before opening the checklist.';
+        return;
+      }
+      if (data.workflowStage === WORKFLOW_STAGE.VEHICLE_RETURNED) {
+        checklistContainer.style.display = 'none';
+        returnNotesContainer.style.display = 'none';
+        actionBtn.textContent = 'Return Key (Manual Fallback)';
+        actionBtn.dataset.mode = 'return-key';
+        actionBtn.disabled = false;
+        actionBtn.style.display = '';
+        actionBtn.onclick = () => completeManualKeyReturn(vehicleName);
+        messageEl.textContent = 'The vehicle has been returned. Hand the key to the front desk, then scan the pink card or use the manual button below.';
+        return;
+      }
       checklistContainer.style.display = 'block';
       returnNotesContainer.style.display = 'none';
       returnCommentsInput.value = '';
@@ -696,7 +748,7 @@
       actionBtn.disabled = true;
       actionBtn.style.display = '';
       actionBtn.onclick = () => signOutVehicle(vehicleName);
-    } else if (data.status === 'signedOut' && signedOutBy === currentUser.email) {
+    } else if (data.status === 'signedOut' && signedOutBy === currentUser.email && userHoldsKey) {
       checklistContainer.style.display = 'none';
       returnNotesContainer.style.display = 'block';
       actionBtn.textContent = 'Return Vehicle';
@@ -711,132 +763,97 @@
       actionBtn.dataset.mode = 'hidden';
       actionBtn.disabled = true;
       actionBtn.style.display = 'none';
-      messageEl.textContent = signedOutBy
-        ? `This vehicle is currently signed out by ${signedOutBy}.`
-        : 'This vehicle is currently marked as signed out, but no user is recorded. Please contact the front desk.';
+      messageEl.textContent = signedOutBy === currentUser.email && !userHoldsKey
+        ? 'Your vehicle is signed out, but the key is not assigned to you. Please contact the front desk.'
+        : signedOutBy
+          ? `This vehicle is currently signed out by ${signedOutBy}.`
+          : 'This vehicle is currently marked as signed out, but no user is recorded. Please contact the front desk.';
     }
   }
 
   async function signOutVehicle(vehicleName) {
-    const vehicleRef = ref(db, 'vehicles/' + vehicleName);
-    const snap = await get(vehicleRef);
+    actionBtn.disabled = true;
+    try {
+      const result = await commitVehicleSignOut(db, vehicleName, currentUser.email);
+      const checklistRepairItems = getChecklistRepairNotes();
+      await logChecklistRepairItems(vehicleName, checklistRepairItems);
 
-    if (!snap.exists()) {
-      messageEl.textContent = 'Vehicle not found in database.';
-      actionBtn.style.display = 'none';
-      return;
-    }
-
-    const vehicleData = snap.val();
-
-    if (vehicleData.keyHeldBy !== currentUser.email && vehicleData.keyStatus === 'withStaff') {
-      messageEl.textContent = 'Cannot sign out vehicle unless the front desk handed the keys to you.';
-      actionBtn.style.display = 'none';
-      await logVehicleAction(vehicleName, 'vehicleSignOutDenied', {
-        reason: 'keyHeldByMismatch',
-        keyHeldBy: vehicleData.keyHeldBy || null
+      await logVehicleAction(vehicleName, 'signedOut', {
+        keyHeldBy: result.state.keyHeldBy || null,
+        workflowStage: result.state.workflowStage,
+        checklistCompleted: true,
+        checklistItemCount: checklistItems.length,
+        checklistResponses: getChecklistLogPayload()
       });
-      return;
-    }
 
-    if (vehicleData.keyStatus !== 'withStaff') {
-      messageEl.textContent = 'Cannot sign out vehicle until keys are handed over by front desk.';
+      messageEl.textContent = 'Status: Signed Out by Staff.';
+      showSignoutSuccessDialog(vehicleName);
       actionBtn.style.display = 'none';
-      return;
+    } catch (error) {
+      messageEl.textContent = error.message || 'The vehicle could not be signed out. Please try again.';
+      actionBtn.disabled = false;
+      await logVehicleAction(vehicleName, 'vehicleSignOutDenied', {
+        reason: error.code || 'unknown'
+      });
     }
-
-    const now = new Date();
-    const localNowTS = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      now.getHours(),
-      now.getMinutes(),
-      now.getSeconds()
-    ).getTime();
-
-    const bookingSnap = await get(ref(db, 'bookings/' + vehicleName));
-    if (bookingSnap.exists()) {
-      const allBookings = bookingSnap.val();
-      for (const bId in allBookings) {
-        const b = allBookings[bId];
-        const startTS = new Date(b.startTimeISO).getTime();
-        const endTS = new Date(b.endTimeISO).getTime();
-
-        if (localNowTS >= startTS && localNowTS < endTS) {
-          if (b.userName !== currentUser.email) {
-            messageEl.textContent = `Vehicle is currently booked by ${b.userName}. You can't sign it out.`;
-            actionBtn.style.display = 'none';
-            return;
-          }
-          break;
-        }
-      }
-    }
-
-    await update(vehicleRef, {
-      status: 'signedOut',
-      CurrentlySignedOutBy: currentUser.email,
-      alarm: false
-    });
-
-    const checklistRepairItems = getChecklistRepairNotes();
-    await logChecklistRepairItems(vehicleName, checklistRepairItems);
-
-    await logVehicleAction(vehicleName, 'signedOut', {
-      keyHeldBy: vehicleData.keyHeldBy || null,
-      checklistCompleted: true,
-      checklistItemCount: checklistItems.length,
-      checklistResponses: getChecklistLogPayload()
-    });
-
-    messageEl.textContent = 'Status: Signed Out by Staff.';
-    showSignoutSuccessDialog(vehicleName);
-    actionBtn.style.display = 'none';
   }
 
   async function returnVehicle(vehicleName) {
-    const vehicleRef = ref(db, 'vehicles/' + vehicleName);
-    const snap = await get(vehicleRef);
-    if (!snap.exists()) {
-      messageEl.textContent = 'Vehicle not found in database.';
-      actionBtn.style.display = 'none';
-      return;
-    }
-
-    const vehicleData = snap.val();
-    if (vehicleData.CurrentlySignedOutBy !== currentUser.email) {
-      messageEl.textContent = 'Only the staff member who signed out the vehicle can sign it back in.';
-      actionBtn.style.display = 'none';
-      await logVehicleAction(vehicleName, 'vehicleReturnDenied', {
-        reason: 'signedOutUserMismatch',
-        currentlySignedOutBy: vehicleData.CurrentlySignedOutBy || null
-      });
-      return;
-    }
-
     const maintenanceComment = returnCommentsInput.value.trim();
+    actionBtn.disabled = true;
+    try {
+      const result = await commitVehicleReturn(
+        db,
+        vehicleName,
+        currentUser.email,
+        Boolean(maintenanceComment)
+      );
 
-    await update(vehicleRef, {
-      status: 'available',
-      CurrentlySignedOutBy: null
-    });
-
-    if (maintenanceComment) {
-      await update(vehicleRef, {
-        maintenanceAlert: true,
-        alarm: true
+      if (maintenanceComment) {
+        await logMaintenanceComment(vehicleName, maintenanceComment);
+      }
+      await logVehicleAction(vehicleName, 'signedIn', {
+        workflowStage: result.state.workflowStage,
+        keyHeldBy: result.state.keyHeldBy || null
       });
-      await logMaintenanceComment(vehicleName, maintenanceComment);
+
+      returnCommentsInput.value = '';
+      returnNotesContainer.style.display = 'none';
+      messageEl.textContent = `Returned ${vehicleName}. Take the key to the front desk and scan the pink card.`;
+      actionBtn.textContent = 'Return Key (Manual Fallback)';
+      actionBtn.dataset.mode = 'return-key';
+      actionBtn.disabled = false;
+      actionBtn.style.display = '';
+      actionBtn.onclick = () => completeManualKeyReturn(vehicleName);
+      closeBrowserNote.classList.add('visible');
+    } catch (error) {
+      messageEl.textContent = error.message || 'The vehicle could not be returned. Please try again.';
+      actionBtn.disabled = false;
+      await logVehicleAction(vehicleName, 'vehicleReturnDenied', {
+        reason: error.code || 'unknown'
+      });
     }
+  }
 
-    await logVehicleAction(vehicleName, 'signedIn');
+  async function completeManualKeyReturn(vehicleName) {
+    if (!confirm('Have you handed the key back to the front desk?')) return;
 
-    returnCommentsInput.value = '';
-    returnNotesContainer.style.display = 'none';
-    messageEl.textContent = `Returned ${vehicleName}.`;
-    actionBtn.style.display = 'none';
-    closeBrowserNote.classList.add('visible');
+    actionBtn.disabled = true;
+    try {
+      const result = await commitKeyReturn(db, vehicleName, currentUser.email);
+      await logVehicleAction(vehicleName, 'keyReturned', {
+        keyStatus: result.state.keyStatus,
+        keyHeldBy: result.state.keyHeldBy || null,
+        workflowStage: result.state.workflowStage,
+        source: 'manualVehicleAccess'
+      });
+      messageEl.textContent = 'Vehicle trip complete. The key is recorded at the front desk.';
+      actionBtn.style.display = 'none';
+      closeBrowserNote.classList.remove('visible');
+    } catch (error) {
+      messageEl.textContent = error.message || 'The key could not be returned. Please try again.';
+      actionBtn.disabled = false;
+    }
   }
 </script>
 

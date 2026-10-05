@@ -1,0 +1,91 @@
+YFNED FLEET NFC CARD VALUES
+===========================
+
+Program each card as a URL/URI record, not as plain text.
+Test each card before permanently locking it.
+
+PINK CARD = Front-desk key pickup and return
+GREEN CARD = Vehicle checklist and vehicle return
+
+
+01-20 2021 Red Traverse CM335
+PINK: https://yfnedfleet.com/pink.html?v=CM335
+GREEN: https://yfnedfleet.com/green.html?v=CM335
+
+
+02-20 2021 Black Traverse CM366
+PINK: https://yfnedfleet.com/pink.html?v=CM366
+GREEN: https://yfnedfleet.com/green.html?v=CM366
+
+
+03-21 2021 Grey Traverse CN360
+PINK: https://yfnedfleet.com/pink.html?v=CN360
+GREEN: https://yfnedfleet.com/green.html?v=CN360
+
+
+04-21 2021 Shadow Silverado 1500 CM695
+PINK: https://yfnedfleet.com/pink.html?v=CM695
+GREEN: https://yfnedfleet.com/green.html?v=CM695
+
+
+06-21 2020 Grey Grand Caravan CN468
+PINK: https://yfnedfleet.com/pink.html?v=CN468
+GREEN: https://yfnedfleet.com/green.html?v=CN468
+
+
+07-21 2021 White Terrain CN466
+PINK: https://yfnedfleet.com/pink.html?v=CN466
+GREEN: https://yfnedfleet.com/green.html?v=CN466
+
+
+08-21 2021 Black Terrain CN467
+PINK: https://yfnedfleet.com/pink.html?v=CN467
+GREEN: https://yfnedfleet.com/green.html?v=CN467
+
+
+10-24 2025 Green Trailblazer C838B
+PINK: https://yfnedfleet.com/pink.html?v=C838B
+GREEN: https://yfnedfleet.com/green.html?v=C838B
+
+
+11-24 2024 Grey Traverse CS266
+PINK: https://yfnedfleet.com/pink.html?v=CS266
+GREEN: https://yfnedfleet.com/green.html?v=CS266
+
+
+13-24 2024 Grey Traverse CT008
+PINK: https://yfnedfleet.com/pink.html?v=CT008
+GREEN: https://yfnedfleet.com/green.html?v=CT008
+
+
+14-24 2024 Grey Traverse C443C
+PINK: https://yfnedfleet.com/pink.html?v=C443C
+GREEN: https://yfnedfleet.com/green.html?v=C443C
+
+
+15-24 2024 Grey Traverse C444C
+PINK: https://yfnedfleet.com/pink.html?v=C444C
+GREEN: https://yfnedfleet.com/green.html?v=C444C
+
+
+16-24 2024 Blue Traverse CT073
+PINK: https://yfnedfleet.com/pink.html?v=CT073
+GREEN: https://yfnedfleet.com/green.html?v=CT073
+
+
+17-25 2025 Black Buick Envision CV294
+PINK: https://yfnedfleet.com/pink.html?v=CV294
+GREEN: https://yfnedfleet.com/green.html?v=CV294
+
+
+18-25 2025 Ford Transit Van C115C
+PINK: https://yfnedfleet.com/pink.html?v=C115C
+GREEN: https://yfnedfleet.com/green.html?v=C115C
+
+
+NOT INCLUDED
+------------
+09-24 2024 White Sierra 3500 C182B is present in Firebase but is not currently
+included in the application's bookable fleet metadata.
+
+The Test NFC Card entry is intentionally omitted.

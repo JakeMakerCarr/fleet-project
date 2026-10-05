@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YFNED Pink NFC Card</title>
+  <style>
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 1.5rem;
+      box-sizing: border-box;
+      background: #e7bbd2;
+      color: #172033;
+      font-family: sans-serif;
+      text-align: center;
+    }
+    main {
+      width: min(100%, 520px);
+      padding: 2rem;
+      border-radius: 12px;
+      background: white;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>YFNED Key Handoff</h1>
+    <p id="status">Opening the pink-card key handoff…</p>
+  </main>
+
+  <script type="module">
+    import { getVehicleNameFromCode } from './fleet-data.js';
+
+    const code = new URLSearchParams(window.location.search).get('v');
+    const vehicle = getVehicleNameFromCode(code);
+    const status = document.getElementById('status');
+
+    if (!code) {
+      status.textContent = 'This pink NFC link is missing its vehicle code.';
+    } else if (!vehicle) {
+      status.textContent = `Unknown vehicle code: ${code}`;
+    } else {
+      window.location.replace(`keyhand.html?vehicle=${encodeURIComponent(vehicle)}`);
+    }
+  </script>
+</body>
+</html>
