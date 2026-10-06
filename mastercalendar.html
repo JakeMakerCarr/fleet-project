@@ -477,6 +477,7 @@
     import {
       VEHICLE_COLORS as vehicleColors,
       getCanonicalVehicleName,
+      getDatabaseVehicleName,
       getVehicleExportLabel
     } from './fleet-data.js';
     import { escapeHtml } from './html-utils.js';
@@ -513,10 +514,11 @@
       const normalized = {};
       Object.entries(vehicles || {}).forEach(([vehicleName, vehicleData]) => {
         const canonicalName = getCanonicalVehicleName(vehicleName);
-        normalized[canonicalName] = {
-          ...(normalized[canonicalName] || {}),
-          ...(vehicleData || {})
-        };
+        const databaseName = getDatabaseVehicleName(canonicalName);
+        const previous = normalized[canonicalName] || {};
+        normalized[canonicalName] = vehicleName === databaseName
+          ? { ...previous, ...(vehicleData || {}) }
+          : { ...(vehicleData || {}), ...previous };
       });
       return normalized;
     }
@@ -579,7 +581,7 @@
           : 'Out For Maintenance';
         button.addEventListener('click', async () => {
           const nextStatus = status === 'workingFine' ? 'outForMaintenance' : 'workingFine';
-          await update(ref(db, `vehicles/${vehicleName}`), {
+          await update(ref(db, `vehicles/${getDatabaseVehicleName(vehicleName)}`), {
             maintenanceStatus: nextStatus
           });
           await renderMaintenanceCorner();
@@ -613,7 +615,7 @@
     async function saveMaintenanceDialog() {
       if (!activeMaintenanceVehicle) return;
 
-      await update(ref(db, `vehicles/${activeMaintenanceVehicle}`), {
+      await update(ref(db, `vehicles/${getDatabaseVehicleName(activeMaintenanceVehicle)}`), {
         maintenanceDetails: {
           reason: maintenanceReasonInput.value.trim(),
           dateInShop: maintenanceDateInInput.value || '',

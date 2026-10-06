@@ -54,6 +54,7 @@
       getVehicleState,
       returnKey
     } from './fleet-workflow.js';
+    import { getDatabaseVehicleName } from './fleet-data.js';
     import { ref, push, set } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
     import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 
@@ -62,7 +63,7 @@
     const primaryAction = document.getElementById('primary-action');
     const returnUnusedKey = document.getElementById('return-unused-key');
     const params = new URLSearchParams(window.location.search);
-    const vehicle = decodeURIComponent(params.get('vehicle') || '');
+    const vehicle = getDatabaseVehicleName(decodeURIComponent(params.get('vehicle') || ''));
 
     async function logVehicleAction(vehicleName, userEmail, action, details = {}) {
       const logRef = push(ref(db, `vehicleLogs/${vehicleName}`));

@@ -87,9 +87,12 @@ export async function claimKey(db, vehicle, userEmail, source = 'pinkNfc') {
   const result = await runTransaction(ref(db, `vehicles/${vehicle}`), current => {
     denial = null;
     outcome = 'claimed';
-    if (!current) {
+    // A transaction can run once with a locally cached null before Firebase
+    // has loaded the server value. Returning null lets Firebase compare with
+    // the server and retry with the real vehicle instead of aborting early.
+    if (current === null) {
       denial = { code: 'VEHICLE_NOT_FOUND', message: 'Vehicle not found in database.' };
-      return;
+      return current;
     }
 
     const holder = normalizeEmail(current.keyHeldBy);
@@ -136,7 +139,7 @@ export async function claimKey(db, vehicle, userEmail, source = 'pinkNfc') {
     };
   });
 
-  if (!result.committed) {
+  if (!result.committed || !result.snapshot.exists()) {
     throw transactionError(denial, 'The key could not be assigned because its status changed. Please try again.');
   }
   return { outcome, state: result.snapshot.val() || {} };
@@ -151,9 +154,9 @@ export async function signOutVehicle(db, vehicle, userEmail) {
   const result = await runTransaction(ref(db, `vehicles/${vehicle}`), current => {
     denial = null;
     outcome = 'signedOut';
-    if (!current) {
+    if (current === null) {
       denial = { code: 'VEHICLE_NOT_FOUND', message: 'Vehicle not found in database.' };
-      return;
+      return current;
     }
 
     const user = normalizeEmail(userEmail);
@@ -189,7 +192,7 @@ export async function signOutVehicle(db, vehicle, userEmail) {
     };
   });
 
-  if (!result.committed) {
+  if (!result.committed || !result.snapshot.exists()) {
     throw transactionError(denial, 'The vehicle could not be signed out because its status changed. Please try again.');
   }
   return { outcome, state: result.snapshot.val() || {} };
@@ -202,9 +205,9 @@ export async function returnVehicle(db, vehicle, userEmail, hasMaintenanceCommen
   const result = await runTransaction(ref(db, `vehicles/${vehicle}`), current => {
     denial = null;
     outcome = 'returned';
-    if (!current) {
+    if (current === null) {
       denial = { code: 'VEHICLE_NOT_FOUND', message: 'Vehicle not found in database.' };
-      return;
+      return current;
     }
 
     const user = normalizeEmail(userEmail);
@@ -235,7 +238,7 @@ export async function returnVehicle(db, vehicle, userEmail, hasMaintenanceCommen
     };
   });
 
-  if (!result.committed) {
+  if (!result.committed || !result.snapshot.exists()) {
     throw transactionError(denial, 'The vehicle could not be returned because its status changed. Please try again.');
   }
   return { outcome, state: result.snapshot.val() || {} };
@@ -248,9 +251,9 @@ export async function returnKey(db, vehicle, userEmail, { allowUnused = false } 
   const result = await runTransaction(ref(db, `vehicles/${vehicle}`), current => {
     denial = null;
     outcome = 'returned';
-    if (!current) {
+    if (current === null) {
       denial = { code: 'VEHICLE_NOT_FOUND', message: 'Vehicle not found in database.' };
-      return;
+      return current;
     }
 
     if ((current.keyStatus || 'atFrontDesk') === 'atFrontDesk') {
@@ -281,7 +284,7 @@ export async function returnKey(db, vehicle, userEmail, { allowUnused = false } 
     };
   });
 
-  if (!result.committed) {
+  if (!result.committed || !result.snapshot.exists()) {
     throw transactionError(denial, 'The key could not be returned because its status changed. Please try again.');
   }
   return { outcome, state: result.snapshot.val() || {} };

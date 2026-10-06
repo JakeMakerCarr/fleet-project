@@ -278,6 +278,7 @@
       VEHICLE_COLORS as vehicleColors,
       VEHICLE_GAS_CARD_COLORS as vehicleGasCardColors,
       getCanonicalVehicleName,
+      getDatabaseVehicleName,
       getVehicleExportLabel
     } from './fleet-data.js';
     import { ref, get } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
@@ -350,11 +351,12 @@
       const statuses = {};
       snap.forEach(vehicleSnap => {
         const name = getCanonicalVehicleName(vehicleSnap.key);
-        statuses[name] = {
-          ...(statuses[name] || {}),
-          ...(vehicleSnap.val() || {}),
-          databaseVehicleName: vehicleSnap.key
-        };
+        const databaseName = getDatabaseVehicleName(name);
+        const previous = statuses[name] || {};
+        const vehicleData = vehicleSnap.val() || {};
+        statuses[name] = vehicleSnap.key === databaseName
+          ? { ...previous, ...vehicleData, databaseVehicleName: vehicleSnap.key }
+          : { ...vehicleData, ...previous, databaseVehicleName: previous.databaseVehicleName || vehicleSnap.key };
       });
       return statuses;
     }

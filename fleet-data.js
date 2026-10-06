@@ -25,6 +25,12 @@ export const VEHICLE_ALIASES = Object.freeze({
   '18-25 2025 Ford Transit Van C115C': '18-25 2025 Ford Transit Van - C115C'
 });
 
+const VEHICLE_DATABASE_NAMES = Object.freeze(
+  Object.fromEntries(
+    Object.entries(VEHICLE_ALIASES).map(([databaseName, canonicalName]) => [canonicalName, databaseName])
+  )
+);
+
 export const VEHICLE_EXPORT_LABELS = Object.freeze({
   '01-20 2021 Red Traverse CM335': 'Red Traverse CM335',
   '02-20 2021 Black Traverse CM366': 'Black Traverse CM366',
@@ -115,6 +121,12 @@ export const VEHICLE_CODES = Object.freeze({
 
 export function getCanonicalVehicleName(vehicle) {
   return VEHICLE_ALIASES[vehicle] || vehicle;
+}
+
+// Firebase still contains a mixture of old and display-oriented vehicle names.
+// NFC workflows use the shorter keys as their single authoritative records.
+export function getDatabaseVehicleName(vehicle) {
+  return VEHICLE_DATABASE_NAMES[vehicle] || vehicle;
 }
 
 export function getVehicleNameFromCode(code) {

@@ -340,6 +340,7 @@
     import { WORKFLOW_STAGE } from './fleet-workflow.js';
     import {
       getCanonicalVehicleName,
+      getDatabaseVehicleName,
       getVehicleExportLabel as getDisplayName
     } from './fleet-data.js';
     import {
@@ -545,7 +546,12 @@
 
         Object.entries(vehicles).forEach(([name, data]) => {
           const canonicalName = getCanonicalVehicleName(name);
-          const sourceName = vehicles[canonicalName] ? canonicalName : name;
+          const databaseName = getDatabaseVehicleName(canonicalName);
+          const sourceName = vehicles[databaseName]
+            ? databaseName
+            : vehicles[canonicalName]
+              ? canonicalName
+              : name;
           const relatedVehicleNames = getRelatedVehicleNames(sourceName, vehicles);
           if (renderedVehicles.has(sourceName)) return;
 

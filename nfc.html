@@ -299,6 +299,7 @@
     signOutVehicle as commitVehicleSignOut
   } from './fleet-workflow.js';
   import { FLEET_ALERT_TYPE } from './fleet-alerts.js';
+  import { getDatabaseVehicleName } from './fleet-data.js';
   import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
   import { ref, get, push, set, update } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js';
 
@@ -322,14 +323,6 @@
 
   let currentUser = null;
   let currentVehicle = vehicle;
-  const legacyVehicleNameMap = {
-    '03-21 2021 Grey Traverse CN360 Nutrition Team Only': '03-21 2021 Grey Traverse CN360',
-    '06-21 2020 Grey Grand Caravan CN468 Early Years Only': '06-21 2020 Grey Grand Caravan CN468',
-    '07-21 2021 White Terrain CN466 Early Years Only': '07-21 2021 White Terrain CN466',
-    '08-21 2021 Black Terrain CN467 Early Years Only': '08-21 2021 Black Terrain CN467',
-    '10-24 2025 Green MTU Trailblazer C838B': '10-24 2025 Green Trailblazer C838B',
-    '18-25 2025 Ford Transit Van - C115C': '18-25 2025 Ford Transit Van C115C'
-  };
   const vehiclePickerLabels = {
     '01-20 2021 Red Traverse CM335': 'Red Traverse CM335',
     '02-20 2021 Black Traverse CM366': 'Black Traverse CM366',
@@ -582,10 +575,6 @@
       statusEl.classList.remove('functional', 'needs-repair');
     });
     updateChecklistProgress();
-  }
-
-  function getDatabaseVehicleName(name) {
-    return legacyVehicleNameMap[name] || name;
   }
 
   function getVehicleDisplayLabel(name) {
