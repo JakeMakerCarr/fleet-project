@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { VEHICLE_ALIASES, getDatabaseVehicleName } from './fleet-data.js';
+import {
+  TEST_NFC_VEHICLE,
+  VEHICLE_ALIASES,
+  getDatabaseVehicleName,
+  getVehicleNameFromCode
+} from './fleet-data.js';
 
 const records = new Map();
 
@@ -51,6 +56,7 @@ assert.equal(getDatabaseVehicleName(vehicle), vehicle);
 for (const [databaseName, alternateName] of Object.entries(VEHICLE_ALIASES)) {
   assert.equal(getDatabaseVehicleName(alternateName), databaseName);
 }
+assert.equal(getVehicleNameFromCode('test'), TEST_NFC_VEHICLE);
 
 records.set(vehiclePath, {
   status: 'available',

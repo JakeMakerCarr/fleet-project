@@ -116,8 +116,11 @@ export const VEHICLE_CODES = Object.freeze({
   C444C: '15-24 2024 Grey Traverse C444C',
   CT073: '16-24 2024 Blue Traverse CT073',
   CV294: '17-25 2025 Black Buick Envision CV294',
-  C115C: '18-25 2025 Ford Transit Van C115C'
+  C115C: '18-25 2025 Ford Transit Van C115C',
+  TEST: 'Test NFC Card'
 });
+
+export const TEST_NFC_VEHICLE = 'Test NFC Card';
 
 export function getCanonicalVehicleName(vehicle) {
   return VEHICLE_ALIASES[vehicle] || vehicle;

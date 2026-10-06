@@ -83,9 +83,13 @@ PINK: https://yfnedfleet.com/pink.html?v=C115C
 GREEN: https://yfnedfleet.com/green.html?v=C115C
 
 
+TEST NFC CARD (single-card test flow)
+GREEN: https://yfnedfleet.com/green.html?v=TEST
+
+
 NOT INCLUDED
 ------------
 09-24 2024 White Sierra 3500 C182B is present in Firebase but is not currently
 included in the application's bookable fleet metadata.
 
-The Test NFC Card entry is intentionally omitted.
+The test card automatically performs its test-key pickup before opening the checklist.
