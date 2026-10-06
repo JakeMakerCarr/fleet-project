@@ -8,10 +8,9 @@ export const WORKFLOW_STAGE = Object.freeze({
   KEY_RETURNED: 'keyReturned'
 });
 
-// NFC readers and mobile browsers can retry the same tag URL. Keep a recent
-// pink-card return idempotent so a retry cannot immediately check the key out
-// again for the same user.
-export const PINK_RETURN_GUARD_MS = 60 * 1000;
+// NFC readers and mobile browsers can retry the same tag URL. Keep recent pink
+// pickup/return actions idempotent so a retry cannot immediately reverse them.
+export const PINK_SCAN_GUARD_MS = 60 * 1000;
 
 export class FleetAccessError extends Error {
   constructor(code, message, details = {}) {
@@ -24,6 +23,17 @@ export class FleetAccessError extends Error {
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
+}
+
+export function isRecentPinkPickup(state, userEmail, now = Date.now()) {
+  const keyPickedUpAt = Number(state?.keyPickedUpAt);
+  return state?.keyCheckoutSource === 'pinkNfc'
+    && state?.keyStatus === 'withStaff'
+    && state?.workflowStage === WORKFLOW_STAGE.KEY_PICKED_UP
+    && normalizeEmail(state?.keyHeldBy) === normalizeEmail(userEmail)
+    && Number.isFinite(keyPickedUpAt)
+    && now - keyPickedUpAt >= 0
+    && now - keyPickedUpAt <= PINK_SCAN_GUARD_MS;
 }
 
 function bookingOwner(booking) {
@@ -112,7 +122,7 @@ export async function claimKey(db, vehicle, userEmail, source = 'pinkNfc') {
       && normalizeEmail(current.keyReturnedBy) === user
       && Number.isFinite(keyReturnedAt)
       && operationTime - keyReturnedAt >= 0
-      && operationTime - keyReturnedAt <= PINK_RETURN_GUARD_MS;
+      && operationTime - keyReturnedAt <= PINK_SCAN_GUARD_MS;
 
     if (isRecentPinkReturn) {
       outcome = 'recentlyReturned';

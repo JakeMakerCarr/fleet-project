@@ -78,6 +78,15 @@ records.set(vehiclePath, {
 await workflow.claimKey({}, vehicle, userEmail);
 assert.equal(records.get(vehiclePath).keyStatus, 'withStaff');
 assert.equal(records.get(vehiclePath).keyHeldBy, userEmail);
+assert.equal(workflow.isRecentPinkPickup(records.get(vehiclePath), userEmail), true);
+assert.equal(
+  workflow.isRecentPinkPickup(
+    records.get(vehiclePath),
+    userEmail,
+    records.get(vehiclePath).keyPickedUpAt + workflow.PINK_SCAN_GUARD_MS + 1
+  ),
+  false
+);
 
 await workflow.completeChecklist({}, vehicle, userEmail);
 assert.equal(records.get(vehiclePath).status, 'available');
@@ -103,7 +112,7 @@ assert.equal(records.get(vehiclePath).workflowStage, workflow.WORKFLOW_STAGE.KEY
 
 records.set(vehiclePath, {
   ...records.get(vehiclePath),
-  keyReturnedAt: Date.now() - workflow.PINK_RETURN_GUARD_MS - 1
+  keyReturnedAt: Date.now() - workflow.PINK_SCAN_GUARD_MS - 1
 });
 const laterPinkScan = await workflow.claimKey({}, vehicle, userEmail, 'pinkNfc');
 assert.equal(laterPinkScan.outcome, 'claimed');

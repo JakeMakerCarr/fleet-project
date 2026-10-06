@@ -59,6 +59,7 @@
       WORKFLOW_STAGE,
       claimKey,
       getVehicleState,
+      isRecentPinkPickup,
       returnKey
     } from './fleet-workflow.js';
     import { getDatabaseVehicleName } from './fleet-data.js';
@@ -182,16 +183,29 @@
           return;
         }
 
-        if (data.workflowStage === WORKFLOW_STAGE.VEHICLE_RETURNED) {
-          const result = await returnKey(db, vehicle, userEmail);
+        if (
+          data.workflowStage === WORKFLOW_STAGE.VEHICLE_RETURNED
+          || data.workflowStage === WORKFLOW_STAGE.KEY_PICKED_UP
+        ) {
+          const returningUnusedKey = data.workflowStage === WORKFLOW_STAGE.KEY_PICKED_UP;
+          if (returningUnusedKey && isRecentPinkPickup(data, userEmail)) {
+            statusDiv.textContent = '✅ The key remains assigned to you. A repeated pink-card scan did not return it.';
+            showAction('Open Checklist (Manual Fallback)', openVehicleAccess);
+            return;
+          }
+          const result = await returnKey(db, vehicle, userEmail, {
+            allowUnused: returningUnusedKey
+          });
           touchRecentAuthSession();
-          await logVehicleAction(vehicle, userEmail, 'keyReturned', {
+          await logVehicleAction(vehicle, userEmail, returningUnusedKey ? 'keyReturnedUnused' : 'keyReturned', {
             keyStatus: result.state.keyStatus,
             keyHeldBy: result.state.keyHeldBy || null,
             workflowStage: result.state.workflowStage,
             source: 'pinkNfc'
           });
-          statusDiv.textContent = '✅ Vehicle trip complete. The key is now recorded at the front desk.';
+          statusDiv.textContent = returningUnusedKey
+            ? '✅ The key is now recorded at the front desk.'
+            : '✅ Vehicle trip complete. The key is now recorded at the front desk.';
           return;
         }
 
@@ -201,9 +215,7 @@
           return;
         }
 
-        statusDiv.textContent = data.workflowStage === WORKFLOW_STAGE.KEY_PICKED_UP
-          ? 'The key is already assigned to you. Scan the green card at the vehicle to open the checklist.'
-          : 'The key is assigned to you. Choose the correct next step below.';
+        statusDiv.textContent = 'The key is assigned to you. Choose the correct next step below.';
         showAction('Open Vehicle Checklist', openVehicleAccess);
         returnUnusedKey.hidden = false;
         returnUnusedKey.onclick = () => returnUnused(userEmail);
