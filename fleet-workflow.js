@@ -8,6 +8,11 @@ export const WORKFLOW_STAGE = Object.freeze({
   KEY_RETURNED: 'keyReturned'
 });
 
+// NFC readers and mobile browsers can retry the same tag URL. Keep a recent
+// pink-card return idempotent so a retry cannot immediately check the key out
+// again for the same user.
+export const PINK_RETURN_GUARD_MS = 60 * 1000;
+
 export class FleetAccessError extends Error {
   constructor(code, message, details = {}) {
     super(message);
@@ -100,6 +105,19 @@ export async function claimKey(db, vehicle, userEmail, source = 'pinkNfc') {
     const user = normalizeEmail(userEmail);
     const keyStatus = current.keyStatus || 'atFrontDesk';
     const vehicleStatus = current.status || 'available';
+    const keyReturnedAt = Number(current.keyReturnedAt);
+    const isRecentPinkReturn = source === 'pinkNfc'
+      && keyStatus === 'atFrontDesk'
+      && current.workflowStage === WORKFLOW_STAGE.KEY_RETURNED
+      && normalizeEmail(current.keyReturnedBy) === user
+      && Number.isFinite(keyReturnedAt)
+      && operationTime - keyReturnedAt >= 0
+      && operationTime - keyReturnedAt <= PINK_RETURN_GUARD_MS;
+
+    if (isRecentPinkReturn) {
+      outcome = 'recentlyReturned';
+      return current;
+    }
 
     if (current.maintenanceStatus === 'outForMaintenance') {
       denial = { code: 'MAINTENANCE', message: 'This vehicle is currently out for maintenance.' };
@@ -344,7 +362,8 @@ export async function returnKey(db, vehicle, userEmail, { allowUnused = false } 
       lastKeyChange: operationTime,
       alarm: current.maintenanceAlert === true,
       workflowStage: WORKFLOW_STAGE.KEY_RETURNED,
-      keyReturnedAt: operationTime
+      keyReturnedAt: operationTime,
+      keyReturnedBy: userEmail
     };
   });
 

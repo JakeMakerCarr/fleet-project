@@ -153,6 +153,11 @@
 
         if (keyStatus === 'atFrontDesk') {
           const result = await claimKey(db, vehicle, userEmail, 'pinkNfc');
+          if (result.outcome === 'recentlyReturned') {
+            statusDiv.textContent = '✅ The key remains recorded at the front desk. The repeated pink-card scan did not check it out again.';
+            actions.hidden = true;
+            return;
+          }
           await logVehicleAction(vehicle, userEmail, 'keyPickedUp', {
             keyStatus: result.state.keyStatus,
             keyHeldBy: result.state.keyHeldBy || null,
@@ -179,6 +184,7 @@
 
         if (data.workflowStage === WORKFLOW_STAGE.VEHICLE_RETURNED) {
           const result = await returnKey(db, vehicle, userEmail);
+          touchRecentAuthSession();
           await logVehicleAction(vehicle, userEmail, 'keyReturned', {
             keyStatus: result.state.keyStatus,
             keyHeldBy: result.state.keyHeldBy || null,

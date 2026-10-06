@@ -919,6 +919,7 @@
         currentUser.email,
         Boolean(maintenanceComment)
       );
+      touchRecentAuthSession();
 
       if (maintenanceComment) {
         await logMaintenanceComment(vehicleName, maintenanceComment);
@@ -952,6 +953,7 @@
     actionBtn.disabled = true;
     try {
       const result = await commitKeyReturn(db, vehicleName, currentUser.email);
+      touchRecentAuthSession();
       await logVehicleAction(vehicleName, 'keyReturned', {
         keyStatus: result.state.keyStatus,
         keyHeldBy: result.state.keyHeldBy || null,

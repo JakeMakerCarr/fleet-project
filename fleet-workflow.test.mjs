@@ -94,6 +94,20 @@ assert.equal(records.get(vehiclePath).workflowStage, workflow.WORKFLOW_STAGE.VEH
 
 await workflow.returnKey({}, vehicle, userEmail);
 assert.equal(records.get(vehiclePath).keyStatus, 'atFrontDesk');
+assert.equal(records.get(vehiclePath).keyReturnedBy, userEmail);
+
+const repeatedPinkScan = await workflow.claimKey({}, vehicle, userEmail, 'pinkNfc');
+assert.equal(repeatedPinkScan.outcome, 'recentlyReturned');
+assert.equal(records.get(vehiclePath).keyStatus, 'atFrontDesk');
+assert.equal(records.get(vehiclePath).workflowStage, workflow.WORKFLOW_STAGE.KEY_RETURNED);
+
+records.set(vehiclePath, {
+  ...records.get(vehiclePath),
+  keyReturnedAt: Date.now() - workflow.PINK_RETURN_GUARD_MS - 1
+});
+const laterPinkScan = await workflow.claimKey({}, vehicle, userEmail, 'pinkNfc');
+assert.equal(laterPinkScan.outcome, 'claimed');
+assert.equal(records.get(vehiclePath).keyStatus, 'withStaff');
 
 await assert.rejects(
   workflow.claimKey({}, 'Missing Vehicle', userEmail),
