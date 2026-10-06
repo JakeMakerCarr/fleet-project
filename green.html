@@ -44,7 +44,7 @@
     } else if (!vehicle) {
       status.textContent = `Unknown vehicle code: ${code}`;
     } else {
-      window.location.replace(`nfc.html?vehicle=${encodeURIComponent(vehicle)}`);
+      window.location.replace(`nfc.html?vehicle=${encodeURIComponent(vehicle)}&source=greenNfc`);
     }
   </script>
 </body>

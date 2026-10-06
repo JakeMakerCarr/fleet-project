@@ -58,6 +58,18 @@ for (const [databaseName, alternateName] of Object.entries(VEHICLE_ALIASES)) {
 }
 assert.equal(getVehicleNameFromCode('test'), TEST_NFC_VEHICLE);
 
+const prematureVehicle = 'Premature Signout Test';
+records.set(`vehicles/${prematureVehicle}`, {
+  status: 'available',
+  keyStatus: 'withStaff',
+  keyHeldBy: userEmail,
+  workflowStage: 'keyPickedUp'
+});
+await assert.rejects(
+  workflow.signOutVehicle({}, prematureVehicle, userEmail),
+  error => error.code === 'CHECKLIST_REQUIRED'
+);
+
 records.set(vehiclePath, {
   status: 'available',
   keyStatus: 'atFrontDesk'
@@ -66,6 +78,13 @@ records.set(vehiclePath, {
 await workflow.claimKey({}, vehicle, userEmail);
 assert.equal(records.get(vehiclePath).keyStatus, 'withStaff');
 assert.equal(records.get(vehiclePath).keyHeldBy, userEmail);
+
+await workflow.completeChecklist({}, vehicle, userEmail);
+assert.equal(records.get(vehiclePath).status, 'available');
+assert.equal(
+  records.get(vehiclePath).workflowStage,
+  workflow.WORKFLOW_STAGE.CHECKLIST_COMPLETED
+);
 
 await workflow.signOutVehicle({}, vehicle, userEmail);
 assert.equal(records.get(vehiclePath).status, 'signedOut');

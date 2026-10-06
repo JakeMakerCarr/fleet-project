@@ -2,6 +2,7 @@ import { ref, get, runTransaction } from 'https://www.gstatic.com/firebasejs/10.
 
 export const WORKFLOW_STAGE = Object.freeze({
   KEY_PICKED_UP: 'keyPickedUp',
+  CHECKLIST_COMPLETED: 'checklistCompleted',
   VEHICLE_SIGNED_OUT: 'vehicleSignedOut',
   VEHICLE_RETURNED: 'vehicleReturned',
   KEY_RETURNED: 'keyReturned'
@@ -145,6 +146,62 @@ export async function claimKey(db, vehicle, userEmail, source = 'pinkNfc') {
   return { outcome, state: result.snapshot.val() || {} };
 }
 
+export async function completeChecklist(db, vehicle, userEmail) {
+  await assertNoOtherActiveBooking(db, vehicle, userEmail);
+
+  let denial = null;
+  let outcome = 'completed';
+  const operationTime = Date.now();
+  const result = await runTransaction(ref(db, `vehicles/${vehicle}`), current => {
+    denial = null;
+    outcome = 'completed';
+    if (current === null) {
+      denial = { code: 'VEHICLE_NOT_FOUND', message: 'Vehicle not found in database.' };
+      return current;
+    }
+
+    const user = normalizeEmail(userEmail);
+    const holder = normalizeEmail(current.keyHeldBy);
+    if (current.maintenanceStatus === 'outForMaintenance') {
+      denial = { code: 'MAINTENANCE', message: 'This vehicle is currently out for maintenance.' };
+      return;
+    }
+    if (current.keyStatus !== 'withStaff' || holder !== user) {
+      denial = {
+        code: 'KEY_NOT_HELD',
+        message: 'You must pick up this key from the front desk before completing the checklist.'
+      };
+      return;
+    }
+    if ((current.status || 'available') !== 'available') {
+      denial = { code: 'VEHICLE_IN_USE', message: 'This vehicle is already signed out.' };
+      return;
+    }
+    if (current.workflowStage === WORKFLOW_STAGE.CHECKLIST_COMPLETED) {
+      outcome = 'alreadyCompleted';
+      return current;
+    }
+    if (current.workflowStage !== WORKFLOW_STAGE.KEY_PICKED_UP) {
+      denial = {
+        code: 'CHECKLIST_NOT_READY',
+        message: 'Pick up the key before completing the vehicle checklist.'
+      };
+      return;
+    }
+
+    return {
+      ...current,
+      workflowStage: WORKFLOW_STAGE.CHECKLIST_COMPLETED,
+      checklistCompletedAt: operationTime
+    };
+  });
+
+  if (!result.committed || !result.snapshot.exists()) {
+    throw transactionError(denial, 'The checklist could not be completed because the vehicle status changed.');
+  }
+  return { outcome, state: result.snapshot.val() || {} };
+}
+
 export async function signOutVehicle(db, vehicle, userEmail) {
   await assertNoOtherActiveBooking(db, vehicle, userEmail);
 
@@ -179,6 +236,13 @@ export async function signOutVehicle(db, vehicle, userEmail) {
         return current;
       }
       denial = { code: 'VEHICLE_IN_USE', message: 'This vehicle is already signed out by another user.' };
+      return;
+    }
+    if (current.workflowStage !== WORKFLOW_STAGE.CHECKLIST_COMPLETED) {
+      denial = {
+        code: 'CHECKLIST_REQUIRED',
+        message: 'Complete the vehicle checklist before tapping the green card to sign out.'
+      };
       return;
     }
 

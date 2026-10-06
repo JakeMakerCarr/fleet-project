@@ -43,6 +43,30 @@
       font-weight: bold;
       color: darkred;
     }
+    .checklist-complete-panel {
+      max-width: 620px;
+      margin: 2rem auto 0;
+      padding: 1.75rem;
+      border: 2px solid #22c55e;
+      border-radius: 14px;
+      background: #ecfdf5;
+      color: #14532d;
+      text-align: center;
+      box-shadow: 0 10px 28px rgba(21, 128, 61, 0.16);
+    }
+    .checklist-complete-panel[hidden] {
+      display: none;
+    }
+    .checklist-complete-panel h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.75rem;
+    }
+    .checklist-complete-panel p {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      line-height: 1.5;
+    }
     .close-browser-note {
       display: none;
       margin: 1.25rem 0 0;
@@ -276,6 +300,10 @@
     </div>
     <button id="actionBtn"></button>
     <div id="message"></div>
+    <section id="checklist-complete-panel" class="checklist-complete-panel" hidden>
+      <h2>Checklist Completed!</h2>
+      <p>Please tap the green NFC card to sign out the vehicle before driving.</p>
+    </section>
     <p id="close-browser-note" class="close-browser-note">
       Take the key back to the front desk. Scan the pink card there, or keep this page open and use the manual return button.
     </p>
@@ -295,6 +323,7 @@
   import {
     WORKFLOW_STAGE,
     claimKey as commitKeyPickup,
+    completeChecklist as commitChecklist,
     returnKey as commitKeyReturn,
     returnVehicle as commitVehicleReturn,
     signOutVehicle as commitVehicleSignOut
@@ -306,12 +335,14 @@
 
   const urlParams = new URLSearchParams(window.location.search);
   const vehicleParam = urlParams.get('vehicle');
+  const accessSource = urlParams.get('source') || 'greenNfc';
   const vehicle = vehicleParam ? decodeURIComponent(vehicleParam) : '';
   const authStatus = document.getElementById('auth-status');
   const mainContent = document.getElementById('main-content');
   const vehicleNameEl = document.getElementById('vehicle-name');
   const actionBtn = document.getElementById('actionBtn');
   const messageEl = document.getElementById('message');
+  const checklistCompletePanel = document.getElementById('checklist-complete-panel');
   const checklistContainer = document.getElementById('checklist-container');
   const checklistGrid = document.getElementById('checklist-grid');
   const checklistStatus = document.getElementById('checklist-status');
@@ -558,7 +589,7 @@
     const total = checklistItems.length;
     const completed = checklistSelections.filter(itemState => Boolean(getChecklistStatus(itemState))).length;
     checklistStatus.textContent = `${completed} / ${total} completed`;
-    if (actionBtn.dataset.mode === 'signout') {
+    if (actionBtn.dataset.mode === 'complete-checklist') {
       actionBtn.disabled = completed !== total;
     }
   }
@@ -589,7 +620,13 @@
   }
 
   signoutSuccessContinue.addEventListener('click', () => {
-    window.location.reload();
+    signoutSuccessDialog.hidden = true;
+    checklistContainer.style.display = 'none';
+    returnNotesContainer.style.display = 'none';
+    actionBtn.style.display = 'none';
+    messageEl.textContent = 'Vehicle signed out successfully. You may now drive the vehicle.';
+    closeBrowserNote.textContent = 'After parking the vehicle, tap the green NFC card again to open the return form.';
+    closeBrowserNote.classList.add('visible');
   });
 
   if (!vehicle) {
@@ -720,6 +757,7 @@
     const keyHeldBy = String(data.keyHeldBy || '').toLowerCase();
     const userHoldsKey = data.keyStatus === 'withStaff' && keyHeldBy === loggedInUser;
     messageEl.textContent = '';
+    checklistCompletePanel.hidden = true;
     closeBrowserNote.classList.remove('visible');
 
     if (data.status === 'available') {
@@ -750,15 +788,28 @@
         messageEl.textContent = 'The vehicle has been returned. Hand the key to the front desk, then scan the pink card or use the manual button below.';
         return;
       }
+      if (data.workflowStage === WORKFLOW_STAGE.CHECKLIST_COMPLETED) {
+        checklistContainer.style.display = 'none';
+        returnNotesContainer.style.display = 'none';
+        actionBtn.style.display = 'none';
+        if (accessSource === 'manualChecklist') {
+          messageEl.textContent = '';
+          checklistCompletePanel.hidden = false;
+          return;
+        }
+        messageEl.textContent = 'Green NFC card detected. Signing out the vehicle...';
+        await signOutVehicle(vehicleName);
+        return;
+      }
       checklistContainer.style.display = 'block';
       returnNotesContainer.style.display = 'none';
       returnCommentsInput.value = '';
       resetChecklist();
-      actionBtn.textContent = 'Sign Out Vehicle';
-      actionBtn.dataset.mode = 'signout';
+      actionBtn.textContent = 'Complete Checklist';
+      actionBtn.dataset.mode = 'complete-checklist';
       actionBtn.disabled = true;
       actionBtn.style.display = '';
-      actionBtn.onclick = () => signOutVehicle(vehicleName);
+      actionBtn.onclick = () => completeVehicleChecklist(vehicleName);
     } else if (data.status === 'signedOut' && signedOutBy === currentUser.email && userHoldsKey) {
       checklistContainer.style.display = 'none';
       returnNotesContainer.style.display = 'block';
@@ -782,19 +833,41 @@
     }
   }
 
+  async function completeVehicleChecklist(vehicleName) {
+    actionBtn.disabled = true;
+    try {
+      const result = await commitChecklist(db, vehicleName, currentUser.email);
+      const checklistRepairItems = getChecklistRepairNotes();
+      await logChecklistRepairItems(vehicleName, checklistRepairItems);
+      await logVehicleAction(vehicleName, 'checklistCompleted', {
+        keyHeldBy: result.state.keyHeldBy || null,
+        workflowStage: result.state.workflowStage,
+        checklistItemCount: checklistItems.length,
+        checklistResponses: getChecklistLogPayload()
+      });
+
+      checklistContainer.style.display = 'none';
+      returnNotesContainer.style.display = 'none';
+      actionBtn.style.display = 'none';
+      messageEl.textContent = '';
+      checklistCompletePanel.hidden = false;
+    } catch (error) {
+      messageEl.textContent = error.message || 'The checklist could not be completed. Please try again.';
+      actionBtn.disabled = false;
+      await logVehicleAction(vehicleName, 'checklistCompletionDenied', {
+        reason: error.code || 'unknown'
+      });
+    }
+  }
+
   async function signOutVehicle(vehicleName) {
     actionBtn.disabled = true;
     try {
       const result = await commitVehicleSignOut(db, vehicleName, currentUser.email);
-      const checklistRepairItems = getChecklistRepairNotes();
-      await logChecklistRepairItems(vehicleName, checklistRepairItems);
-
       await logVehicleAction(vehicleName, 'signedOut', {
         keyHeldBy: result.state.keyHeldBy || null,
         workflowStage: result.state.workflowStage,
-        checklistCompleted: true,
-        checklistItemCount: checklistItems.length,
-        checklistResponses: getChecklistLogPayload()
+        source: 'greenNfc'
       });
 
       messageEl.textContent = 'Status: Signed Out by Staff.';

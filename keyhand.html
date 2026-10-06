@@ -96,7 +96,7 @@
     }
 
     function openVehicleAccess() {
-      window.location.href = `nfc.html?vehicle=${encodeURIComponent(vehicle)}`;
+      window.location.href = `nfc.html?vehicle=${encodeURIComponent(vehicle)}&source=manualChecklist`;
     }
 
     async function returnUnused(userEmail) {
@@ -158,6 +158,12 @@
             source: 'pinkNfc'
           });
           statusDiv.textContent = '✅ Vehicle trip complete. The key is now recorded at the front desk.';
+          return;
+        }
+
+        if (data.workflowStage === WORKFLOW_STAGE.CHECKLIST_COMPLETED) {
+          statusDiv.textContent = 'Checklist completed. Go to the vehicle and tap the green NFC card to sign it out before driving.';
+          actions.hidden = true;
           return;
         }
 
